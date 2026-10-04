@@ -52,6 +52,9 @@ def build(case, run_dir):
         os.remove(os.path.join(run_dir, "input" + os.path.splitext(src)[1]))
     else:
         prompt = f"/techblog {tone} {src_arg} -o article.md --keep-work"
+    if case.get("allowed_tools"):
+        # 스킬 없이 실행하는 baseline은 skill의 allowed-tools가 없어서 URL을 읽으려면 WebFetch를 따로 허용해야 한다.
+        extra += ["--allowedTools"] + case["allowed_tools"]
     return prompt, extra
 
 
