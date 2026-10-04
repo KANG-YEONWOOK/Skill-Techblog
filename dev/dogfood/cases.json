@@ -1,0 +1,47 @@
+{
+ "notes": [
+  "dogfooding 케이스. docs/ 자료는 저장소에 없으므로 로컬에서만 쓴다. {work}는 scratch 폴더(%TEMP%/techblog-work).",
+  "mode: skill(기본), baseline(스킬 없이 일반 프롬프트), retone(완성된 글의 어투만 변환), pasted(자료 텍스트를 프롬프트에 붙여넣음)"
+ ],
+ "cases": [
+  {
+   "name": "A-antislop-casual",
+   "source": "docs/2510.15061v1.pdf",
+   "tone": "casual"
+  },
+  {
+   "name": "B-idiosyncrasies-default",
+   "source": "docs/sun25z.pdf",
+   "tone": "default"
+  },
+  {
+   "name": "S1-pagedattention-casual",
+   "source": "{work}/sources/2309.06180.pdf",
+   "tone": "casual"
+  },
+  {
+   "name": "Arep-antislop-casual",
+   "source": "docs/2510.15061v1.pdf",
+   "tone": "casual",
+   "note": "A와 같은 설정. run 간 편차 측정용"
+  },
+  {
+   "name": "A0-antislop-baseline",
+   "source": "docs/2510.15061v1.pdf",
+   "tone": "casual",
+   "mode": "baseline"
+  },
+  {
+   "name": "B0-idiosyncrasies-baseline",
+   "source": "docs/sun25z.pdf",
+   "tone": "default",
+   "mode": "baseline"
+  },
+  {
+   "name": "S10-pagedattention-baseline",
+   "source": "{work}/sources/2309.06180.pdf",
+   "tone": "casual",
+   "mode": "baseline"
+  }
+ ]
+}
