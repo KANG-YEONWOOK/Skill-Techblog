@@ -1,0 +1,394 @@
+{
+  "schema": 1,
+  "version": "v0",
+  "generated_at": "2026-10-04",
+  "basis": "잠정값. 연구 수치와 토스·카카오·당근 15편 예비 측정에서 잡았다. dev/baseline/calibrate.py가 사람 글 측정값으로 다시 만든다.",
+  "max_warn": 2,
+  "metrics": {
+    "G2.experience": {
+      "kind": "gate"
+    },
+    "G2.exp_ending": {
+      "kind": "gate",
+      "title": "직접 겪었다는 종결(~더라고요, ~네요)",
+      "hint": "자료를 주어로 바꾸고 종결을 사실 서술로 쓴다."
+    },
+    "G3.chatbot": {
+      "kind": "gate"
+    },
+    "G3.placeholder": {
+      "kind": "gate"
+    },
+    "G3.source_meta": {
+      "kind": "gate"
+    },
+    "G4.off_tone": {
+      "kind": "gate",
+      "title": "어투 혼용",
+      "hint": "Default는 합니다체, Casual은 해요체로 맞춘다. Casual에서는 종결부만 고친다."
+    },
+    "G4.banned_ending": {
+      "kind": "gate",
+      "title": "Casual 금지 어미(~더라고요, ~네요, ~잖아요, ~는데요)",
+      "hint": "tone.md의 직접 대응 어미로 바꾼다."
+    },
+    "G6.emoji": {
+      "kind": "gate",
+      "title": "본문 이모지",
+      "hint": "이모지를 지운다."
+    },
+    "G6.semicolon": {
+      "kind": "gate",
+      "title": "본문 세미콜론",
+      "hint": "문장을 둘로 나누거나 연결어미로 잇는다."
+    },
+    "G6.emdash": {
+      "kind": "gate",
+      "title": "문장 안 em dash",
+      "hint": "쉼표, 괄호, 문장 분리로 바꾼다. 라벨 구분자는 목록 앞부분에서만 쓴다."
+    },
+    "G7.conj_comma": {
+      "kind": "gate",
+      "title": "접속부사 뒤 쉼표",
+      "hint": "그리고·그러나·하지만·그래서·따라서 뒤 쉼표를 지운다."
+    },
+    "G8.beyond_simple": {
+      "kind": "gate"
+    },
+    "G9.cliche_intro": {
+      "kind": "gate"
+    },
+    "G9.cliche_outro": {
+      "kind": "gate"
+    },
+    "G9.empty_challenge": {
+      "kind": "gate"
+    },
+    "G9.summary_opener": {
+      "kind": "gate"
+    },
+    "A1.np": {
+      "kind": "poisson",
+      "rate_per_1k": 0.56,
+      "pass_q": 0.9,
+      "warn_q": 0.975,
+      "title": "부정 대구(X가 아니라 Y 계열) 문장 수",
+      "hint": "부정하는 X를 지우고 Y를 바로 쓴다. 기준 안으로 들어오면 멈춘다."
+    },
+    "A1.np_simple": {
+      "kind": "upper",
+      "pass_max": 1,
+      "warn_max": 1
+    },
+    "A1.np_title": {
+      "kind": "upper",
+      "pass_max": 0,
+      "warn_max": 0,
+      "title": "제목의 부정 대구",
+      "hint": "제목은 다루는 내용을 바로 쓴다."
+    },
+    "A1.np_first_para": {
+      "kind": "upper",
+      "pass_max": 0,
+      "warn_max": 1,
+      "title": "첫 문단의 부정 대구",
+      "hint": "도입은 자료의 상황이나 문제로 시작한다."
+    },
+    "A1.np_same_para": {
+      "kind": "upper",
+      "pass_max": 0,
+      "warn_max": 1,
+      "title": "한 문단에 부정 대구 2회 이상",
+      "hint": "한 문단에 한 번만 남긴다."
+    },
+    "A1.ppunman": {
+      "kind": "info"
+    },
+    "A2.comma_per_sentence": {
+      "kind": "upper",
+      "pass_max": 0.75,
+      "warn_max": 0.9,
+      "title": "문장당 쉼표",
+      "hint": "연결어미 뒤 쉼표부터 지운다.",
+      "min_chars": 1500
+    },
+    "A2.comma_sentence_ratio": {
+      "kind": "upper",
+      "pass_max": 0.55,
+      "warn_max": 0.65,
+      "title": "쉼표가 있는 문장 비율",
+      "hint": "꼭 필요한 쉼표만 남긴다.",
+      "min_chars": 1500
+    },
+    "A2.connective_comma_ratio": {
+      "kind": "upper",
+      "pass_max": 0.15,
+      "warn_max": 0.2,
+      "title": "연결어미 뒤 쉼표 비율",
+      "hint": "~고, ~며, ~지만, ~는데 뒤 쉼표를 지운다.",
+      "min_chars": 1500
+    },
+    "INFO.adverb_comma": {
+      "kind": "info",
+      "title": "문장 첫 부사 뒤 쉼표(즉, 특히, 다만 등)"
+    },
+    "A3.salience": {
+      "kind": "upper",
+      "pass_max": 2,
+      "warn_max": 3
+    },
+    "A4.para_end": {
+      "kind": "upper",
+      "pass_max": 3,
+      "warn_max": 4,
+      "title": "문단 끝 요약·교훈 문장",
+      "hint": "앞 문장을 되풀이하거나 의미를 부여하는 마지막 문장을 지운다."
+    },
+    "A4.obligation_end": {
+      "kind": "upper",
+      "pass_max": 1,
+      "warn_max": 2
+    },
+    "A4.gyeolguk": {
+      "kind": "upper",
+      "pass_max": 1,
+      "warn_max": 2
+    },
+    "A4.summary_start": {
+      "kind": "info"
+    },
+    "A4.lesson_end": {
+      "kind": "info"
+    },
+    "A5.style_words_per_1k": {
+      "kind": "upper",
+      "pass_max": 0.6,
+      "warn_max": 1.0,
+      "title": "과사용 어휘(1,000자당)",
+      "min_chars": 1500
+    },
+    "A5.word_max": {
+      "kind": "upper",
+      "pass_max": 2,
+      "warn_max": 3,
+      "title": "과사용 어휘 단어별 최다 횟수",
+      "hint": "같은 단어를 세 번 이상 쓰지 않는다."
+    },
+    "A5.policy_verbs_per_1k": {
+      "kind": "upper",
+      "pass_max": 1.5,
+      "warn_max": 2.5,
+      "title": "추상 정책 동사(1,000자당)",
+      "min_chars": 1500
+    },
+    "A6.calque": {
+      "kind": "upper",
+      "pass_max": 1,
+      "warn_max": 2
+    },
+    "A7.hedge_stack": {
+      "kind": "upper",
+      "pass_max": 0,
+      "warn_max": 1
+    },
+    "A7.hedge_boimnida": {
+      "kind": "upper",
+      "pass_max": 2,
+      "warn_max": 3
+    },
+    "A8.sent_len_mean": {
+      "kind": "range",
+      "pass": [
+        42,
+        65
+      ],
+      "warn": [
+        38,
+        70
+      ],
+      "title": "평균 문장 길이(공백 포함 글자)",
+      "hint": "짧은 문장만 이어지면 관련 문장을 합치고, 긴 문장만 이어지면 나눈다.",
+      "min_chars": 1500
+    },
+    "A8.sent_len_cv": {
+      "kind": "lower",
+      "pass_min": 0.4,
+      "warn_min": 0.33,
+      "title": "문장 길이 변동계수",
+      "hint": "짧은 문장과 긴 문장을 섞는다.",
+      "min_chars": 1500
+    },
+    "A8.long_ratio": {
+      "kind": "lower",
+      "pass_min": 0.08,
+      "warn_min": 0.04,
+      "title": "80자 이상 문장 비율",
+      "hint": "조건과 이유를 한 문장에 담는 긴 문장도 둔다.",
+      "min_chars": 1500
+    },
+    "A8.ending_run4": {
+      "kind": "upper",
+      "pass_max": 1,
+      "warn_max": 2,
+      "title": "같은 종결 4회 연속",
+      "hint": "시제나 서술 방식을 바꿔 종결을 섞는다.",
+      "min_chars": 1500
+    },
+    "A8.sentences_per_para": {
+      "kind": "range",
+      "pass": [
+        1.6,
+        3.5
+      ],
+      "warn": [
+        1.3,
+        4.2
+      ],
+      "title": "문단당 문장 수",
+      "min_chars": 1500
+    },
+    "A8.single_para_ratio": {
+      "kind": "range",
+      "pass": [
+        0.08,
+        0.45
+      ],
+      "warn": [
+        0.03,
+        0.6
+      ],
+      "title": "한 문장 문단 비율",
+      "min_chars": 1500
+    },
+    "A9.bold_per_1k": {
+      "kind": "upper",
+      "pass_max": 6,
+      "warn_max": 9,
+      "title": "bold(1,000자당)",
+      "hint": "핵심 결과와 용어에만 bold를 쓴다.",
+      "min_chars": 1500
+    },
+    "A9.list_ratio": {
+      "kind": "upper",
+      "pass_max": 0.25,
+      "warn_max": 0.35,
+      "title": "목록 비중",
+      "hint": "이유와 과정을 설명하는 내용은 문단으로 쓴다.",
+      "min_chars": 1500
+    },
+    "A9.label_list_ratio": {
+      "kind": "upper",
+      "pass_max": 0.5,
+      "warn_max": 0.7,
+      "title": "\"라벨: 설명\" 목록 비율",
+      "hint": "라벨 없이 문장으로 쓰거나 표로 바꾼다.",
+      "min_chars": 1500
+    },
+    "A9.heading_per_1k": {
+      "kind": "range",
+      "pass": [
+        0.8,
+        2.6
+      ],
+      "warn": [
+        0.5,
+        3.2
+      ],
+      "title": "헤딩 밀도(1,000자당)",
+      "min_chars": 1500
+    },
+    "A9.heading_colon_ratio": {
+      "kind": "upper",
+      "pass_max": 0.25,
+      "warn_max": 0.4,
+      "title": "콜론이 든 헤딩 비율",
+      "hint": "헤딩을 명사구나 질문 하나로 쓴다.",
+      "min_chars": 1500
+    },
+    "A10.triad_per_1k": {
+      "kind": "upper",
+      "pass_max": 0.8,
+      "warn_max": 1.2,
+      "title": "셋 묶음 나열(1,000자당)",
+      "hint": "자료에 실제로 셋이 있을 때만 셋으로 나열한다.",
+      "min_chars": 1500
+    },
+    "A10.triad_same_para": {
+      "kind": "upper",
+      "pass_max": 0,
+      "warn_max": 1,
+      "title": "한 문단에 셋 묶음 2회 이상"
+    },
+    "A11.body_questions": {
+      "kind": "upper",
+      "pass_max": 3,
+      "warn_max": 5,
+      "title": "본문 질문 문장",
+      "hint": "섹션을 여는 질문만 남긴다."
+    },
+    "A11.question_heading_ratio": {
+      "kind": "upper",
+      "pass_max": 0.2,
+      "warn_max": 0.3,
+      "title": "질문형 헤딩 비율"
+    },
+    "A12.progressive_per_1k": {
+      "kind": "upper",
+      "pass_max": 0.5,
+      "warn_max": 0.8,
+      "title": "\"~되고 있다\"(1,000자당)",
+      "min_chars": 1500
+    },
+    "A13.demonstrative_start_per_1k": {
+      "kind": "upper",
+      "pass_max": 0.6,
+      "warn_max": 1.0,
+      "title": "지시어로 여는 문장(1,000자당)",
+      "min_chars": 1500
+    },
+    "A14.translationese_per_1k": {
+      "kind": "upper",
+      "pass_max": 0.5,
+      "warn_max": 0.8,
+      "title": "번역투(1,000자당)",
+      "min_chars": 1500
+    },
+    "A14.doeeojida": {
+      "kind": "upper",
+      "pass_max": 0,
+      "warn_max": 0
+    },
+    "A15.unknown_numbers": {
+      "kind": "upper",
+      "pass_max": 0,
+      "warn_max": 0,
+      "title": "fact sheet에 없는 수치",
+      "hint": "자료에서 확인한 수치만 쓴다. 변환·반올림 값은 fact sheet에 함께 적는다."
+    },
+    "T.jyo_ratio": {
+      "kind": "upper",
+      "pass_max": 0.05,
+      "warn_max": 0.08,
+      "tone": "casual",
+      "title": "~죠 종결 비율",
+      "hint": "~죠는 앞 내용의 귀결을 다시 말할 때만 쓴다."
+    },
+    "T.geudeun_ratio": {
+      "kind": "upper",
+      "pass_max": 0.05,
+      "warn_max": 0.08,
+      "tone": "casual",
+      "title": "~거든요 종결 비율",
+      "hint": "~거든요는 Default 문장에 원인 표지가 있을 때만 쓴다."
+    },
+    "T.kkayo_ratio": {
+      "kind": "upper",
+      "pass_max": 0.04,
+      "warn_max": 0.06,
+      "title": "~할까요? 질문 비율"
+    },
+    "INFO.we": {
+      "kind": "info"
+    }
+  }
+}
