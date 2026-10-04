@@ -148,6 +148,11 @@ class PatternTest(unittest.TestCase):
                       "다시 학습이 필요할 수 있습니다. 모델이 바뀌면 다시 학습해야 합니다.")
         self.assertEqual(a["metrics"]["A7.must_may"]["value"], 2)
 
+    def test_read_as(self):
+        a = L.analyze("표에서 지연 대부분이 배치 대기에서 생긴다고 읽을 수 있습니다. 이 평가는 차이에서 나온 것으로 읽힙니다. "
+                      "로그를 읽을 수 있습니다. 표의 측정값대로라면 지연의 72%는 배치 대기에서 생깁니다.")
+        self.assertEqual(a["metrics"]["A7.read_as"]["value"], 2)
+
     def test_single_para_ratio_lower_bound(self):
         dense = "\n\n".join("첫 문장입니다. 둘째 문장입니다. 셋째 문장입니다. 넷째 문장입니다." for _ in range(5))
         short = "\n\n".join(["첫 문장입니다. 둘째 문장입니다.", "한 문장 문단입니다."] * 3)

@@ -95,6 +95,7 @@ techblog 스킬이 쓴 글을 점검하는 기준이다. 스킬의 점검 단계
 | A7.hedge_stack | 추정 중첩: "~할 수 있을 것으로 보입니다", "~일 가능성이 있을 수 있습니다" | PASS ≤1 | 0 / 0 | [14][21] |
 | A7.hedge_boimnida | "~것으로 보입니다" | PASS 0, WARN ≤2 | 0 / 0 | [14] |
 | A7.must_may | 의무와 가능성 중첩 "~해야 할 수 있다"(영어 "may need to"를 옮긴 표현) | PASS 0, WARN 1 | 사람 글 224편 중 2편 | dogfooding |
+| A7.read_as | 추론 표지 "~로 읽힙니다", "~라고 읽을 수 있습니다"(영어 "can be read as"를 옮긴 표현) | PASS 0, WARN 1 | 사람 글 224편 중 2편(2025년 이후 글) | dogfooding |
 | A8.sent_len_mean | 평균 문장 길이(공백 포함) | PASS 46~84자 | 62 / 82 | [10][15] |
 | A8.sent_len_cv | 문장 길이 변동계수 | PASS ≥0.37 | 0.48 / 0.61 | [10][15] |
 | A8.long_ratio | 80자 이상 문장 비율 | PASS ≥0.065 | 0.26 / 0.49 | [3][15] |
@@ -124,6 +125,7 @@ techblog 스킬이 쓴 글을 점검하는 기준이다. 스킬의 점검 단계
 - A8: Muñoz-Ortiz et al.(2024)에서 41단어 이상 문장은 사람 12.0%, LLM 4.1~5.5%였다[15]. Pangram에서 Opus 5.5의 문장 길이 변동계수는 0.475로 Opus 5보다 11% 줄었다[10]. 같은 종결 반복(A8.ending_run4)은 dogfooding에서 추가했다. 스킬이 Casual로 바꾼 글에서 "~해요/~했어요"가 이어지는 구간이 8~9곳 나왔고, pairwise judge가 이 리듬을 사람 글보다 기계적이라고 지적했다.
 - A8.ending_top_share: dogfooding iteration 4에서 style judge가 세 글 모두 "어미와 호흡이 균일하다"고 지적했다. Casual 글은 "~해요" 현재형이 서술 문장의 47~53%로 사람 해요체 글의 p90~p95(0.51~0.52)에 걸려 있었다. 동작을 설명하는 "~합니다/~됩니다"가 많은 초안이 변환되며 한 종결로 모였기 때문이다.
 - A7.must_may: dogfooding iteration 3~5에서 "다시 학습해야 할 수 있습니다" 같은 문장이 글마다 1~2개 나왔다. style-guide가 추론을 드러내는 예로 이 형태를 보여 준 것이 원인이었다. 사람 글 baseline 224편에서는 2편에 1회씩 나왔다.
+- A7.read_as: held-out round에서 Discord 글(E)과 PEP 659 글(S2)에 2회씩 나왔고 style judge가 두 번 모두 hedge로 인용했다. 스킬의 "추론임을 문장에 드러낸다"는 지시를 모델이 이 형태로 따랐다. 사람 글 baseline에서는 1만 자당 0.02회 이하였다.
 - A8.single_para_ratio: dogfooding iteration 4~5의 스킬 출력은 한 문장 문단 비율이 0.04~0.09로 사람 글 66편의 최솟값(0.074)보다 낮았다. 스킬 없는 Claude 출력(0.28~0.41)은 사람 글 범위 안이었다. style-guide가 "문단당 2~3문장, 한 문장 문단 15~30%"라고 적었는데, 이 값은 초기에 15편을 읽고 센 조사에서 왔고 lint로 잰 사람 글 66편의 중앙값은 문단당 2.0문장, 한 문장 문단 37%였다.
 - A16: dogfooding iteration 2에서 "자료를 주어로 쓴다"는 규칙 때문에 "저자들은 ~"으로 여는 문장이 18%(160문장 중 29개)까지 늘었고, pairwise judge가 이 반복을 보고서 같은 리듬이라고 지적했다. 스킬 없는 Claude 출력은 2~7%였다. 사실은 기술·결과를 주어로 쓰고 "저자들은"은 주장·추정을 옮길 때만 쓴다.
 - A9, A10: Arize에서 Opus 5.5의 bold lead-in bullet은 2.5배, 세 항목 목록은 35% 늘었고[9], Pangram에서 bullet은 85%, 번호 목록은 111% 늘었다[10]. 사람 글도 bold와 목록을 쓰므로 0이 목표가 아니다.

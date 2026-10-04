@@ -2,7 +2,7 @@
   "schema": 1,
   "version": "v1",
   "generated_at": "2026-10-05",
-  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit 54c4f36",
+  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit 6bfd827",
   "max_warn": 3,
   "metrics": {
     "G2.exp_ending": {
@@ -366,6 +366,13 @@
       "warn_max": 1,
       "fixed": true,
       "note": "사람 글 baseline 224편 중 2편에서 1회씩 나왔다. 1회는 WARN, 2회부터 FAIL"
+    },
+    "A7.read_as": {
+      "kind": "upper",
+      "pass_max": 0,
+      "warn_max": 1,
+      "fixed": true,
+      "note": "사람 글 baseline 224편 중 2편(둘 다 2025년 이후 글)에서 1회씩 나왔다. 1회는 WARN, 2회부터 FAIL"
     },
     "A8.ending_run4": {
       "kind": "upper",
