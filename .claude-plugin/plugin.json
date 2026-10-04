@@ -1,0 +1,13 @@
+{
+  "name": "techblog",
+  "version": "0.1.0",
+  "description": "자료(논문·문서 PDF, URL, 텍스트)의 핵심을 토스·카카오·당근 기술 블로그 문체의 한국어 아티클로 정리하는 skill. 근거 기반 rubric과 검사 스크립트로 AI 문체 패턴을 줄이고, 어투는 Default(합니다체)와 Casual(해요체) 중 고른다.",
+  "author": {
+    "name": "KANG-YEONWOOK",
+    "url": "https://github.com/KANG-YEONWOOK"
+  },
+  "homepage": "https://github.com/KANG-YEONWOOK/Skill-Techblog",
+  "repository": "https://github.com/KANG-YEONWOOK/Skill-Techblog",
+  "license": "MIT",
+  "keywords": ["korean", "tech-blog", "technical-writing", "writing-style", "skill"]
+}

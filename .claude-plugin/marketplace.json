@@ -1,0 +1,17 @@
+{
+  "name": "skill-techblog",
+  "description": "techblog skill: 자료를 한국어 기술 블로그 아티클로 정리한다.",
+  "owner": {
+    "name": "KANG-YEONWOOK",
+    "url": "https://github.com/KANG-YEONWOOK"
+  },
+  "plugins": [
+    {
+      "name": "techblog",
+      "source": "./",
+      "description": "자료(논문·문서 PDF, URL, 텍스트)의 핵심을 토스·카카오·당근 기술 블로그 문체의 한국어 아티클로 정리한다. Default(합니다체)/Casual(해요체).",
+      "category": "writing",
+      "tags": ["korean", "tech-blog", "writing"]
+    }
+  ]
+}
