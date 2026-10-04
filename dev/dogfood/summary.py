@@ -2,7 +2,7 @@
 """사람 글 baseline, 스킬 없는 Claude, 스킬 Default, 스킬 Casual의 지표를 한 표로 모은다(README 비교표).
 
 - 사람 글: dev/baseline/stats.json의 default, casual 그룹(2025년 이전 글) 중앙값
-- 생성 글: dogfood 결과의 eval.json(lint 재측정값)과 judge.json(style, fidelity). 케이스 값의 중앙값
+- 생성 글: article.md를 lint_ko.py로 다시 잰 값, eval.json의 lint 판정, judge.json(style, fidelity). 케이스 값의 중앙값
   케이스는 `<iteration>/<case>` 형식으로 지정한다. mode가 baseline이면 "스킬 없음", 아니면 tone별로 묶는다.
 
 사용법
@@ -15,6 +15,10 @@ import os
 import statistics
 import sys
 
+ROOT_FOR_IMPORT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(ROOT_FOR_IMPORT, "skills", "techblog", "scripts"))
+import lint_ko as L  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_WORK = os.path.join(os.environ.get("TEMP", "/tmp"), "techblog-work", "dogfood")
 METRICS = (
@@ -25,7 +29,8 @@ METRICS = (
     ("A2.connective_comma_ratio", "연결어미 뒤 쉼표 비율", 3),
     ("A1.np", "부정 대구(X가 아니라 Y) 문장 수", 1),
     ("A8.ending_top_share", "가장 많은 종결의 비율", 2),
-    ("A16.source_subject_share", "\"저자들은/논문은\"으로 여는 문장 비율", 3),
+    ("A8.sent_len_mean", "평균 문장 길이(공백 포함)", 1),
+    ("A8.single_para_ratio", "한 문장 문단 비율", 2),
 )
 COLUMNS = (("human-default", "사람 글 합니다체"), ("human-casual", "사람 글 해요체"),
            ("baseline", "스킬 없는 Claude"), ("default", "스킬 Default"), ("casual", "스킬 Casual"))
@@ -72,7 +77,10 @@ def main():
         col["n"] += 1
         col["cases"].append(spec)
         lint = e.get("lint", {})
-        m = dict(lint.get("metrics", {}), chars=lint.get("chars"))
+        # eval.json에는 주요 지표만 있으므로 글을 다시 재서 모든 지표를 쓴다.
+        a = L.analyze(L.read_text(os.path.join(d, "article.md")))
+        m = {k: v["value"] for k, v in a["metrics"].items()}
+        m["chars"] = a["stats"]["chars"]
         for k, _, _ in METRICS:
             col["metrics"].setdefault(k, []).append(m.get(k))
         if lint.get("verdict") == "PASS":

@@ -27,6 +27,13 @@ python dev/dogfood/judge.py --iter iter-1 --compare iter-0   # style·fidelity·
 | S1-pagedattention-casual | Kwon et al. (2023), PagedAttention (arXiv 2309.06180) | Casual | 반복, AI 글쓰기와 무관한 자료 |
 | Arep-antislop-casual | A와 같음 | Casual | run 간 편차 |
 | A0, B0, S10 | 위와 같음 | | 스킬 없이 "한국어 기술 블로그 글로 정리해 달라"고 요청한 결과(iteration 0) |
+| C-epanorthosis-default | Boggia (2026), Artificial Epanorthosis (arXiv 2607.21498) | Default | held-out |
+| D-munozortiz-casual | Muñoz-Ortiz et al. (2024), Contrasting Linguistic Patterns in Human and LLM-Generated News Text | Casual | held-out |
+| E-discord-url-default | Discord 엔지니어링 블로그 "How Discord Stores Trillions of Messages"(URL 입력) | Default | held-out, 영문 웹 문서 |
+| F-retone-casual | 마지막 iteration A의 Default 초안 | Casual | held-out, `--retone` |
+| S2-pep659-pasted-default | PEP 659(public domain) 본문을 프롬프트에 붙여넣음 | Default | held-out, 붙여넣은 텍스트 |
+| S3-pagedattention-sonnet-casual | S1과 같음 | Casual | held-out, `--model sonnet` |
+| C0, D0, E0, S20 | C, D, E, S2와 같음 | | 스킬 없이 요청한 결과(held-out pairwise 비교 대상) |
 
 A, B의 자료는 AI 글쓰기 연구라서 글에 AI 문체 표현이 인용으로 많이 나온다. lint는 따옴표 안을 검사에서 뺀다. S1은 이런 인용이 없는 자료로 같은 기준을 확인하려고 넣었다.
 
@@ -47,4 +54,6 @@ A, B의 자료는 AI 글쓰기 연구라서 글에 AI 문체 표현이 인용으
 - judge 평균 1.6 이상, 0점 없음, J7이 사람 글 대조군 p75 이하
 - iteration 0 대비 pairwise 승률 80% 이상
 
-iteration은 최대 6회다. 수렴하지 않거나 run 간 편차 수준에서 개선이 멈추면 남은 문제와 근거를 `REPORT.md`에 정리한다.
+iteration은 최대 6회로 정했다. 수렴하지 않거나 run 간 편차 수준에서 개선이 멈추면 남은 문제와 근거를 `REPORT.md`에 정리한다.
+
+실제 진행: iteration 6의 문단 지시가 회귀를 만들어서 그 지시를 고친 iteration 7까지 실행했다. 종료 기준을 연속 2회 만족하지는 못했고(A의 pairwise와 style 평균), held-out round는 iteration 7 버전으로 실행했다. 판단 근거는 `REPORT.md`의 "종료 판단"에 있다.

@@ -30,7 +30,7 @@ metadata:
 
 ## 스크립트 실행
 
-- 스크립트는 Bash 도구로 실행한다. Windows는 `python`, macOS와 Linux는 `python3`를 쓴다. 경로는 큰따옴표로 감싼다. 한 번에 명령 하나만 실행하고 `;`, `&&`로 다른 명령(`cat` 등)을 이어 붙이지 않는다. 참고 문서는 Read 도구로 읽는다.
+- 스크립트는 Bash 도구로 실행한다. Windows는 `python`, macOS와 Linux는 `python3`를 쓴다. 경로는 큰따옴표로 감싼다. 한 번에 명령 하나만 실행하고 `;`, `&&`로 다른 명령(`cat` 등)을 이어 붙이지 않는다. 이 스킬이 허용하는 Bash 명령은 아래 검사 스크립트뿐이다. 참고 문서와 PDF는 Read, 파일 목록은 Glob으로 본다.
   - 문체 검사: `python "${CLAUDE_SKILL_DIR}/scripts/lint_ko.py" "<글>" --tone default --facts "<이름>.facts.md"`
   - 어투 검사: `python "${CLAUDE_SKILL_DIR}/scripts/tone_check.py" "<이름>.draft.md" "<이름>.md"`
   - 작업 파일 삭제: `python "${CLAUDE_SKILL_DIR}/scripts/tone_check.py" --cleanup "<이름>.facts.md" "<이름>.draft.md"`
