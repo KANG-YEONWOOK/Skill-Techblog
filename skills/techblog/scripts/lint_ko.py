@@ -556,8 +556,9 @@ def number_set(text):
 # ---------------------------------------------------------------- 분석
 
 EMOJI_RE = re.compile("[\U0001F000-\U0001FAFF☀-⛿✀-➿⭐⭕‼⁉]")
-DASH_RE = re.compile(r"[—―]|\s–\s")
-LABEL_DASH_RE = re.compile(r"^[^—―–]{1,30}\s[—―–]\s")
+DASH_RE = re.compile(r"[가-힣][^—―–\n]{0,15}?(?:[—―]|\s–\s)[^—―–\n]{0,15}?[가-힣]")
+LABEL_DASH_RE = re.compile(r"^(?:[-*+]\s|\d+[.)]\s)?([^—―–]{1,20}?)\s[—―–]\s")
+LABEL_PARTICLE_RE = re.compile(r"(은|는|이|가|을|를|에|의|로|와|과|도|만|면|고|서)$")
 REF_HEADING_RE = re.compile(r"(참고|references?|출처|각주|reference|읽을\s*거리)", re.I)
 QUESTION_HEADING_RE = re.compile(r"(\?|을까|를까|할까|일까|될까|볼까|까요|나요|는가|인가)$")
 
@@ -630,10 +631,11 @@ def analyze(text, patterns_spec=None, facts_text=None):
         if EMOJI_RE.search(clean):
             emoji_hits.append({"line": b.line, "text": clean[:160]})
         if not in_refs:
-            for m in DASH_RE.finditer(clean):
-                if b.type == "list_item" and LABEL_DASH_RE.match(clean) and m.start() <= 32:
-                    continue
-                dash_hits.append({"line": b.line, "text": clean[:160]})
+            for m in DASH_RE.finditer(mask_quotes(clean)):
+                lm = LABEL_DASH_RE.match(clean)
+                if lm and m.start() <= len(lm.group(0)) and not LABEL_PARTICLE_RE.search(lm.group(1).strip()):
+                    continue  # "1단계 — 설정" 같은 라벨 구분자
+                dash_hits.append({"line": b.line, "text": clean[:160], "match": m.group(0)})
                 break
             if ";" in PH_RE.sub("", clean):
                 semicolon_hits.append({"line": b.line, "text": clean[:160]})
@@ -776,15 +778,6 @@ def analyze(text, patterns_spec=None, facts_text=None):
     # A4 문단 끝 요약·교훈 합계
     para_end = metrics["A4.summary_start"]["hits"] + metrics["A4.lesson_end"]["hits"]
     put("A4.para_end", len(para_end), para_end)
-
-    # A7: 같은 문장에 추정 표현 2개 이상
-    hedge_markers = re.compile(r"(수\s*(도\s*)?있|것으로\s*보|가능성|듯|것\s*같|추정|아마|어쩌면)")
-    stack = list(metrics["A7.hedge_stack"]["hits"])
-    seen = {(h["line"], h["text"]) for h in stack}
-    for s in body:
-        if len(hedge_markers.findall(s.masked)) >= 3 and (s.line, s.text[:160]) not in seen:
-            stack.append(_hit(s))
-    put("A7.hedge_stack", len(stack), stack)
 
     # A8 리듬
     lens = [len(s.text) for s in body if s.kind == "paragraph"]

@@ -108,7 +108,7 @@ class PatternTest(unittest.TestCase):
         self.assertGreaterEqual(self.m["G8.beyond_simple"]["value"], 1)  # 제목
         self.assertGreaterEqual(self.m["G9.cliche_intro"]["value"], 1)
         self.assertGreaterEqual(self.m["G9.cliche_outro"]["value"], 1)
-        self.assertGreaterEqual(self.m["G9.summary_opener"]["value"], 1)
+        self.assertGreaterEqual(self.m["A4.summary_opener"]["value"], 1)
         self.assertGreaterEqual(self.m["G6.emoji"]["value"], 1)
 
     def test_np_and_salience(self):
@@ -124,7 +124,7 @@ class PatternTest(unittest.TestCase):
     def test_good_text_has_no_gate(self):
         a = L.analyze(GOOD_DEFAULT)
         for mid, m in a["metrics"].items():
-            if mid.startswith(("G2", "G3", "G6", "G7", "G8", "G9")):
+            if mid.startswith(("G2", "G3", "G6", "G7", "G8", "G9", "A4.summary_opener")):
                 self.assertEqual(m["value"], 0, (mid, m["hits"]))
 
     def test_emdash_label_allowed(self):
