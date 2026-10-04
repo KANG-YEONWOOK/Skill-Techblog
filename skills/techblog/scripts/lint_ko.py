@@ -371,7 +371,7 @@ HAERA_NOUNS = ("람다", "판다", "바다", "어젠다", "아젠다")
 NOMINAL_RE = re.compile(r"(함|됨|했음|됐음|였음|었음|았음|있음|없음|같음|좋음|않음)$")
 NOMINAL_EXCEPT = ("결함", "포함")
 TRAIL_STRIP = " \t.?!…\"'”’)]}」』:;~*_,"
-BANNED_ENDINGS = ("더라고요", "더군요", "네요", "잖아요", "는데요", "은데요", "답니다")
+BANNED_ENDINGS = ("더라고요", "더군요", "네요", "잖아요", "답니다")
 EXPERIENCE_ENDINGS = ("더라고요", "더군요", "네요")
 
 
@@ -925,6 +925,7 @@ def tone_metrics(analysis, tone):
         "T.jyo_ratio": {"value": round(b.get("C_JYO", 0) / n, 3), "hits": []},
         "T.geudeun_ratio": {"value": round(b.get("C_GEUDEUN", 0) / n, 3), "hits": []},
         "T.kkayo_ratio": {"value": round(b.get("Q_KKAYO", 0) / n, 3), "hits": []},
+        "T.neundeyo_ratio": {"value": round(b.get("C_NEUNDEYO", 0) / n, 3), "hits": []},
     }
     return out
 

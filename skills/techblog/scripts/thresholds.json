@@ -29,7 +29,7 @@
     },
     "G4.banned_ending": {
       "kind": "gate",
-      "title": "Casual 금지 어미(~더라고요, ~네요, ~잖아요, ~는데요)",
+      "title": "Casual 금지 어미(~더라고요, ~네요, ~잖아요, ~답니다)",
       "hint": "tone.md의 직접 대응 어미로 바꾼다.",
       "policy": true
     },
@@ -476,6 +476,16 @@
       "warn_max": 0.126,
       "title": "~할까요? 질문 비율",
       "n": 66
+    },
+    "T.neundeyo_ratio": {
+      "kind": "upper",
+      "pass_max": 0.04,
+      "warn_max": 0.08,
+      "tone": "casual",
+      "fixed": true,
+      "policy": true,
+      "title": "~는데요 종결 비율",
+      "hint": "~는데요는 다음 문장의 대조·보충을 예고할 때만 쓴다(사람 해요체 글 3.4%)."
     },
     "INFO.adverb_comma": {
       "kind": "info",
