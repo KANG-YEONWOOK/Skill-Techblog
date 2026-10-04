@@ -110,7 +110,7 @@ techblog 스킬이 쓴 글을 점검하는 기준이다. 스킬의 점검 단계
 | A13.demonstrative_start_per_1k | "이는", "이를 통해", "이러한", "이처럼"으로 여는 문장(1,000자당) | PASS ≤0.93 | 0.23 / 0.75 | [1][15] |
 | A14.translationese_per_1k | 번역투: "그것은", "~에 의해", "가장 ~한 ~ 중 하나", "중요한 역할을 하다", 속성의 "~를 가지고 있다" | PASS ≤0.46 | 0 / 0.31 | [1][3] |
 | A14.doeeojida | 이중 피동 "~되어지다" | 0 | - | [3] |
-| A15.unknown_numbers | 본문 수치 중 fact sheet(`<이름>.facts.md`)에 없는 값 | 0 | - | G1 |
+| A15.unknown_numbers | 본문 수치(숫자, "수십만"·"수천" 같은 어림 수량어) 중 fact sheet(`<이름>.facts.md`)에 없는 값 | 0 | - | G1 |
 | A16.source_subject_share | "저자들은", "논문은"으로 여는 문장 비율(policy) | PASS ≤0.10, WARN ≤0.15 | - | dogfooding |
 | T.kkayo_ratio | "~할까요?" 질문 비율 | PASS ≤0.037 | 0 / 0.03 | |
 | T.jyo_ratio, T.geudeun_ratio, T.neundeyo_ratio | Casual의 ~죠, ~거든요, ~는데요 비율(policy) | ~죠·~거든요 PASS ≤0.05, ~는데요 PASS ≤0.04 | 해요체 글 ~죠 3.4%, ~는데요 3.4%, ~거든요 0.2% | tone.md |

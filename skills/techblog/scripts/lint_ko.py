@@ -528,6 +528,8 @@ def is_triad(masked):
 
 # ---------------------------------------------------------------- 수치
 
+# "수십만 명", "수천 개", "몇백 건"처럼 숫자 없이 쓴 어림 수량어
+KO_APPROX_RE = re.compile(r"(?<![가-힣])(?:수|몇)(?:십|백|천)?(?:만|억|조)?(?<=[십백천만억조])(?!큼)")
 NUM_RE = re.compile(
     r"(?<![\w.\-])(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?"
     r"(\s*(?:%p|%|배|x|×|ms|초|분|시간|개|건|명|만|억|천|조|GB|MB|KB|TB|토큰|단어|문장|편|회|번|자|어절|쌍|년|점))?")
@@ -884,18 +886,25 @@ def analyze(text, patterns_spec=None, facts_text=None):
     put("A5.word_max", max(word_counts.values()) if word_counts else 0,
         [{"line": 0, "text": f"{k} {v}회"} for k, v in over.items()])
 
-    # A15 fact sheet에 없는 수치
+    # A15 fact sheet에 없는 수치. "수십만", "수천" 같은 어림 수량어도 fact sheet에 같은 말이 있어야 한다.
     if facts_text is not None:
         known = number_set(facts_text)
+        facts_norm = re.sub(r"\s+", "", facts_text)
         unknown = []
         for s in sentences:
             for key, raw in extract_numbers(s.text):
                 if key not in known:
                     unknown.append(_hit(s, raw))
+            for m in KO_APPROX_RE.finditer(s.masked):
+                if m.group(0) not in facts_norm:
+                    unknown.append(_hit(s, m.group(0)))
         for h in headings:
             for key, raw in extract_numbers(h["text"]):
                 if key not in known:
                     unknown.append({"line": h["line"], "text": h["text"][:160], "match": raw})
+            for m in KO_APPROX_RE.finditer(h["text"]):
+                if m.group(0) not in facts_norm:
+                    unknown.append({"line": h["line"], "text": h["text"][:160], "match": m.group(0)})
         put("A15.unknown_numbers", len(unknown), unknown)
 
     # 종결 분포

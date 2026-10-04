@@ -2,7 +2,7 @@
   "schema": 1,
   "version": "v1",
   "generated_at": "2026-10-05",
-  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit 6bfd827",
+  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit 9d8b9ba",
   "max_warn": 3,
   "metrics": {
     "G2.exp_ending": {

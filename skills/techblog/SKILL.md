@@ -5,7 +5,7 @@ license: MIT
 compatibility: Claude Code. 검사 스크립트는 Python 3.8 이상이 있으면 실행하고, 없으면 rubric 수동 점검으로 대신한다.
 allowed-tools: Read Write Edit Glob Grep WebFetch Bash(python "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python ${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/*)
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   repository: https://github.com/KANG-YEONWOOK/Skill-Techblog
 ---
 
@@ -51,7 +51,7 @@ metadata:
 - 자료 정보: 제목, 저자 또는 기관, 연도, URL
 - 문제와 배경: 자료가 풀려는 문제, 기존 방법의 한계
 - 방법: 핵심 아이디어, 동작 순서, 실험 설정(모델, 데이터, 조건)
-- 수치: 값, 단위, 조건, 비교 대상, 원문 표현. 비교 기준이 헷갈리기 쉬운 수치는 원문 문장을 그대로 옮겨 둔다(예: "at most 20% of the baseline"은 "기준값의 20% 이하"이지 "기준값보다 20% 이하"가 아니다). 본문에서 단위를 바꾸거나 반올림할 값은 바꾼 값도 함께 적는다.
+- 수치: 값, 단위, 조건, 비교 대상, 원문 표현. 비교 기준이 헷갈리기 쉬운 수치는 원문 문장을 그대로 옮겨 둔다(예: "at most 20% of the baseline"은 "기준값의 20% 이하"이지 "기준값보다 20% 이하"가 아니다). 본문에서 단위를 바꾸거나 반올림할 값은 바꾼 값도 함께 적는다. "수십만", "수천"처럼 어림한 수량을 쓸 거라면 그 근거가 되는 원문 표현과 함께 적는다.
 - 한계: 자료가 밝힌 한계와 실험 범위
 - 용어: 원어와 이 글에서 쓸 표기
 - 인용할 문장: 원문 그대로, 위치(쪽, 절)

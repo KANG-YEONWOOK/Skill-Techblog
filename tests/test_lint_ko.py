@@ -198,6 +198,14 @@ class FactsTest(unittest.TestCase):
         self.assertEqual(m["hits"][0]["match"], "69%")
 
 
+class ApproxQuantityTest(unittest.TestCase):
+    def test_korean_approx_quantity_needs_fact(self):
+        text = "수십만 명이 모인 서버에서 요청 수만큼 스레드를 띄웠습니다. 노드는 수천 개입니다."
+        a = L.analyze(text, facts_text="노드: 수천 개(원문 thousands of nodes)")
+        hits = [h["match"] for h in a["metrics"]["A15.unknown_numbers"]["hits"]]
+        self.assertEqual(hits, ["수십만"])
+
+
 class CliTest(unittest.TestCase):
     def test_cli_runs_on_default_console(self):
         with tempfile.TemporaryDirectory() as d:
