@@ -782,6 +782,16 @@ def analyze(text, patterns_spec=None, facts_text=None):
     put("A2.connective_comma_ratio", round(conn_comma / conn_total, 3) if conn_total else 0.0,
         conn_hits, comma=conn_comma, total=conn_total)
 
+    # A17 같은 첫 두 어절로 여는 문장("표를 보면", "결론부터 말하면")의 최다 반복 횟수
+    openers = {}
+    for s_ in body:
+        toks = re.sub(r"^[^\w가-힣⟦]+", "", s_.masked).split()[:2]
+        if len(toks) == 2:
+            openers.setdefault(" ".join(toks), []).append(s_)
+    top = max(openers.items(), key=lambda kv: len(kv[1])) if openers else None
+    put("A17.opener_repeat", len(top[1]) if top else 0,
+        [_hit(x, top[0]) for x in top[1]] if top and len(top[1]) > 1 else [])
+
     # A16 자료를 주어로 여는 문장의 비율
     src_hits = metrics["A16.source_subject"]["hits"]
     put("A16.source_subject_share", round(len(src_hits) / n_body, 3), src_hits, count=len(src_hits))

@@ -63,7 +63,7 @@ FIDELITY_SCHEMA = {
     "properties": {
         "claims": {"type": "array", "items": {"type": "object", "properties": {
             "article_quote": {"type": "string"}, "source_ref": {"type": "string"},
-            "verdict": {"type": "string", "enum": ["supported", "unsupported", "contradicted"]},
+            "verdict": {"type": "string", "enum": ["supported", "interpretation", "unsupported", "contradicted"]},
             "note": {"type": "string"}}, "required": ["article_quote", "source_ref", "verdict", "note"]}},
         "coverage": {"type": "object", "properties": {k: {"type": "boolean"} for k in
                                                         ("problem", "method", "results", "limitations")},
@@ -76,6 +76,7 @@ FIDELITY_PROMPT = """현재 폴더의 article.md는 자료 {source}를 정리한
 1. claims: article.md에서 수치, 고유명사, 실험 결과, 인과 주장, 인용이 들어 있는 문장을 빠짐없이 뽑아 원문 그대로 인용하고(article_quote), 자료의 근거 위치(source_ref: 쪽, 절, 표)와 판정(verdict)을 적으세요.
    - supported: 자료가 그대로 뒷받침한다.
    - unsupported: 자료에서 찾을 수 없다(지어낸 수치, 경험, 출처, 사례 포함).
+   - interpretation: 글쓴이의 해석이나 추론이고, 문장에 해석·추론임이 드러나 있으며("~라면 ~할 수 있습니다", "표를 보면 ~로 읽힙니다"), 자료의 사실과 모순되지 않는다. 자료의 결론처럼 단정했다면 unsupported로 판정한다.
    - contradicted: 자료와 다르다(수치 오류, 조건이 빠져 뜻이 바뀜, 추정을 단정으로 바꿈, 대상을 혼동함).
    note에는 판정 이유를 짧게 적으세요.
 2. coverage: 자료의 문제(problem), 방법(method), 핵심 결과(results), 한계(limitations)가 글에 있는지 각각 true/false로 적으세요.
@@ -198,9 +199,10 @@ def run_fidelity(iter_dir, model, only=None):
         res = call_judge(FIDELITY_PROMPT.format(source=source_desc), FIDELITY_SCHEMA, jdir, model, extra)
         body = _norm(L.read_text(os.path.join(d, "article.md")))
         claims = res.get("claims", [])
-        bad = [x for x in claims if x["verdict"] != "supported"]
+        bad = [x for x in claims if x["verdict"] in ("unsupported", "contradicted")]
         out[c] = {"j1": res.get("j1"), "coverage": res.get("coverage"), "missing": res.get("missing"),
-                  "claims": len(claims), "unsupported": [x for x in bad if x["verdict"] == "unsupported"],
+                  "claims": len(claims), "interpretation": sum(1 for x in claims if x["verdict"] == "interpretation"),
+                  "unsupported": [x for x in bad if x["verdict"] == "unsupported"],
                   "contradicted": [x for x in bad if x["verdict"] == "contradicted"],
                   "quote_not_found": sum(1 for x in claims if _norm(x["article_quote"]) not in body),
                   "cost": res.get("_cost"), "error": res.get("error")}
