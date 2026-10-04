@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: retone-casual
+description: 합니다체로 쓴 기술 블로그 글의 어투만 해요체로 바꾼다. 문장 순서, 수치, 내용은 그대로여야 한다.
+context:
+  scaffold_script: setup.sh
