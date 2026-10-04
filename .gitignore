@@ -1,0 +1,10 @@
+# 리서치 자료 (커밋하지 않음)
+docs/
+*.pdf
+
+# claude plugin eval 실행 결과
+evals/results/
+
+# Python
+__pycache__/
+*.pyc
