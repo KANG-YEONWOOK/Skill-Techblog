@@ -825,6 +825,12 @@ def analyze(text, patterns_spec=None, facts_text=None):
             run_len = 1
         prev = s
     put("A8.ending_run4", len(runs), runs)
+    pred = [s_.bucket for s_ in body if s_.bucket not in ("NOUN", "OTHER")]
+    if pred:
+        top_bucket = max(set(pred), key=pred.count)
+        put("A8.ending_top_share", round(pred.count(top_bucket) / len(pred), 3), [], bucket=top_bucket)
+    else:
+        put("A8.ending_top_share", 0.0)
     paras = [ps for ps in para_sents if ps]
     put("A8.sentences_per_para", round(sum(len(p) for p in paras) / len(paras), 2) if paras else 0.0)
     put("A8.single_para_ratio", round(sum(1 for p in paras if len(p) == 1) / len(paras), 3) if paras else 0.0)

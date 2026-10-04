@@ -76,6 +76,7 @@ Gate는 사람 글에서 거의 나오지 않아야 한다. policy 표시가 있
 | A2.connective_comma_ratio | 0 | 4 | 0 |
 | A4.obligation_end | 0 | 3 | 0 |
 | A7.hedge_stack | 1 | 0 | 0 |
+| A8.ending_top_share | 0 | 3 | 0 |
 | T.kkayo_ratio | 0 | 2 | 0 |
 | A1.np_same_para | 0 | 2 | 0 |
 | A12.progressive_per_1k | 0 | 2 | 0 |

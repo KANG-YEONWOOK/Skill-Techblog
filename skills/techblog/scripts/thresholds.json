@@ -2,7 +2,7 @@
   "schema": 1,
   "version": "v1",
   "generated_at": "2026-10-04",
-  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit ea2a70c",
+  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit 3aac822",
   "max_warn": 3,
   "metrics": {
     "G2.exp_ending": {
@@ -368,6 +368,26 @@
       "pass_max": 6,
       "warn_max": 10,
       "n": 66
+    },
+    "A8.ending_top_share": {
+      "kind": "upper",
+      "pass_max": 0.6,
+      "warn_max": 0.7,
+      "min_chars": 1500,
+      "by_tone": {
+        "default": {
+          "pass_max": 0.597,
+          "warn_max": 0.844,
+          "n": 40
+        },
+        "casual": {
+          "pass_max": 0.521,
+          "warn_max": 0.782,
+          "n": 26
+        }
+      },
+      "title": "가장 많은 종결의 비율",
+      "hint": "한 종결(예: ~해요, ~합니다)이 몰리지 않게 상태(~입니다), 존재(~있습니다), 가능성(~수 있습니다), 과거(~했습니다) 문장을 섞는다. Casual은 허용 변형(~죠, ~거든요, ~는데요)도 조건에 맞게 쓴다."
     },
     "A8.long_ratio": {
       "kind": "lower",

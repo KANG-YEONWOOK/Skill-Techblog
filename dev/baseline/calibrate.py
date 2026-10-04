@@ -60,6 +60,15 @@ def calibrate(stats, template):
     new = json.loads(json.dumps(template))
     notes = {}
     for mid, spec in new["metrics"].items():
+        if "by_tone" in spec and spec.get("kind") == "upper" and not spec.get("fixed"):
+            for tone in CALIB_GROUPS:
+                tv = [a["metrics"][mid] for a in calib if a["group"] == tone and mid in a["metrics"]]
+                if tv:
+                    pm = round_limit(mid, pct(tv, 0.95), tv)
+                    top = max(pct(tv, 0.99), max(tv))
+                    top = top + 1 if is_count_metric(mid, tv) else top * 1.2
+                    spec["by_tone"][tone] = {"pass_max": pm, "warn_max": max(pm, round_limit(mid, top, tv)), "n": len(tv)}
+            continue
         kind = spec.get("kind")
         pool = [a for a in calib if (not spec.get("tone") or a["group"] == spec["tone"])
                 and a["site"] not in spec.get("exclude_sites", [])]
@@ -110,6 +119,8 @@ def judge_article(a, thresholds, skip=()):
             continue
         if spec.get("tone") and spec["tone"] != tone:
             continue
+        if "by_tone" in spec:
+            spec = dict(spec, **spec["by_tone"].get(tone, {}))
         status, _ = L.judge(a["metrics"][mid], spec, a["chars"])
         if spec.get("min_chars") and a["chars"] < spec["min_chars"] and status != "GATE":
             status = "INFO"
