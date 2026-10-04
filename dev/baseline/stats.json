@@ -125,7 +125,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 30,
@@ -226,7 +227,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.017
    },
    "endings": {
     "D_B_PRES": 25,
@@ -327,7 +329,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.013
+    "T.kkayo_ratio": 0.013,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 38,
@@ -426,7 +429,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.04
+    "T.kkayo_ratio": 0.04,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 25,
@@ -525,7 +529,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_EXIST": 5,
@@ -623,7 +628,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.013
    },
    "endings": {
     "C_SEYO": 1,
@@ -726,7 +732,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.015,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.015
+    "T.kkayo_ratio": 0.015,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_EXIST": 16,
@@ -828,7 +835,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.01
    },
    "endings": {
     "C_SEYO": 1,
@@ -929,7 +937,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.07,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.03
+    "T.kkayo_ratio": 0.03,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 16,
@@ -1033,7 +1042,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.029,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 2,
@@ -1131,7 +1141,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 13,
@@ -1233,7 +1244,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 2,
@@ -1334,7 +1346,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.028,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.028
+    "T.kkayo_ratio": 0.028,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 15,
@@ -1436,7 +1449,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_PAST": 19,
@@ -1536,7 +1550,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -1639,7 +1654,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 16,
@@ -1740,7 +1756,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 37,
@@ -1838,7 +1855,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.015,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.015
+    "T.kkayo_ratio": 0.015,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_EXIST": 7,
@@ -1940,7 +1958,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.014
    },
    "endings": {
     "C_NEUNDEYO": 1,
@@ -2041,7 +2060,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.015
+    "T.kkayo_ratio": 0.015,
+    "T.neundeyo_ratio": 0.023
    },
    "endings": {
     "D_PAST": 23,
@@ -2146,7 +2166,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.023,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.023
+    "T.kkayo_ratio": 0.023,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_EXIST": 8,
@@ -2249,7 +2270,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.011,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.022
+    "T.kkayo_ratio": 0.022,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 12,
@@ -2352,7 +2374,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.015,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.015
+    "T.kkayo_ratio": 0.015,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -2455,7 +2478,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.018,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -2559,7 +2583,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.074,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.032
+    "T.kkayo_ratio": 0.032,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 40,
@@ -2662,7 +2687,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.021,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -2762,7 +2788,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 36,
@@ -2863,7 +2890,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_PAST": 18,
@@ -2965,7 +2993,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.008
+    "T.kkayo_ratio": 0.008,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 39,
@@ -3068,7 +3097,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "NOUN": 14,
@@ -3167,7 +3197,8 @@
     "G4.banned_ending": 1,
     "T.jyo_ratio": 0.024,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_PAST": 20,
@@ -3268,7 +3299,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.025
+    "T.kkayo_ratio": 0.025,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -3371,7 +3403,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.01
    },
    "endings": {
     "C_SEYO": 1,
@@ -3472,7 +3505,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 4,
@@ -3573,7 +3607,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -3672,7 +3707,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -3774,7 +3810,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.021
    },
    "endings": {
     "D_EXIST": 1,
@@ -3876,7 +3913,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.017
    },
    "endings": {
     "D_COP": 6,
@@ -3976,7 +4014,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.006,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.018
+    "T.kkayo_ratio": 0.018,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 11,
@@ -4078,7 +4117,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 13,
@@ -4177,7 +4217,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_CAN": 7,
@@ -4272,10 +4313,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 6,
-    "G4.banned_ending": 7,
+    "G4.banned_ending": 3,
     "T.jyo_ratio": 0.008,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.025
+    "T.kkayo_ratio": 0.025,
+    "T.neundeyo_ratio": 0.034
    },
    "endings": {
     "C_COP": 8,
@@ -4327,7 +4369,7 @@
     "A1.np_deoisang": 0,
     "A1.np_simple": 0,
     "A1.ppunman": 0,
-    "A3.salience": 0,
+    "A3.salience": 2,
     "A4.summary_start": 0,
     "A4.obligation_end": 0,
     "A4.lesson_end": 0,
@@ -4383,7 +4425,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -4485,7 +4528,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -4584,7 +4628,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.047
+    "T.kkayo_ratio": 0.047,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_PAST": 10,
@@ -4687,7 +4732,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.009
    },
    "endings": {
     "D_COP": 4,
@@ -4790,7 +4836,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.033,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.022
+    "T.kkayo_ratio": 0.022,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 11,
@@ -4894,7 +4941,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 10,
@@ -4992,7 +5040,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.027,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_PAST": 1,
@@ -5088,10 +5137,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 0,
-    "G4.banned_ending": 2,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.057
    },
    "endings": {
     "C_COP": 5,
@@ -5185,10 +5235,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 2,
-    "G4.banned_ending": 1,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.015
    },
    "endings": {
     "C_SEYO": 2,
@@ -5287,10 +5338,11 @@
     "A14.translationese_per_1k": 0.24,
     "A5.word_max": 1,
     "G4.off_tone": 1,
-    "G4.banned_ending": 1,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.013
    },
    "endings": {
     "C_EXIST": 12,
@@ -5393,7 +5445,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.036
+    "T.kkayo_ratio": 0.036,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "NOUN": 2,
@@ -5498,7 +5551,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 9,
@@ -5600,7 +5654,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.01,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 11,
@@ -5699,7 +5754,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.027,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 7,
@@ -5797,10 +5853,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 1,
     "G4.off_tone": 1,
-    "G4.banned_ending": 2,
+    "G4.banned_ending": 1,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.038
+    "T.kkayo_ratio": 0.038,
+    "T.neundeyo_ratio": 0.038
    },
    "endings": {
     "C_EXIST": 9,
@@ -5903,7 +5960,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -6004,7 +6062,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 32,
@@ -6104,7 +6163,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 3,
@@ -6207,7 +6267,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 9,
@@ -6305,10 +6366,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 0,
-    "G4.banned_ending": 2,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.033,
     "T.geudeun_ratio": 0.017,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.05
    },
    "endings": {
     "C_PRES": 28,
@@ -6408,10 +6470,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 0,
-    "G4.banned_ending": 2,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.032,
     "T.geudeun_ratio": 0.016,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.048
    },
    "endings": {
     "C_PRES": 30,
@@ -6514,7 +6577,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.033,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.02
+    "T.kkayo_ratio": 0.02,
+    "T.neundeyo_ratio": 0.053
    },
    "endings": {
     "C_SEYO": 1,
@@ -6620,7 +6684,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 1,
@@ -6718,7 +6783,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_PAST": 22,
@@ -6816,10 +6882,11 @@
     "A14.translationese_per_1k": 0.27,
     "A5.word_max": 0,
     "G4.off_tone": 0,
-    "G4.banned_ending": 2,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.017,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.034
    },
    "endings": {
     "C_PAST": 9,
@@ -6918,10 +6985,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 3,
-    "G4.banned_ending": 7,
+    "G4.banned_ending": 2,
     "T.jyo_ratio": 0.212,
     "T.geudeun_ratio": 0.013,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.087
    },
    "endings": {
     "C_COP": 3,
@@ -7028,7 +7096,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.029,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.01
+    "T.kkayo_ratio": 0.01,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -7132,7 +7201,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_COP": 3,
@@ -7230,7 +7300,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.103
+    "T.kkayo_ratio": 0.103,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_EXIST": 9,
@@ -7333,7 +7404,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.066
+    "T.kkayo_ratio": 0.066,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 51,
@@ -7435,10 +7507,11 @@
     "A14.translationese_per_1k": 0.44,
     "A5.word_max": 0,
     "G4.off_tone": 1,
-    "G4.banned_ending": 7,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.1,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.14
    },
    "endings": {
     "C_COP": 2,
@@ -7540,7 +7613,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -7638,10 +7712,11 @@
     "A14.translationese_per_1k": 0.26,
     "A5.word_max": 2,
     "G4.off_tone": 0,
-    "G4.banned_ending": 4,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.006,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.023
    },
    "endings": {
     "C_SEYO": 2,
@@ -7741,10 +7816,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 1,
-    "G4.banned_ending": 6,
+    "G4.banned_ending": 2,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.105
+    "T.kkayo_ratio": 0.105,
+    "T.neundeyo_ratio": 0.022
    },
    "endings": {
     "C_COP": 22,
@@ -7847,10 +7923,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 3,
-    "G4.banned_ending": 2,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.057,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.023
+    "T.kkayo_ratio": 0.023,
+    "T.neundeyo_ratio": 0.023
    },
    "endings": {
     "D_B_PRES": 2,
@@ -7953,10 +8030,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 2,
-    "G4.banned_ending": 7,
+    "G4.banned_ending": 2,
     "T.jyo_ratio": 0.079,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.079
    },
    "endings": {
     "D_COP": 1,
@@ -8058,10 +8136,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 2,
-    "G4.banned_ending": 3,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.045,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.045
    },
    "endings": {
     "C_PAST": 20,
@@ -8161,10 +8240,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 0,
-    "G4.banned_ending": 3,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.073
    },
    "endings": {
     "C_EXIST": 17,
@@ -8260,10 +8340,11 @@
     "A14.translationese_per_1k": 0.13,
     "A5.word_max": 0,
     "G4.off_tone": 5,
-    "G4.banned_ending": 5,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.075,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.031
+    "T.kkayo_ratio": 0.031,
+    "T.neundeyo_ratio": 0.031
    },
    "endings": {
     "C_COP": 14,
@@ -8371,7 +8452,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.01
    },
    "endings": {
     "C_PAST": 11,
@@ -8472,10 +8554,11 @@
     "A14.translationese_per_1k": 0.24,
     "A5.word_max": 0,
     "G4.off_tone": 0,
-    "G4.banned_ending": 5,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.113,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.07
    },
    "endings": {
     "C_SEYO": 1,
@@ -8573,10 +8656,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 0,
-    "G4.banned_ending": 2,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.042,
     "T.geudeun_ratio": 0.021,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.042
    },
    "endings": {
     "C_SEYO": 1,
@@ -8679,7 +8763,8 @@
     "G4.banned_ending": 5,
     "T.jyo_ratio": 0.036,
     "T.geudeun_ratio": 0.009,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_COP": 11,
@@ -8785,10 +8870,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 1,
-    "G4.banned_ending": 1,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.123,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.035
+    "T.kkayo_ratio": 0.035,
+    "T.neundeyo_ratio": 0.018
    },
    "endings": {
     "C_SEYO": 1,
@@ -8890,10 +8976,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 4,
-    "G4.banned_ending": 12,
+    "G4.banned_ending": 1,
     "T.jyo_ratio": 0.046,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.215
    },
    "endings": {
     "C_PRES": 6,
@@ -8994,10 +9081,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 1,
     "G4.off_tone": 5,
-    "G4.banned_ending": 3,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.1,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.029
+    "T.kkayo_ratio": 0.029,
+    "T.neundeyo_ratio": 0.043
    },
    "endings": {
     "D_COP": 3,
@@ -9101,10 +9189,11 @@
     "A14.translationese_per_1k": 0.24,
     "A5.word_max": 1,
     "G4.off_tone": 8,
-    "G4.banned_ending": 8,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.005,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.005
+    "T.kkayo_ratio": 0.005,
+    "T.neundeyo_ratio": 0.038
    },
    "endings": {
     "C_SEYO": 2,
@@ -9211,7 +9300,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.023
+    "T.kkayo_ratio": 0.023,
+    "T.neundeyo_ratio": 0.023
    },
    "endings": {
     "C_SEYO": 1,
@@ -9312,10 +9402,11 @@
     "A14.translationese_per_1k": 0.19,
     "A5.word_max": 1,
     "G4.off_tone": 1,
-    "G4.banned_ending": 5,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.098,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.057
+    "T.kkayo_ratio": 0.057,
+    "T.neundeyo_ratio": 0.041
    },
    "endings": {
     "C_SEYO": 2,
@@ -9419,10 +9510,11 @@
     "A14.translationese_per_1k": 0.17,
     "A5.word_max": 1,
     "G4.off_tone": 2,
-    "G4.banned_ending": 17,
+    "G4.banned_ending": 8,
     "T.jyo_ratio": 0.041,
     "T.geudeun_ratio": 0.024,
-    "T.kkayo_ratio": 0.006
+    "T.kkayo_ratio": 0.006,
+    "T.neundeyo_ratio": 0.065
    },
    "endings": {
     "C_PAST": 60,
@@ -9532,7 +9624,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.01
+    "T.kkayo_ratio": 0.01,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 12,
@@ -9634,7 +9727,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -9734,7 +9828,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.017
+    "T.kkayo_ratio": 0.017,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -9837,7 +9932,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -9938,7 +10034,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.01,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.051
+    "T.kkayo_ratio": 0.051,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -10042,7 +10139,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.009
+    "T.kkayo_ratio": 0.009,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 24,
@@ -10142,10 +10240,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 1,
-    "G4.banned_ending": 11,
+    "G4.banned_ending": 9,
     "T.jyo_ratio": 0.071,
     "T.geudeun_ratio": 0.045,
-    "T.kkayo_ratio": 0.027
+    "T.kkayo_ratio": 0.027,
+    "T.neundeyo_ratio": 0.018
    },
    "endings": {
     "D_B_PRES": 1,
@@ -10252,7 +10351,8 @@
     "G4.banned_ending": 1,
     "T.jyo_ratio": 0.155,
     "T.geudeun_ratio": 0.021,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.01
    },
    "endings": {
     "C_SEYO": 2,
@@ -10357,7 +10457,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.005,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.005
+    "T.kkayo_ratio": 0.005,
+    "T.neundeyo_ratio": 0.02
    },
    "endings": {
     "D_COP": 16,
@@ -10457,10 +10558,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 0,
-    "G4.banned_ending": 2,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.037,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.049
    },
    "endings": {
     "C_SEYO": 2,
@@ -10565,7 +10667,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_EXIST": 1,
@@ -10666,7 +10769,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_EXIST": 12,
@@ -10769,7 +10873,8 @@
     "G4.banned_ending": 1,
     "T.jyo_ratio": 0.019,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.065
+    "T.kkayo_ratio": 0.065,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_Q": 2,
@@ -10871,10 +10976,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 1,
     "G4.off_tone": 0,
-    "G4.banned_ending": 8,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.062,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.062
    },
    "endings": {
     "C_PRES": 50,
@@ -10972,10 +11078,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 5,
-    "G4.banned_ending": 3,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.046,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.062
    },
    "endings": {
     "D_COP": 4,
@@ -11075,10 +11182,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 4,
     "G4.off_tone": 8,
-    "G4.banned_ending": 1,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.007
    },
    "endings": {
     "C_SEYO": 1,
@@ -11182,7 +11290,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.043,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 1,
@@ -11281,10 +11390,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 2,
-    "G4.banned_ending": 4,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.051
    },
    "endings": {
     "C_SEYO": 1,
@@ -11385,10 +11495,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 3,
-    "G4.banned_ending": 11,
+    "G4.banned_ending": 4,
     "T.jyo_ratio": 0.028,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.111
    },
    "endings": {
     "C_SEYO": 1,
@@ -11493,7 +11604,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.005
    },
    "endings": {
     "D_COP": 19,
@@ -11595,7 +11707,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.005,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.003
+    "T.kkayo_ratio": 0.003,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_PAST": 18,
@@ -11643,7 +11756,7 @@
     "A1.np_deoisang": 0,
     "A1.np_simple": 0,
     "A1.ppunman": 0,
-    "A3.salience": 0,
+    "A3.salience": 1,
     "A4.summary_start": 0,
     "A4.obligation_end": 0,
     "A4.lesson_end": 0,
@@ -11699,7 +11812,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.091
+    "T.kkayo_ratio": 0.091,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_PAST": 3,
@@ -11802,7 +11916,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.012,
-    "T.kkayo_ratio": 0.024
+    "T.kkayo_ratio": 0.024,
+    "T.neundeyo_ratio": 0.012
    },
    "endings": {
     "D_PAST": 28,
@@ -11908,7 +12023,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.02
+    "T.kkayo_ratio": 0.02,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 5,
@@ -12008,7 +12124,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.016,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.016
+    "T.kkayo_ratio": 0.016,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_PAST": 20,
@@ -12113,7 +12230,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.022,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.004
+    "T.kkayo_ratio": 0.004,
+    "T.neundeyo_ratio": 0.007
    },
    "endings": {
     "D_COP": 40,
@@ -12217,7 +12335,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.007
+    "T.kkayo_ratio": 0.007,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_PAST": 10,
@@ -12319,7 +12438,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 3,
@@ -12419,7 +12539,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 22,
@@ -12518,10 +12639,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 3,
-    "G4.banned_ending": 6,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.053,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.158
    },
    "endings": {
     "D_COP": 1,
@@ -12564,7 +12686,7 @@
     "A1.np_deoisang": 0,
     "A1.np_simple": 0,
     "A1.ppunman": 0,
-    "A3.salience": 1,
+    "A3.salience": 2,
     "A4.summary_start": 0,
     "A4.obligation_end": 0,
     "A4.lesson_end": 0,
@@ -12617,10 +12739,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 1,
     "G4.off_tone": 0,
-    "G4.banned_ending": 1,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.246,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.015
    },
    "endings": {
     "C_COP": 1,
@@ -12719,10 +12842,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 0,
-    "G4.banned_ending": 1,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.018,
     "T.geudeun_ratio": 0.018,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.009
    },
    "endings": {
     "C_SEYO": 2,
@@ -12824,7 +12948,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.014
    },
    "endings": {
     "C_SEYO": 1,
@@ -12926,7 +13051,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.005,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.011
+    "T.kkayo_ratio": 0.011,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_PAST": 14,
@@ -13031,7 +13157,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "OTHER": 24,
@@ -13132,7 +13259,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.012,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.006
+    "T.kkayo_ratio": 0.006,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 17,
@@ -13178,7 +13306,7 @@
     "A1.np_deoisang": 0,
     "A1.np_simple": 0,
     "A1.ppunman": 1,
-    "A3.salience": 0,
+    "A3.salience": 1,
     "A4.summary_start": 1,
     "A4.obligation_end": 0,
     "A4.lesson_end": 0,
@@ -13234,7 +13362,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 4,
@@ -13334,7 +13463,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.062
    },
    "endings": {
     "D_COP": 29,
@@ -13436,7 +13566,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.071
    },
    "endings": {
     "D_COP": 14,
@@ -13536,7 +13667,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.007
    },
    "endings": {
     "D_B_PRES": 90,
@@ -13637,7 +13769,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.024,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.024
+    "T.kkayo_ratio": 0.024,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "NOUN": 3,
@@ -13738,7 +13871,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.135,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.019
+    "T.kkayo_ratio": 0.019,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 3,
@@ -13843,7 +13977,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 17,
@@ -13946,7 +14081,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_PAST": 22,
@@ -13991,7 +14127,7 @@
     "A1.np_deoisang": 0,
     "A1.np_simple": 1,
     "A1.ppunman": 0,
-    "A3.salience": 2,
+    "A3.salience": 3,
     "A4.summary_start": 1,
     "A4.obligation_end": 1,
     "A4.lesson_end": 1,
@@ -14047,7 +14183,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.041
+    "T.kkayo_ratio": 0.041,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_EXIST": 13,
@@ -14150,7 +14287,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "NOUN": 3,
@@ -14250,7 +14388,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.011,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.011
+    "T.kkayo_ratio": 0.011,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "NOUN": 1,
@@ -14352,7 +14491,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.034,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.007
+    "T.kkayo_ratio": 0.007,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 18,
@@ -14450,10 +14590,11 @@
     "A14.translationese_per_1k": 0.11,
     "A5.word_max": 0,
     "G4.off_tone": 14,
-    "G4.banned_ending": 4,
+    "G4.banned_ending": 1,
     "T.jyo_ratio": 0.097,
     "T.geudeun_ratio": 0.005,
-    "T.kkayo_ratio": 0.005
+    "T.kkayo_ratio": 0.005,
+    "T.neundeyo_ratio": 0.015
    },
    "endings": {
     "C_COP": 19,
@@ -14560,7 +14701,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.08,
     "T.geudeun_ratio": 0.022,
-    "T.kkayo_ratio": 0.007
+    "T.kkayo_ratio": 0.007,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -14667,7 +14809,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.012
    },
    "endings": {
     "D_EXIST": 6,
@@ -14767,7 +14910,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 7,
@@ -14811,7 +14955,7 @@
     "A1.np_deoisang": 0,
     "A1.np_simple": 2,
     "A1.ppunman": 0,
-    "A3.salience": 4,
+    "A3.salience": 5,
     "A4.summary_start": 0,
     "A4.obligation_end": 6,
     "A4.lesson_end": 0,
@@ -14867,7 +15011,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_EXIST": 6,
@@ -14911,7 +15056,7 @@
     "A1.np_deoisang": 0,
     "A1.np_simple": 0,
     "A1.ppunman": 0,
-    "A3.salience": 2,
+    "A3.salience": 3,
     "A4.summary_start": 1,
     "A4.obligation_end": 0,
     "A4.lesson_end": 0,
@@ -14967,7 +15112,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.065,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_EXIST": 7,
@@ -15011,7 +15157,7 @@
     "A1.np_deoisang": 0,
     "A1.np_simple": 2,
     "A1.ppunman": 1,
-    "A3.salience": 1,
+    "A3.salience": 4,
     "A4.summary_start": 5,
     "A4.obligation_end": 2,
     "A4.lesson_end": 0,
@@ -15067,7 +15213,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 44,
@@ -15168,7 +15315,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.011
+    "T.kkayo_ratio": 0.011,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_EXIST": 14,
@@ -15269,7 +15417,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_PAST": 2,
@@ -15369,7 +15518,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 35,
@@ -15470,7 +15620,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_S_PRES": 2,
@@ -15569,7 +15720,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "NOUN": 1,
@@ -15670,7 +15822,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 8,
@@ -15767,7 +15920,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_PAST": 76,
@@ -15867,7 +16021,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_PAST": 45,
@@ -15968,7 +16123,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.015,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 25,
@@ -16012,7 +16168,7 @@
     "A1.np_deoisang": 0,
     "A1.np_simple": 0,
     "A1.ppunman": 5,
-    "A3.salience": 0,
+    "A3.salience": 1,
     "A4.summary_start": 4,
     "A4.obligation_end": 0,
     "A4.lesson_end": 0,
@@ -16068,7 +16224,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 9,
@@ -16168,7 +16325,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_S_PRES": 3,
@@ -16267,7 +16425,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_EXIST": 9,
@@ -16364,7 +16523,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 12,
@@ -16464,7 +16624,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.018,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.012
    },
    "endings": {
     "C_SEYO": 1,
@@ -16565,10 +16726,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 0,
-    "G4.banned_ending": 1,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.097,
     "T.geudeun_ratio": 0.007,
-    "T.kkayo_ratio": 0.015
+    "T.kkayo_ratio": 0.015,
+    "T.neundeyo_ratio": 0.007
    },
    "endings": {
     "C_SEYO": 1,
@@ -16671,7 +16833,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.018
    },
    "endings": {
     "D_PAST": 41,
@@ -16772,7 +16935,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -16873,7 +17037,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -16972,7 +17137,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 58,
@@ -17071,10 +17237,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 4,
-    "G4.banned_ending": 3,
+    "G4.banned_ending": 2,
     "T.jyo_ratio": 0.008,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.008
    },
    "endings": {
     "C_SEYO": 3,
@@ -17181,7 +17348,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.045,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.012
+    "T.kkayo_ratio": 0.012,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 28,
@@ -17286,7 +17454,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.011
    },
    "endings": {
     "D_COP": 2,
@@ -17387,7 +17556,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.006
+    "T.kkayo_ratio": 0.006,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "NOUN": 19,
@@ -17490,7 +17660,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.015,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.008
    },
    "endings": {
     "D_COP": 15,
@@ -17590,10 +17761,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 0,
-    "G4.banned_ending": 1,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.056,
     "T.geudeun_ratio": 0.02,
-    "T.kkayo_ratio": 0.02
+    "T.kkayo_ratio": 0.02,
+    "T.neundeyo_ratio": 0.005
    },
    "endings": {
     "C_COP": 28,
@@ -17644,7 +17816,7 @@
     "A1.np_deoisang": 0,
     "A1.np_simple": 0,
     "A1.ppunman": 1,
-    "A3.salience": 1,
+    "A3.salience": 2,
     "A4.summary_start": 6,
     "A4.obligation_end": 3,
     "A4.lesson_end": 0,
@@ -17700,7 +17872,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.004
+    "T.kkayo_ratio": 0.004,
+    "T.neundeyo_ratio": 0.014
    },
    "endings": {
     "D_COP": 26,
@@ -17801,10 +17974,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 1,
     "G4.off_tone": 0,
-    "G4.banned_ending": 2,
+    "G4.banned_ending": 1,
     "T.jyo_ratio": 0.022,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.015
+    "T.kkayo_ratio": 0.015,
+    "T.neundeyo_ratio": 0.007
    },
    "endings": {
     "C_COP": 11,
@@ -17908,7 +18082,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 11,
@@ -18010,7 +18185,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.012,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.012
    },
    "endings": {
     "D_COP": 12,
@@ -18108,10 +18284,11 @@
     "A14.translationese_per_1k": 0.13,
     "A5.word_max": 1,
     "G4.off_tone": 0,
-    "G4.banned_ending": 2,
+    "G4.banned_ending": 1,
     "T.jyo_ratio": 0.044,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.015
    },
    "endings": {
     "C_SEYO": 2,
@@ -18216,7 +18393,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -18318,7 +18496,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -18420,7 +18599,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -18522,7 +18702,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.062,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -18626,7 +18807,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.019,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.038
+    "T.kkayo_ratio": 0.038,
+    "T.neundeyo_ratio": 0.006
    },
    "endings": {
     "D_COP": 38,
@@ -18731,7 +18913,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.019,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.047
+    "T.kkayo_ratio": 0.047,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_S_PRES": 4,
@@ -18835,7 +19018,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.101,
     "T.geudeun_ratio": 0.025,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -18938,7 +19122,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.009,
-    "T.kkayo_ratio": 0.005
+    "T.kkayo_ratio": 0.005,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -18986,7 +19171,7 @@
     "A1.np_deoisang": 0,
     "A1.np_simple": 0,
     "A1.ppunman": 2,
-    "A3.salience": 1,
+    "A3.salience": 2,
     "A4.summary_start": 1,
     "A4.obligation_end": 0,
     "A4.lesson_end": 2,
@@ -19042,7 +19227,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.014,
     "T.geudeun_ratio": 0.014,
-    "T.kkayo_ratio": 0.007
+    "T.kkayo_ratio": 0.007,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 2,
@@ -19146,7 +19332,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.014
+    "T.kkayo_ratio": 0.014,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 38,
@@ -19247,7 +19434,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.105,
     "T.geudeun_ratio": 0.044,
-    "T.kkayo_ratio": 0.009
+    "T.kkayo_ratio": 0.009,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "Q_KKAYO": 1,
@@ -19351,7 +19539,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -19456,7 +19645,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.014,
     "T.geudeun_ratio": 0.005,
-    "T.kkayo_ratio": 0.014
+    "T.kkayo_ratio": 0.014,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_PRES": 75,
@@ -19562,7 +19752,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.021,
-    "T.kkayo_ratio": 0.011
+    "T.kkayo_ratio": 0.011,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_COP": 9,
@@ -19665,7 +19856,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.007
+    "T.kkayo_ratio": 0.007,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 20,
@@ -19765,7 +19957,8 @@
     "G4.banned_ending": 2,
     "T.jyo_ratio": 0.01,
     "T.geudeun_ratio": 0.041,
-    "T.kkayo_ratio": 0.01
+    "T.kkayo_ratio": 0.01,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_COP": 32,
@@ -19873,7 +20066,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.025,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.006
+    "T.kkayo_ratio": 0.006,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_S_PRES": 23,
@@ -19978,7 +20172,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.028,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_S_PRES": 13,
@@ -20081,7 +20276,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.016,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.016
+    "T.kkayo_ratio": 0.016,
+    "T.neundeyo_ratio": 0.008
    },
    "endings": {
     "D_COP": 31,
@@ -20186,7 +20382,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.02,
     "T.geudeun_ratio": 0.031,
-    "T.kkayo_ratio": 0.01
+    "T.kkayo_ratio": 0.01,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_COP": 9,
@@ -20234,7 +20431,7 @@
     "A1.np_deoisang": 0,
     "A1.np_simple": 0,
     "A1.ppunman": 0,
-    "A3.salience": 4,
+    "A3.salience": 5,
     "A4.summary_start": 0,
     "A4.obligation_end": 0,
     "A4.lesson_end": 0,
@@ -20290,7 +20487,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.027,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 34,
@@ -20395,7 +20593,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.032,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.027
+    "T.kkayo_ratio": 0.027,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "NOUN": 17,
@@ -20498,7 +20697,8 @@
     "G4.banned_ending": 1,
     "T.jyo_ratio": 0.04,
     "T.geudeun_ratio": 0.076,
-    "T.kkayo_ratio": 0.152
+    "T.kkayo_ratio": 0.152,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -20606,7 +20806,8 @@
     "G4.banned_ending": 2,
     "T.jyo_ratio": 0.107,
     "T.geudeun_ratio": 0.012,
-    "T.kkayo_ratio": 0.012
+    "T.kkayo_ratio": 0.012,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 1,
@@ -20708,10 +20909,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 5,
-    "G4.banned_ending": 14,
+    "G4.banned_ending": 11,
     "T.jyo_ratio": 0.078,
     "T.geudeun_ratio": 0.039,
-    "T.kkayo_ratio": 0.039
+    "T.kkayo_ratio": 0.039,
+    "T.neundeyo_ratio": 0.049
    },
    "endings": {
     "D_PAST": 2,
@@ -20819,10 +21021,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 1,
-    "G4.banned_ending": 2,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.016,
     "T.geudeun_ratio": 0.049,
-    "T.kkayo_ratio": 0.016
+    "T.kkayo_ratio": 0.016,
+    "T.neundeyo_ratio": 0.049
    },
    "endings": {
     "C_SEYO": 1,
@@ -20927,7 +21130,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_PAST": 30,
@@ -21022,7 +21226,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.008,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.008
+    "T.kkayo_ratio": 0.008,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 39,
@@ -21126,7 +21331,8 @@
     "G4.banned_ending": 2,
     "T.jyo_ratio": 0.12,
     "T.geudeun_ratio": 0.04,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 2,
@@ -21228,7 +21434,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -21329,10 +21536,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 0,
     "G4.off_tone": 7,
-    "G4.banned_ending": 6,
+    "G4.banned_ending": 2,
     "T.jyo_ratio": 0.114,
     "T.geudeun_ratio": 0.034,
-    "T.kkayo_ratio": 0.023
+    "T.kkayo_ratio": 0.023,
+    "T.neundeyo_ratio": 0.023
    },
    "endings": {
     "C_SEYO": 2,
@@ -21441,7 +21649,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -21543,7 +21752,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.022,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_PRES": 93,
@@ -21642,10 +21852,11 @@
     "A14.translationese_per_1k": 0.0,
     "A5.word_max": 1,
     "G4.off_tone": 0,
-    "G4.banned_ending": 2,
+    "G4.banned_ending": 0,
     "T.jyo_ratio": 0.065,
     "T.geudeun_ratio": 0.007,
-    "T.kkayo_ratio": 0.014
+    "T.kkayo_ratio": 0.014,
+    "T.neundeyo_ratio": 0.014
    },
    "endings": {
     "C_SEYO": 1,
@@ -21694,7 +21905,7 @@
     "A1.np_deoisang": 0,
     "A1.np_simple": 1,
     "A1.ppunman": 8,
-    "A3.salience": 2,
+    "A3.salience": 3,
     "A4.summary_start": 3,
     "A4.obligation_end": 3,
     "A4.lesson_end": 1,
@@ -21750,7 +21961,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 14,
@@ -21850,7 +22062,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -21950,7 +22163,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.026,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.013
+    "T.kkayo_ratio": 0.013,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 1,
@@ -22054,7 +22268,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.02,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.03
+    "T.kkayo_ratio": 0.03,
+    "T.neundeyo_ratio": 0.005
    },
    "endings": {
     "C_SEYO": 1,
@@ -22159,7 +22374,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.016
+    "T.kkayo_ratio": 0.016,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 2,
@@ -22265,7 +22481,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.069,
     "T.geudeun_ratio": 0.015,
-    "T.kkayo_ratio": 0.038
+    "T.kkayo_ratio": 0.038,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 2,
@@ -22371,7 +22588,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.016
+    "T.kkayo_ratio": 0.016,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_PAST": 55,
@@ -22475,7 +22693,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.007,
     "T.geudeun_ratio": 0.007,
-    "T.kkayo_ratio": 0.007
+    "T.kkayo_ratio": 0.007,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "Q_KKAYO": 1,
@@ -22578,7 +22797,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.018,
     "T.geudeun_ratio": 0.107,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_COP": 1,
@@ -22682,7 +22902,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.007,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.013
+    "T.kkayo_ratio": 0.013,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 60,
@@ -22788,7 +23009,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.0
+    "T.kkayo_ratio": 0.0,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -22885,7 +23107,8 @@
     "G4.banned_ending": 4,
     "T.jyo_ratio": 0.007,
     "T.geudeun_ratio": 0.022,
-    "T.kkayo_ratio": 0.022
+    "T.kkayo_ratio": 0.022,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "C_SEYO": 1,
@@ -22994,7 +23217,8 @@
     "G4.banned_ending": 0,
     "T.jyo_ratio": 0.0,
     "T.geudeun_ratio": 0.0,
-    "T.kkayo_ratio": 0.008
+    "T.kkayo_ratio": 0.008,
+    "T.neundeyo_ratio": 0.0
    },
    "endings": {
     "D_B_PRES": 70,

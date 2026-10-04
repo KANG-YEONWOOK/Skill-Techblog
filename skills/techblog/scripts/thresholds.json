@@ -2,7 +2,7 @@
   "schema": 1,
   "version": "v1",
   "generated_at": "2026-10-04",
-  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit 84b80db",
+  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit b366de3",
   "max_warn": 3,
   "metrics": {
     "G2.exp_ending": {
@@ -236,7 +236,7 @@
     },
     "A3.salience": {
       "kind": "upper",
-      "pass_max": 1,
+      "pass_max": 2,
       "warn_max": 3,
       "n": 66
     },
@@ -331,16 +331,13 @@
       "n": 66
     },
     "A8.ending_run4": {
-      "kind": "info",
+      "kind": "upper",
       "title": "같은 종결 4회 연속",
-      "hint": "시제나 서술 방식을 바꿔 종결을 섞는다.",
+      "hint": "같은 종결이 네 문장 넘게 이어진 곳에 상태·가능성·조건 문장을 섞는다. Casual이면 Default 초안을 고쳐 다시 변환한다.",
       "min_chars": 1500,
-      "human": {
-        "p10": 0.0,
-        "p50": 2.0,
-        "p90": 5.0,
-        "n": 66
-      }
+      "pass_max": 6,
+      "warn_max": 10,
+      "n": 66
     },
     "A8.long_ratio": {
       "kind": "lower",
