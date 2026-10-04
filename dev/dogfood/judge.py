@@ -192,9 +192,14 @@ def run_fidelity(iter_dir, model, only=None):
             extra = ["WebFetch"]
         else:
             ext = os.path.splitext(src)[1]
-            for cand in ("input" + ext,):
-                if os.path.exists(os.path.join(d, cand)):
-                    shutil.copyfile(os.path.join(d, cand), os.path.join(jdir, "source" + ext))
+            cand = os.path.join(d, "input" + ext)
+            if not os.path.exists(cand):
+                # pasted 케이스는 자료를 프롬프트에 붙여넣고 실행 폴더의 사본을 지운다. 원본 경로에서 가져온다.
+                cand = src.replace("{work}", os.path.dirname(os.path.dirname(iter_dir))).replace("{root}", ROOT)
+                if not os.path.isabs(cand):
+                    cand = os.path.join(ROOT, cand)
+            if os.path.exists(cand):
+                shutil.copyfile(cand, os.path.join(jdir, "source" + ext))
             source_desc = "source" + ext
         res = call_judge(FIDELITY_PROMPT.format(source=source_desc), FIDELITY_SCHEMA, jdir, model, extra)
         body = _norm(L.read_text(os.path.join(d, "article.md")))
