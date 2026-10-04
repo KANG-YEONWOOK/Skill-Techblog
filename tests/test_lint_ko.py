@@ -143,6 +143,21 @@ class PatternTest(unittest.TestCase):
         for w in ("해서", "하고", "있으며", "하지만", "보면"):
             self.assertTrue(L.is_connective(w), w)
 
+    def test_must_may(self):
+        a = L.analyze("모델이 바뀌면 분류기를 다시 학습해야 할 수 있습니다. 설정을 바꿔야 할 수도 있어요. "
+                      "다시 학습이 필요할 수 있습니다. 모델이 바뀌면 다시 학습해야 합니다.")
+        self.assertEqual(a["metrics"]["A7.must_may"]["value"], 2)
+
+    def test_single_para_ratio_lower_bound(self):
+        dense = "\n\n".join("첫 문장입니다. 둘째 문장입니다. 셋째 문장입니다. 넷째 문장입니다." for _ in range(5))
+        short = "\n\n".join(["첫 문장입니다. 둘째 문장입니다.", "한 문장 문단입니다."] * 3)
+        th = L.load_json(L.THRESHOLDS_PATH)["metrics"]["A8.single_para_ratio"]
+        self.assertEqual(th["kind"], "lower")
+        v_dense = L.analyze(dense)["metrics"]["A8.single_para_ratio"]["value"]
+        v_short = L.analyze(short)["metrics"]["A8.single_para_ratio"]["value"]
+        self.assertEqual(L.judge(v_dense, th, 2000)[0], "FAIL")
+        self.assertEqual(L.judge(v_short, th, 2000)[0], "PASS")
+
     def test_triad(self):
         self.assertTrue(L.is_triad("빠르고, 안정적이고, 확장 가능합니다."))
         self.assertFalse(L.is_triad("1,000건을 처리했습니다."))

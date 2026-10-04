@@ -55,7 +55,7 @@ Copy-Item -Recurse Skill-Techblog\skills\techblog "$HOME\.claude\skills\techblog
 
 ```
 /techblog paper.pdf
-/techblog casual https://arxiv.org/abs/2309.06180 -o paged-attention.md
+/techblog casual https://arxiv.org/pdf/2309.06180 -o paged-attention.md
 /techblog default design-doc.md 독자는 백엔드 개발자, 분량은 5,000자 안팎
 /techblog casual --retone paged-attention.md
 ```

@@ -150,7 +150,8 @@ def report(stats, thresholds, notes):
     # 주요 지표 분포
     keys = ["A1.np", "A2.comma_per_sentence", "A2.comma_sentence_ratio", "A2.connective_comma_ratio",
             "A3.salience", "A4.para_end", "A5.style_words_per_1k", "A5.policy_verbs_per_1k", "A6.calque",
-            "A8.sent_len_mean", "A8.sent_len_cv", "A8.long_ratio", "A8.ending_run4", "A9.bold_per_1k",
+            "A8.sent_len_mean", "A8.sent_len_cv", "A8.long_ratio", "A8.ending_run4", "A8.ending_top_share",
+            "A8.sentences_per_para", "A8.single_para_ratio", "A9.bold_per_1k",
             "A9.list_ratio", "A9.heading_per_1k", "A10.triad_per_1k", "A11.body_questions",
             "A13.demonstrative_start_per_1k", "A14.translationese_per_1k", "T.jyo_ratio", "T.geudeun_ratio",
             "T.kkayo_ratio"]

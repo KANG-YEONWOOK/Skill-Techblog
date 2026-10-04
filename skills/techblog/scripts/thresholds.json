@@ -2,7 +2,7 @@
   "schema": 1,
   "version": "v1",
   "generated_at": "2026-10-04",
-  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit 3aac822",
+  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit d004ee8",
   "max_warn": 3,
   "metrics": {
     "G2.exp_ending": {
@@ -360,6 +360,13 @@
       "warn_max": 2,
       "n": 66
     },
+    "A7.must_may": {
+      "kind": "upper",
+      "pass_max": 0,
+      "warn_max": 1,
+      "fixed": true,
+      "note": "사람 글 baseline 224편 중 2편에서 1회씩 나왔다. 1회는 WARN, 2회부터 FAIL"
+    },
     "A8.ending_run4": {
       "kind": "upper",
       "title": "같은 종결 4회 연속",
@@ -434,15 +441,13 @@
       }
     },
     "A8.single_para_ratio": {
-      "kind": "info",
+      "kind": "lower",
       "title": "한 문장 문단 비율",
+      "hint": "문단 하나에는 사실 하나와 그 근거나 결과까지만 쓴다. 네 문장 이상 이어진 문단은 내용이 바뀌는 곳에서 나누고, 전환·핵심 수치·결론 문장은 한 문장 문단으로 둔다.",
       "min_chars": 1500,
-      "human": {
-        "p10": 0.135,
-        "p50": 0.374,
-        "p90": 0.633,
-        "n": 66
-      }
+      "pass_min": 0.115,
+      "warn_min": 0.059,
+      "n": 66
     },
     "A9.bold_per_1k": {
       "kind": "upper",
