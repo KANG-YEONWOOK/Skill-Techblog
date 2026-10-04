@@ -112,9 +112,9 @@ def compare_sentence(d, c, d_line, c_line, si):
         issues.append(_issue("PREFIX", "FAIL", d_line, c_line, si, d, c,
                              f"마지막 {K_TAIL}어절 밖에서 달라졌다(D {rd}어절, C {rc}어절 남음)"))
     elif rd and rc:
+        # 활용으로 바뀌는 것은 첫 음절 뒤쪽이다(썼습니다→썼어요, 둡니다→둬요). 첫 음절 초성이 다르면 다른 낱말이다.
         a, b = _choseong(dw[p]), _choseong(cw[p])
-        need = 2 if min(len(a), len(b)) >= 2 else 1
-        if a[:need] != b[:need]:
+        if a[:1] != b[:1]:
             issues.append(_issue("STEM", "WARN", d_line, c_line, si, d, c, "바뀐 어절의 어간이 다르다"))
     dword, cword = L.last_word(d), L.last_word(c)
     dcls = L.classify_ending(dword, d.rstrip().endswith("?"))

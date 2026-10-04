@@ -80,6 +80,12 @@ class ToneCheckTest(unittest.TestCase):
         c = CASUAL.replace("90% 줄였어요.", "90% 줄였거든요.")
         self.assertIn(("GEUDEUN", "WARN"), self.codes(d, c))
 
+    def test_conjugation_is_not_stem_change(self):
+        for d, c in (("코드를 썼습니다.", "코드를 썼어요."), ("값이 같습니다.", "값이 같아요."),
+                     ("버킷을 둡니다.", "버킷을 둬요."), ("방식입니다.", "방식이에요.")):
+            self.assertNotIn(("STEM", "WARN"), self.codes(d, c), (d, c))
+        self.assertIn(("STEM", "WARN"), self.codes("결과가 좋습니다.", "결과가 나빠요."))
+
     def test_polarity(self):
         c = CASUAL.replace("성능 저하가 없었던 이유는", "성능 저하가 있었던 이유는")
         self.assertIn(("POLARITY", "FAIL"), self.codes(DEFAULT, c))
