@@ -2,7 +2,7 @@
   "schema": 1,
   "version": "v1",
   "generated_at": "2026-10-04",
-  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit b366de3",
+  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit 03c7c43",
   "max_warn": 3,
   "metrics": {
     "G2.exp_ending": {
@@ -128,8 +128,8 @@
     },
     "A10.triad_per_1k": {
       "kind": "upper",
-      "pass_max": 2.21,
-      "warn_max": 4.368,
+      "pass_max": 1.617,
+      "warn_max": 3.396,
       "title": "셋 묶음 나열(1,000자당)",
       "hint": "자료에 실제로 셋이 있을 때만 셋으로 나열한다.",
       "min_chars": 1500,
@@ -141,7 +141,7 @@
       "human": {
         "p10": 0.0,
         "p50": 0.0,
-        "p90": 1.0,
+        "p90": 0.0,
         "n": 66
       }
     },
@@ -203,6 +203,24 @@
       "title": "fact sheet에 없는 수치",
       "hint": "자료에서 확인한 수치만 쓴다. 변환·반올림 값은 fact sheet에 함께 적는다.",
       "fixed": true
+    },
+    "A16.source_subject": {
+      "kind": "info",
+      "human": {
+        "p10": 0.0,
+        "p50": 0.0,
+        "p90": 0.0,
+        "n": 66
+      }
+    },
+    "A16.source_subject_share": {
+      "kind": "upper",
+      "pass_max": 0.1,
+      "warn_max": 0.15,
+      "fixed": true,
+      "policy": true,
+      "title": "자료를 주어로 여는 문장 비율(\"저자들은\", \"논문은\")",
+      "hint": "사실은 기술·방법·결과를 주어로 쓰고, \"저자들은\"은 저자의 주장·추정·판단을 옮길 때만 쓴다."
     },
     "A2.comma_per_sentence": {
       "kind": "upper",

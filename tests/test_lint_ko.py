@@ -146,6 +146,8 @@ class PatternTest(unittest.TestCase):
     def test_triad(self):
         self.assertTrue(L.is_triad("빠르고, 안정적이고, 확장 가능합니다."))
         self.assertFalse(L.is_triad("1,000건을 처리했습니다."))
+        self.assertFalse(L.is_triad("정확도는 각각 20%, 25%, 25%입니다."))
+        self.assertFalse(L.is_triad("논문은 이들을 ChatGPT, Claude, Grok으로 부릅니다."))
 
 
 class ToneTest(unittest.TestCase):

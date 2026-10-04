@@ -107,6 +107,7 @@ techblog 스킬이 쓴 글을 점검하는 기준이다. 스킬의 점검 단계
 | A14.translationese_per_1k | 번역투: "그것은", "~에 의해", "가장 ~한 ~ 중 하나", "중요한 역할을 하다", 속성의 "~를 가지고 있다" | PASS ≤0.46 | 0 / 0.31 | [1][3] |
 | A14.doeeojida | 이중 피동 "~되어지다" | 0 | - | [3] |
 | A15.unknown_numbers | 본문 수치 중 fact sheet(`<이름>.facts.md`)에 없는 값 | 0 | - | G1 |
+| A16.source_subject_share | "저자들은", "논문은"으로 여는 문장 비율(policy) | PASS ≤0.10, WARN ≤0.15 | - | dogfooding |
 | T.kkayo_ratio | "~할까요?" 질문 비율 | PASS ≤0.037 | 0 / 0.03 | |
 | T.jyo_ratio, T.geudeun_ratio, T.neundeyo_ratio | Casual의 ~죠, ~거든요, ~는데요 비율(policy) | ~죠·~거든요 PASS ≤0.05, ~는데요 PASS ≤0.04 | 해요체 글 ~죠 3.4%, ~는데요 3.4%, ~거든요 0.2% | tone.md |
 | INFO.closing_wish | 마무리 인사("도움이 되었으면 합니다", policy) | 글당 1회 | - | |
@@ -118,6 +119,7 @@ techblog 스킬이 쓴 글을 점검하는 기준이다. 스킬의 점검 단계
 - A5: Lee(2026)에서 기대치 대비 시사하다 4.0배, 구조적 6.0배, 기능하다 7.0배, 통합적 5.7배, 다층적 6.1배였다[1].
 - A6: digitalmarketer의 GitHub PR 467,387건 분석에서 load-bearing은 19.6배, quietly는 30.1배였고, Claude 한국어 글에서 "떠받치고 있습니다", "조용히 삼켜지고" 같은 직역이 관찰됐다[5].
 - A8: Muñoz-Ortiz et al.(2024)에서 41단어 이상 문장은 사람 12.0%, LLM 4.1~5.5%였다[15]. Pangram에서 Opus 5.5의 문장 길이 변동계수는 0.475로 Opus 5보다 11% 줄었다[10]. 같은 종결 반복(A8.ending_run4)은 dogfooding에서 추가했다. 스킬이 Casual로 바꾼 글에서 "~해요/~했어요"가 이어지는 구간이 8~9곳 나왔고, pairwise judge가 이 리듬을 사람 글보다 기계적이라고 지적했다.
+- A16: dogfooding iteration 2에서 "자료를 주어로 쓴다"는 규칙 때문에 "저자들은 ~"으로 여는 문장이 18%(160문장 중 29개)까지 늘었고, pairwise judge가 이 반복을 보고서 같은 리듬이라고 지적했다. 스킬 없는 Claude 출력은 2~7%였다. 사실은 기술·결과를 주어로 쓰고 "저자들은"은 주장·추정을 옮길 때만 쓴다.
 - A9, A10: Arize에서 Opus 5.5의 bold lead-in bullet은 2.5배, 세 항목 목록은 35% 늘었고[9], Pangram에서 bullet은 85%, 번호 목록은 111% 늘었다[10]. 사람 글도 bold와 목록을 쓰므로 0이 목표가 아니다.
 
 ## 참고 지표 (INFO)

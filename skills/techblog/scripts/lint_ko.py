@@ -511,10 +511,17 @@ def comma_count(masked):
     return len(re.findall(r"[,，]", DIGIT_COMMA_RE.sub("", masked)))
 
 
+TRIAD_DATA_RE = re.compile(r"[0-9A-Za-z⟦]")
+
+
 def is_triad(masked):
+    """수사적 셋 묶음("빠르고, 안정적이고, 확장 가능한")을 센다.
+    수치, 영문 이름, 인용이 든 나열은 자료의 데이터를 옮긴 것이라 세지 않는다."""
     s = DIGIT_COMMA_RE.sub("", masked)
     parts = [p.strip() for p in re.split(r"[,，]", s)]
     if len(parts) < 3:
+        return False
+    if any(TRIAD_DATA_RE.search(p) for p in parts[1:-1]) or TRIAD_DATA_RE.search(parts[0].split()[-1] if parts[0].split() else ""):
         return False
     return all(1 <= len(p.split()) <= 4 for p in parts[1:-1])
 
@@ -774,6 +781,10 @@ def analyze(text, patterns_spec=None, facts_text=None):
     put("A2.comma_sentence_ratio", round(sum(1 for c in commas if c) / n_body, 3))
     put("A2.connective_comma_ratio", round(conn_comma / conn_total, 3) if conn_total else 0.0,
         conn_hits, comma=conn_comma, total=conn_total)
+
+    # A16 자료를 주어로 여는 문장의 비율
+    src_hits = metrics["A16.source_subject"]["hits"]
+    put("A16.source_subject_share", round(len(src_hits) / n_body, 3), src_hits, count=len(src_hits))
 
     # A4 문단 끝 요약·교훈 합계
     para_end = metrics["A4.summary_start"]["hits"] + metrics["A4.lesson_end"]["hits"]

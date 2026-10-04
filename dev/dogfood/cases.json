@@ -42,6 +42,49 @@
    "source": "{work}/sources/2309.06180.pdf",
    "tone": "casual",
    "mode": "baseline"
+  },
+  {
+   "name": "C-epanorthosis-default",
+   "source": "docs/2607.21498v2.pdf",
+   "tone": "default",
+   "set": "held-out"
+  },
+  {
+   "name": "D-munozortiz-casual",
+   "source": "docs/2308.09067v3.pdf",
+   "tone": "casual",
+   "set": "held-out"
+  },
+  {
+   "name": "E-discord-url-default",
+   "source": "https://discord.com/blog/how-discord-stores-trillions-of-messages",
+   "tone": "default",
+   "set": "held-out",
+   "note": "URL 입력"
+  },
+  {
+   "name": "F-retone-casual",
+   "source": "{work}/dogfood/{last}/A-antislop-casual/article.draft.md",
+   "tone": "casual",
+   "mode": "retone",
+   "set": "held-out",
+   "note": "마지막 iteration의 A Default 초안을 --retone으로 변환. {last}는 실행 때 지정"
+  },
+  {
+   "name": "S2-pep659-pasted-default",
+   "source": "{work}/sources/pep-0659.rst",
+   "tone": "default",
+   "mode": "pasted",
+   "set": "held-out",
+   "note": "PEP 659(public domain) 본문을 프롬프트에 붙여넣음"
+  },
+  {
+   "name": "S3-pagedattention-sonnet-casual",
+   "source": "{work}/sources/2309.06180.pdf",
+   "tone": "casual",
+   "model": "sonnet",
+   "set": "held-out",
+   "note": "작은 모델에서도 동작하는지 확인"
   }
  ]
 }

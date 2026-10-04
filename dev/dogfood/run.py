@@ -30,6 +30,7 @@ def build(case, run_dir):
     src = case.get("source")
     if src and not src.startswith(("http://", "https://")):
         src = src.replace("{work}", os.path.dirname(os.path.dirname(os.path.dirname(run_dir)))).replace("{root}", ROOT)
+        src = src.replace("{last}", os.environ.get("TECHBLOG_LAST_ITER", "iter-1"))
         if not os.path.isabs(src):
             src = os.path.join(ROOT, src)
     src_arg = src
