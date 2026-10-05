@@ -2,7 +2,7 @@
   "schema": 1,
   "version": "v1",
   "generated_at": "2026-10-05",
-  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit 9d8b9ba",
+  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit dfdd5f3",
   "max_warn": 3,
   "metrics": {
     "G2.exp_ending": {
@@ -215,12 +215,12 @@
     },
     "A16.source_subject_share": {
       "kind": "upper",
-      "pass_max": 0.1,
-      "warn_max": 0.15,
+      "pass_max": 0.06,
+      "warn_max": 0.1,
       "fixed": true,
       "policy": true,
-      "title": "자료를 주어로 여는 문장 비율(\"저자들은\", \"논문은\")",
-      "hint": "사실은 기술·방법·결과를 주어로 쓰고, \"저자들은\"은 저자의 주장·추정·판단을 옮길 때만 쓴다."
+      "title": "자료를 주어로 여는 문장 비율(\"저자들은\", \"논문은\", \"원문은\")",
+      "hint": "자료가 잰 값과 자료가 설명한 동작은 그 값과 동작을 주어로 쓴다. \"저자들은\", \"논문은\", \"원문은\"은 저자의 주장, 추정, 판단을 옮길 때만 쓴다."
     },
     "A17.opener_repeat": {
       "kind": "info",
@@ -573,19 +573,49 @@
       }
     },
     "A18.number_predicate": {
-      "kind": "check"
+      "kind": "check",
+      "human": {
+        "p10": 0.0,
+        "p50": 0.0,
+        "p90": 0.0,
+        "n": 66
+      }
     },
     "A18.generic_predicate": {
-      "kind": "check"
+      "kind": "info",
+      "human": {
+        "p10": 0.0,
+        "p50": 0.0,
+        "p90": 0.5,
+        "n": 66
+      }
     },
     "A18.bare_reference": {
-      "kind": "check"
+      "kind": "check",
+      "human": {
+        "p10": 0.0,
+        "p50": 0.0,
+        "p90": 0.5,
+        "n": 66
+      }
     },
     "A18.paren_clause": {
-      "kind": "check"
+      "kind": "info",
+      "human": {
+        "p10": 0.0,
+        "p50": 0.0,
+        "p90": 2.0,
+        "n": 66
+      }
     },
     "A18.bundle": {
-      "kind": "check"
+      "kind": "info",
+      "human": {
+        "p10": 0.0,
+        "p50": 0.0,
+        "p90": 1.0,
+        "n": 66
+      }
     }
   },
   "bands": {

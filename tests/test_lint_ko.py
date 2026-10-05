@@ -167,12 +167,19 @@ class PatternTest(unittest.TestCase):
         self.assertEqual(m["A18.paren_clause"]["value"], 1)
         self.assertEqual(m["A18.bundle"]["value"], 1)
 
+    def test_a16_source_subject(self):
+        text = ("원문은 배치 크기를 10으로 줄였다고 씁니다. 논문은 지연을 쟀습니다. 저자들은 원인을 추정합니다. "
+                "원문 그대로 옮기면 메시지가 늦게 도착합니다. 배치 크기를 10으로 줄인 설정에서 p99 지연은 0.8초였습니다.\n")
+        m = L.analyze(text)["metrics"]
+        self.assertEqual(m["A16.source_subject_share"]["extra"]["count"], 3)
+
     def test_check_status_not_in_verdict(self):
-        text = "\n\n".join(["기존 설정과 비교하면 최대 5배입니다."] * 3)
+        text = "\n\n".join(["기존 설정과 비교하면 최대 5배입니다.", "입력·출력 길이를 따로 쟀습니다."] * 3)
         a = L.analyze(text)
         ev = L.evaluate(a, L.load_json(L.THRESHOLDS_PATH), "default")
         st = {r["id"]: r["status"] for r in ev["results"]}
         self.assertEqual(st["A18.number_predicate"], "CHECK")
+        self.assertEqual(st["A18.bundle"], "INFO")  # 사람 글과 비율이 비슷한 후보는 참고 지표로만 센다
         self.assertEqual(ev["summary"]["fail"] + ev["summary"]["gate_fail"], 0)
         self.assertIn("단독 읽기 점검 후보", L.render_text("x.md", "default", a, ev))
 
