@@ -89,12 +89,13 @@ def _ts(v):
         return None
 
 
-def _usage_share(events, start_tool):
-    """start 명령 이후의 입력 토큰 비율과 경과 시간 비율.
+def _usage_share(events, start_tool, end_tool=None):
+    """start 명령부터 마지막 check 명령까지(후처리 구간)의 입력 토큰 비율과 경과 시간 비율.
+    Casual 케이스는 그 뒤에 어투 변환이 이어지므로 end_tool에서 구간을 끝낸다.
     stream-json의 assistant 이벤트는 메시지 시작 시점의 사용량만 담아서 출력 토큰은 메시지별로 셀 수 없다.
     입력 토큰(cache 포함)은 메시지마다 한 번만 센다."""
     seen, total, after = set(), 0, 0
-    passed, first, last, start = False, None, None, None
+    passed, ended, first, last, start, end = False, False, None, None, None, None
     for ev in events:
         if ev[0] == "ts":
             t = _ts(ev[1])
@@ -104,19 +105,22 @@ def _usage_share(events, start_tool):
             continue
         if ev[0] == "tool" and ev[1] == start_tool and not passed:
             passed, start = True, last
+        if ev[0] == "tool" and end_tool is not None and ev[1] == end_tool:
+            ended, end = True, last
         if ev[0] != "usage" or ev[1] in seen:
             continue
         seen.add(ev[1])
         u = ev[2]
         inp = sum(u.get(k) or 0 for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
         total += inp
-        if passed:
+        if passed and not ended:
             after += inp
     out = {"input_share": round(after / total, 3) if total else None}
+    end = end or last
     if first and last and start:
         whole = (last - first).total_seconds()
-        out["minutes_after_start"] = round((last - start).total_seconds() / 60, 1)
-        out["time_share"] = round((last - start).total_seconds() / whole, 3) if whole else None
+        out["minutes_after_start"] = round((end - start).total_seconds() / 60, 1)
+        out["time_share"] = round((end - start).total_seconds() / whole, 3) if whole else None
     return out
 
 
@@ -142,11 +146,17 @@ def revise_summary(case_dir, tone, tools, events):
         return os.path.basename(str(t["input"].get("file_path", "")))
 
     i_start, i_rep, i_check = cmd_index("start"), cmd_index("repeats"), cmd_index("check")
+    checks = [i for i, t in enumerate(tools) if t["name"] in ("Bash", "PowerShell")
+              and "revise_ko.py" in t["input"].get("command", "") and " check " in t["input"].get("command", "") + " "]
+    i_last_check = checks[-1] if checks else None
     edits_after = sum(1 for i, t in enumerate(tools)
                       if i_start is not None and i > i_start and t["name"] in ("Edit", "Write") and path_of(t) == target)
     read_before_repeats = None
     if i_start is not None and i_rep is not None:
-        read_before_repeats = any(t["name"] == "Read" and path_of(t) == target for t in tools[i_start + 1:i_rep])
+        # 5단계의 마지막 수정 뒤부터 repeats 전까지 후처리 대상을 읽었는가
+        last_edit = max([i for i, t in enumerate(tools[:i_start]) if t["name"] in ("Edit", "Write") and path_of(t) == target]
+                        or [-1])
+        read_before_repeats = any(t["name"] == "Read" and path_of(t) == target for t in tools[last_edit + 1:i_rep])
 
     def counts(path):
         c = {}
@@ -166,7 +176,7 @@ def revise_summary(case_dir, tone, tools, events):
             "repeats_before": counts(snap), "repeats_after": counts(post),
             "ran": {"start": i_start is not None, "repeats": i_rep is not None, "check": i_check is not None},
             "read_before_repeats": read_before_repeats, "edits_after_start": edits_after,
-            "usage_after_start": _usage_share(events, i_start) if i_start is not None else None,
+            "usage_after_start": _usage_share(events, i_start, i_last_check) if i_start is not None else None,
             "compactions": sum(1 for ev in events if ev[0] == "compact")}
 
 
