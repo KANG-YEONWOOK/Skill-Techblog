@@ -150,7 +150,7 @@ Casual로 요청받아도 초안은 먼저 합니다체로 쓴다. Casual 글이
 
 1. 후처리 시작 명령(`revise_ko.py start`)으로 후처리 전 초안 사본과 반복 후보 파일을 만든다.
 2. Agent 도구로 general-purpose subagent 하나를 띄워 후처리를 맡긴다. prompt는 아래 문단을 그대로 쓰고 `<...>`만 실제 절대 경로나 URL로 바꾼다. 자료 내용, fact sheet 내용, 초안을 쓰며 내린 판단은 prompt에 넣지 않는다.
-   > `<후처리 대상>`은 techblog skill이 1~5단계(초안 쓰기와 점검)를 마친 합니다체 글이다. 이 글에 techblog skill의 6단계(후처리)만 한다. 먼저 `${CLAUDE_SKILL_DIR}/references/revision.md`를 읽고 그 절차를 따른다. fact sheet는 `<이름>.facts.md`, 자료는 `<자료 경로 또는 URL>`, 반복 후보 파일은 `<이름>.repeats.md`다. 반복 후보 파일은 글을 처음부터 끝까지 읽고 멈출 곳을 적은 뒤에 연다. 적은 곳만 Edit 도구로 고친다. 어투, 헤딩, 표, 코드 블록, 참고자료는 바꾸지 않는다. 후처리 대상 말고 고칠 수 있는 파일은 fact sheet뿐이고, 새로 계산한 값을 적을 때만 고친다. 끝나면 고친 곳마다 줄 번호와 이유를 한 줄씩 보고하고, 일반 규칙과 다르게 남긴 형태가 있으면 그 이유도 보고한다.
+   > `<후처리 대상>`은 techblog skill이 1~5단계(초안 쓰기와 점검)를 마친 합니다체 글이다. 이 글에 techblog skill의 6단계(후처리)만 한다. 먼저 `${CLAUDE_SKILL_DIR}/references/revision.md`를 읽고 그 절차를 따른다. fact sheet는 `<이름>.facts.md`, 자료는 `<자료 경로 또는 URL>`, 반복 후보 파일은 `<이름>.repeats.md`다. 반복 후보 파일은 글을 처음부터 끝까지 읽고 멈출 곳을 적은 뒤에 연다. 적은 곳만 Edit 도구로 고친다. 어투, 헤딩, 표, 코드 블록, 참고자료는 바꾸지 않는다. 후처리 대상 말고 고칠 수 있는 파일은 fact sheet뿐이고, 새로 계산한 값을 적을 때만 고친다. 자료가 PDF면 Read 도구의 pages로 필요한 쪽만 읽고, 다른 프로그램으로 PDF 텍스트를 뽑지 않는다. 끝나면 고친 곳마다 줄 번호와 이유를 한 줄씩 보고하고, 일반 규칙과 다르게 남긴 형태가 있으면 그 이유도 보고한다.
 3. subagent가 끝나면 `revise_ko.py check`를 실행한다. 종료 코드가 1이면 걸린 항목을 revision.md의 "고친 뒤 확인"대로 직접 고친다. subagent가 보고한 남긴 형태와 이유는 8단계 보고에 쓴다.
 - Agent 도구를 쓸 수 없으면 revision.md를 읽고 2의 절차를 직접 한다. Bash를 쓸 수 없으면 사본과 후보 파일 없이 revision.md의 "스크립트를 쓸 수 없을 때"를 따른다.
 
