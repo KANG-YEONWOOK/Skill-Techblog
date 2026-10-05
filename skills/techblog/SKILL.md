@@ -148,7 +148,7 @@ Casual로 요청받아도 초안은 먼저 합니다체로 쓴다. Casual 글이
 
 1. `references/revision.md`를 읽는다.
 2. 후처리 시작 명령(`revise_ko.py start`)으로 후처리 전 초안 사본을 만든다.
-3. 후처리 대상을 Read로 처음부터 끝까지 읽고, 독자가 읽다가 멈출 곳을 줄 번호와 이유와 함께 적는다. 다 읽은 뒤 `revise_ko.py repeats`의 반복 후보를 revision.md의 판단 질문으로 판단한다.
+3. 후처리 대상을 Read로 처음부터 끝까지 읽고, 독자가 읽다가 멈출 곳을 줄 번호와 이유와 함께 적는다. 다 읽고 적은 뒤에 `revise_ko.py repeats`를 실행하고(start와 같은 차례에 실행하지 않는다), 반복 후보를 revision.md의 판단 질문으로 판단한다.
 4. 적은 곳만 Edit 도구로 고친다. 글쓴이가 계산한 값과 고친 수치 문장은 자료 원문으로 다시 확인한다.
 5. `revise_ko.py check`를 실행하고, 종료 코드가 0이 될 때까지 걸린 항목을 revision.md의 "고친 뒤 확인"대로 처리한다.
 - Bash를 쓸 수 없으면 사본 없이 고치고 revision.md의 "스크립트를 쓸 수 없을 때"를 따른다.

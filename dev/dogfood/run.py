@@ -34,7 +34,7 @@ REVISE_PROMPT = """현재 폴더의 article.md는 techblog skill이 1~5단계(�
 절차는 {skill}/SKILL.md의 "### 6. 후처리" 절과 {skill}/references/revision.md를 따른다. 스크립트는 python "{skill}/scripts/revise_ko.py" start "article.md"처럼 한 번에 명령 하나씩 Bash로 실행한다. 끝나면 고친 문장 수와 check 결과를 짧게 보고한다."""
 
 
-def build_revise(case, run_dir):
+def build_revise(case, run_dir, skill_dir=SKILL_DIR):
     """다른 iteration 케이스의 초안 사본, fact sheet, 자료를 복사하고 후처리만 하는 프롬프트를 만든다."""
     work = os.path.dirname(os.path.dirname(os.path.dirname(run_dir)))
     src_dir = os.path.join(work, "dogfood", case["revise_from"])
@@ -52,7 +52,7 @@ def build_revise(case, run_dir):
         if inputs:
             shutil.copyfile(os.path.join(src_dir, inputs[0]), os.path.join(run_dir, inputs[0]))
             src_arg = "./" + inputs[0]
-    prompt = REVISE_PROMPT.format(skill=SKILL_DIR, src=src_arg)
+    prompt = REVISE_PROMPT.format(skill=skill_dir, src=src_arg)
     extra = ["--disable-slash-commands", "--allowedTools", "Read", "Edit", "Write", "Glob", "Grep", "WebFetch",
              "Bash(python *)"]
     return prompt, extra
@@ -61,7 +61,7 @@ def build_revise(case, run_dir):
 def build(case, run_dir):
     """케이스 설정으로 프롬프트와 추가 CLI 인자를 만든다."""
     if case.get("mode") == "revise":
-        return build_revise(case, run_dir)
+        return build_revise(case, run_dir, case.get("skill_dir") or SKILL_DIR)
     src = case.get("source")
     if src and not src.startswith(("http://", "https://")):
         src = src.replace("{work}", os.path.dirname(os.path.dirname(os.path.dirname(run_dir)))).replace("{root}", ROOT)
@@ -138,6 +138,7 @@ def main():
     ap.add_argument("--budget", type=float, default=8.0)
     ap.add_argument("--timeout", type=int, default=45 * 60)
     ap.add_argument("--revise-from", help="이 iteration의 초안 사본으로 revise 모드 케이스를 만든다")
+    ap.add_argument("--skill-dir", help="revise 모드에서 읽을 skill 폴더(지침 버전을 고정할 때 쓴다)")
     args = ap.parse_args()
     with open(args.cases, encoding="utf-8") as f:
         cases = json.load(f)["cases"]
@@ -151,7 +152,7 @@ def main():
             with open(os.path.join(d, "meta.json"), encoding="utf-8") as f:
                 orig = json.load(f)["case"]
             cases.append(dict(orig, mode="revise", tone="default", tone_orig=orig.get("tone", "default"),
-                              revise_from=f"{args.revise_from}/{name}"))
+                              revise_from=f"{args.revise_from}/{name}", skill_dir=args.skill_dir))
     if args.only:
         cases = [c for c in cases if c["name"] in args.only]
     iter_dir = os.path.join(args.work, args.iter)
