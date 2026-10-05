@@ -682,6 +682,8 @@ def analyze(text, patterns_spec=None, facts_text=None):
         hits = []
         if p["scope"] == "para_last":
             pool = [ps[-1] for ps in para_sents if ps]
+        elif p["scope"] == "paragraph":
+            pool = [s for s in body if s.kind == "paragraph"]
         else:
             pool = body
         for s in pool:
@@ -986,6 +988,9 @@ def judge(value, spec, chars):
     kind = spec.get("kind", "info")
     if kind == "info":
         return "INFO", {}
+    if kind == "check":
+        # 점검 후보: 판정에 넣지 않고 걸린 문장만 보여 준다
+        return ("CHECK" if value > 0 else "PASS"), {}
     if kind == "gate":
         return ("GATE" if value > 0 else "PASS"), {"max": 0}
     if kind == "poisson":
@@ -1048,7 +1053,7 @@ def evaluate(analysis, thresholds, tone, max_hits=5, patterns_spec=None):
 
 # ---------------------------------------------------------------- 출력
 
-STATUS_ORDER = {"GATE": 0, "FAIL": 1, "WARN": 2, "PASS": 3, "INFO": 4}
+STATUS_ORDER = {"GATE": 0, "FAIL": 1, "WARN": 2, "CHECK": 3, "PASS": 4, "INFO": 5}
 
 
 def _fmt_limit(lim):
@@ -1072,8 +1077,9 @@ def render_text(path, tone, analysis, ev, show_all=False):
         f"techblog lint | {os.path.basename(path)} | tone={tone} | {st['chars']:,}자 · {st['sentences']}문장 · {st['paragraphs']}문단 · 헤딩 {st['headings']}개",
         f"판정: {sm['verdict']} (Gate 위반 {sm['gate_fail']}, FAIL {sm['fail']}, WARN {sm['warn']})",
     ]
+    checks = [r for r in ev["results"] if r["status"] == "CHECK"]
     for r in sorted(ev["results"], key=lambda r: STATUS_ORDER[r["status"]]):
-        if r["status"] in ("PASS", "INFO") and not show_all:
+        if r["status"] == "CHECK" or (r["status"] in ("PASS", "INFO") and not show_all):
             continue
         lines.append(f"[{r['status']}] {r['id']} {r['title']}: {r['value']} ({_fmt_limit(r['limit'])})")
         if r.get("hint"):
@@ -1081,6 +1087,16 @@ def render_text(path, tone, analysis, ev, show_all=False):
         for h in r.get("hits", []):
             m = f" «{h['match']}»" if h.get("match") else ""
             lines.append(f"    L{h['line']}{m}: {h['text']}")
+    if checks:
+        lines.append("")
+        lines.append("단독 읽기 점검 후보 (판정에 들어가지 않음): 이 문장과 바로 앞 문장만 읽고 무엇에 대한 말인지, "
+                     "수치가 무엇을 잰 값인지 알 수 있으면 그대로 둔다.")
+        for r in checks:
+            lines.append(f"[CHECK] {r['id']} {r['title']}: {r['value']}")
+            if r.get("hint"):
+                lines.append(f"    고치는 방향: {r['hint']}")
+            for h in r.get("hits", []):
+                lines.append(f"    L{h['line']}: {h['text']}")
     return "\n".join(lines)
 
 

@@ -75,7 +75,7 @@ def calibrate(stats, template):
         vals = [a["metrics"][mid] for a in pool if mid in a["metrics"]]
         if kind == "gate" or spec.get("fixed") or not vals:
             continue
-        if kind == "info":
+        if kind in ("info", "check"):
             spec["human"] = {"p10": round(pct(vals, .1), 3), "p50": round(pct(vals, .5), 3),
                              "p90": round(pct(vals, .9), 3), "n": len(vals)}
             continue

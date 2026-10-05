@@ -571,6 +571,21 @@
         "p90": 4.0,
         "n": 66
       }
+    },
+    "A18.number_predicate": {
+      "kind": "check"
+    },
+    "A18.generic_predicate": {
+      "kind": "check"
+    },
+    "A18.bare_reference": {
+      "kind": "check"
+    },
+    "A18.paren_clause": {
+      "kind": "check"
+    },
+    "A18.bundle": {
+      "kind": "check"
     }
   },
   "bands": {
@@ -579,6 +594,7 @@
     "poisson": "사람 pooled rate로 PASS ≤ q0.95, WARN ≤ q0.995",
     "policy": "스킬 출력에만 적용하는 규칙. 사람 글 검증에서는 뺀다.",
     "info": "점수에 넣지 않는 참고 지표. human 값은 사람 글 p10/p50/p90",
-    "fixed": "정책으로 정한 기준치. calibrate.py가 바꾸지 않는다."
+    "fixed": "정책으로 정한 기준치. calibrate.py가 바꾸지 않는다.",
+    "check": "점검 후보. 판정에 넣지 않고 걸린 문장만 보여 준다. human 값은 사람 글 p10/p50/p90"
   }
 }

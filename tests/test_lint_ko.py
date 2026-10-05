@@ -153,6 +153,29 @@ class PatternTest(unittest.TestCase):
                       "로그를 읽을 수 있습니다. 표의 측정값대로라면 지연의 72%는 배치 대기에서 생깁니다.")
         self.assertEqual(a["metrics"]["A7.read_as"]["value"], 2)
 
+    def test_a18_check_candidates(self):
+        text = ("무효화 메시지의 배치 크기를 10으로 줄인 설정에서 12개 서비스의 p99 무효화 지연은 0.8초였습니다. "
+                "기존 설정과 비교하면 최대 5배입니다.\n\n"
+                "OPT-13B로 잰 결과입니다.\n\n"
+                "차이는 배치 대기에서 나옵니다.\n\n"
+                "측정 대상(write-back 캐시만 해당, 12개 서비스)은 로그로 골랐습니다. 입력·출력 길이를 따로 쟀습니다.\n\n"
+                "지연의 72%는 배치 대기 시간이었습니다. 요청 수만큼 스레드를 띄웠습니다.\n")
+        m = L.analyze(text)["metrics"]
+        self.assertEqual(m["A18.number_predicate"]["value"], 1)  # 45자를 넘는 첫 문장은 후보에서 빠진다
+        self.assertEqual(m["A18.generic_predicate"]["value"], 1)
+        self.assertEqual(m["A18.bare_reference"]["value"], 1)
+        self.assertEqual(m["A18.paren_clause"]["value"], 1)
+        self.assertEqual(m["A18.bundle"]["value"], 1)
+
+    def test_check_status_not_in_verdict(self):
+        text = "\n\n".join(["기존 설정과 비교하면 최대 5배입니다."] * 3)
+        a = L.analyze(text)
+        ev = L.evaluate(a, L.load_json(L.THRESHOLDS_PATH), "default")
+        st = {r["id"]: r["status"] for r in ev["results"]}
+        self.assertEqual(st["A18.number_predicate"], "CHECK")
+        self.assertEqual(ev["summary"]["fail"] + ev["summary"]["gate_fail"], 0)
+        self.assertIn("단독 읽기 점검 후보", L.render_text("x.md", "default", a, ev))
+
     def test_single_para_ratio_lower_bound(self):
         dense = "\n\n".join("첫 문장입니다. 둘째 문장입니다. 셋째 문장입니다. 넷째 문장입니다." for _ in range(5))
         short = "\n\n".join(["첫 문장입니다. 둘째 문장입니다.", "한 문장 문단입니다."] * 3)
