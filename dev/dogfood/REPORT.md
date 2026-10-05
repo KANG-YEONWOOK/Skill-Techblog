@@ -486,3 +486,17 @@ commit 311cd8b와 034891a에서 아래를 바꿨다.
   - 단조로움(J8): J8은 iteration 4 이후 스킬 글에서 대부분 1~1.5점이었고(iteration 5는 1.5~2점) 이번에도 1점이었다. 지시문으로 한 가지 반복을 줄이면 judge가 다른 반복을 지적했다. style judge의 점수가 채점 묶음 단위로 함께 움직여서, 2회 채점으로는 0.5점 차이를 지시문 효과로 판단하기 어렵다.
   - 합니다체 글의 J9: 어투별로 보면 합니다체 skill 글(15.8%)이 사람 합니다체 글 3편(12.5%)보다 높다.
   - 수정 전 글의 fidelity 값이 없어서 fidelity 기준은 판단하지 못했다. iteration 9 글 4편은 0건, iteration 10 글 4편은 2건이었다.
+
+## claude plugin eval (0.3.0, commit d218dd6)
+
+`evals/`의 세 케이스를 skill이 있을 때와 없을 때 각각 2회씩, 한 번에 한 실행씩 돌렸다(Opus, grader judge Sonnet, Windows라 eval run 안에서 Bash 없음). 0.3.0에서 SKILL.md의 description을 고쳤으므로 자연어 요청으로 skill이 호출되는지도 확인했다.
+
+- skill이 있는 6회 실행 모두에서 `/techblog` 없이 쓴 자연어 요청으로 skill이 호출됐다.
+- 첫 측정의 케이스 평균은 skill 있음 0.889 / 0.889 / 1.000, skill 없음 0.667 / 0.778 / 1.000(note-casual / note-default / retone-casual)이었다. skill 없는 쪽은 4회 중 3회가 문장 안 em dash·세미콜론과 지어낸 경험 grader에서 실패했다.
+- iteration 8에서 추가한 clarity grader는 note 케이스 8회(skill 있음 4회, 없음 4회)에서 모두 실패했다. grader 문구가 수치 문장 하나라도 측정 대상이나 비교 기준을 알 수 없으면 FAIL로 정했고, 비교가 아닌 수치("토큰 하나의 KV cache는 800KB입니다" 같은 문장)에도 비교 기준을 요구했다. 모든 글을 FAIL로 판정하는 grader는 skill이 있을 때와 없을 때를 구별하지 못한다. 그래서 비교 기준은 배수, 증감, 차이처럼 두 값을 비교하는 수치에만 요구하고, 바로 앞 문장까지 읽어도 무엇의 값인지 알 수 없는 수치 문장이 있을 때만 FAIL로 고쳤다. 이 기준은 rubric J9의 unclear 판정에 해당한다.
+- 고친 grader로 note 두 케이스를 다시 실행했다. 백그라운드 실행이 메모리 부족으로 중단돼서, 케이스마다 skill 있음과 없음을 1회씩 포그라운드로 실행했다.
+  - note-default: skill 있음 0.889(clarity FAIL), skill 없음 0.667(em dash·세미콜론, 지어낸 경험, 자료에 없는 수치 FAIL, clarity PASS)
+  - note-casual: skill 있음 1.000(clarity PASS, judge 3표 중 2표), skill 없음 0.778(clarity, 지어낸 경험 FAIL)
+  - skill 있는 note-default 글이 clarity에서 걸린 문장은 "같은 기간 게이트웨이 p99 latency는 약 77% 줄었습니다", "Redis CPU 사용률은 8%p(퍼센트포인트) 올랐습니다", "Redis CPU 사용률이 왜 8%p 늘었는지도 노트에 설명이 없습니다"였다. 세 문장 모두 변화량의 비교 기준(롤아웃 전)이 그 문장과 바로 앞 문장에 없고 두세 문장 앞의 표에만 있다. eval 결과 파일에는 judge의 판정 근거가 남지 않아서, 같은 grader 문구를 Sonnet에게 주고 걸리는 문장을 물어 확인했다. skill 없는 글에도 "Redis CPU 사용률은 8%p 늘었습니다"가 있었지만, 바로 앞 문장이 전환 이야기여서 통과로 판정됐다.
+  - 이 결과는 iteration 10에서 남은 문제로 정리한 "합니다체 글의 J9가 사람 글보다 높다"와 같은 종류다. 수정 횟수를 다 썼으므로 skill은 고치지 않았다.
+- skill이 있는 8회 실행 모두에서 자연어 요청으로 skill이 호출됐다.
