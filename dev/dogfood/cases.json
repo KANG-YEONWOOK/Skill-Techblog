@@ -2,7 +2,9 @@
  "notes": [
   "dogfooding 케이스. docs/ 자료는 저장소에 없으므로 로컬에서만 쓴다. {work}는 scratch 폴더(%TEMP%/techblog-work).",
   "mode: skill(기본), baseline(스킬 없이 일반 프롬프트), retone(완성된 글의 어투만 변환), pasted(자료 텍스트를 프롬프트에 붙여넣음)",
-  "allowed_tools: claude -p에 --allowedTools로 넘길 도구 목록(baseline의 URL 읽기용)"
+  "allowed_tools: claude -p에 --allowedTools로 넘길 도구 목록(baseline의 URL 읽기용)",
+  "mode revise: 다른 iteration 케이스의 초안 사본(article.unrevised.md), fact sheet, 자료로 새 세션에서 6단계(후처리)만 실행한다. revise_from에 <iteration>/<case>를 쓴다.",
+  "source_local: URL 자료를 한 번 받아 둔 로컬 파일. judge가 초안과 최종 글을 같은 원문으로 판정할 때 쓴다."
  ],
  "cases": [
   {
@@ -61,7 +63,8 @@
    "source": "https://discord.com/blog/how-discord-stores-trillions-of-messages",
    "tone": "default",
    "set": "held-out",
-   "note": "URL 입력"
+   "note": "URL 입력. judge는 source_local(본문을 한 번 받아 둔 파일)로 판정한다",
+   "source_local": "{work}/sources/discord.md"
   },
   {
    "name": "F-retone-casual",
@@ -110,7 +113,8 @@
    "allowed_tools": [
     "WebFetch"
    ],
-   "note": "스킬이 없으면 WebFetch가 사전 승인되지 않으므로 allowed_tools로 허용한다"
+   "note": "스킬이 없으면 WebFetch가 사전 승인되지 않으므로 allowed_tools로 허용한다. judge는 source_local(본문을 한 번 받아 둔 파일)로 판정한다",
+   "source_local": "{work}/sources/discord.md"
   },
   {
    "name": "S20-pep659-baseline",
@@ -119,6 +123,20 @@
    "mode": "baseline",
    "set": "held-out-baseline",
    "note": "S2와 같은 자료. baseline은 파일 경로로 전달한다"
+  },
+  {
+   "name": "N1-note-default",
+   "source": "{work}/sources/note.md",
+   "tone": "default",
+   "set": "smoke",
+   "note": "evals/note-default의 엔지니어링 노트를 파일로 준다. 후처리 흐름과 R6(비교 기준 없는 변화량) 확인용"
+  },
+  {
+   "name": "N2-note-casual",
+   "source": "{work}/sources/note.md",
+   "tone": "casual",
+   "set": "smoke",
+   "note": "N1과 같은 자료의 Casual. 후처리 뒤 어투 변환과 tone_check 인자 확인용"
   }
  ]
 }

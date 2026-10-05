@@ -8,6 +8,8 @@
 
 사용법
   python dev/dogfood/run.py --cases dev/dogfood/cases.json --iter iter-1 [--only A B] [--jobs 2]
+  python dev/dogfood/run.py --iter iter-11r --revise-from iter-11 [--only B] [--jobs 1]
+    (iter-11 케이스의 초안 사본에 새 세션으로 6단계 후처리만 한다. 결과 케이스 이름은 원래 케이스와 같다.)
 """
 
 import argparse
@@ -20,13 +22,46 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SKILL_DIR = os.path.join(ROOT, "skills", "techblog")
 DEFAULT_WORK = os.path.join(os.environ.get("TEMP", "/tmp"), "techblog-work", "dogfood")
 BASELINE_PROMPT = ("{src} 자료의 핵심 내용을 한국어 기술 블로그 아티클로 정리해서 article.md 파일로 저장해줘. "
                    "어투는 {tone_ko}로 써줘.")
+# revise 모드: 초안을 쓴 세션의 context 없이 새 세션에서 6단계(후처리)만 한다.
+REVISE_PROMPT = """현재 폴더의 article.md는 techblog skill이 1~5단계(초안 쓰기와 점검)를 마친 합니다체 초안이다. 이 글에 techblog skill의 6단계(후처리)만 한다. 어투 변환과 작업 파일 삭제는 하지 않는다.
+- skill 폴더: {skill}
+- 자료: {src}
+- fact sheet: article.facts.md
+절차는 {skill}/SKILL.md의 "### 6. 후처리" 절과 {skill}/references/revision.md를 따른다. 스크립트는 python "{skill}/scripts/revise_ko.py" start "article.md"처럼 한 번에 명령 하나씩 Bash로 실행한다. 끝나면 고친 문장 수와 check 결과를 짧게 보고한다."""
+
+
+def build_revise(case, run_dir):
+    """다른 iteration 케이스의 초안 사본, fact sheet, 자료를 복사하고 후처리만 하는 프롬프트를 만든다."""
+    work = os.path.dirname(os.path.dirname(os.path.dirname(run_dir)))
+    src_dir = os.path.join(work, "dogfood", case["revise_from"])
+    shutil.copyfile(os.path.join(src_dir, "article.unrevised.md"), os.path.join(run_dir, "article.md"))
+    if os.path.exists(os.path.join(src_dir, "article.facts.md")):
+        shutil.copyfile(os.path.join(src_dir, "article.facts.md"), os.path.join(run_dir, "article.facts.md"))
+    src_arg = case.get("source", "")
+    local = case.get("source_local")
+    if local:
+        local = local.replace("{work}", work)
+        shutil.copyfile(local, os.path.join(run_dir, "source" + os.path.splitext(local)[1]))
+        src_arg = "./source" + os.path.splitext(local)[1]
+    else:
+        inputs = [f for f in os.listdir(src_dir) if f.startswith("input.")]
+        if inputs:
+            shutil.copyfile(os.path.join(src_dir, inputs[0]), os.path.join(run_dir, inputs[0]))
+            src_arg = "./" + inputs[0]
+    prompt = REVISE_PROMPT.format(skill=SKILL_DIR, src=src_arg)
+    extra = ["--disable-slash-commands", "--allowedTools", "Read", "Edit", "Write", "Glob", "Grep", "WebFetch",
+             "Bash(python *)"]
+    return prompt, extra
 
 
 def build(case, run_dir):
     """케이스 설정으로 프롬프트와 추가 CLI 인자를 만든다."""
+    if case.get("mode") == "revise":
+        return build_revise(case, run_dir)
     src = case.get("source")
     if src and not src.startswith(("http://", "https://")):
         src = src.replace("{work}", os.path.dirname(os.path.dirname(os.path.dirname(run_dir)))).replace("{root}", ROOT)
@@ -102,9 +137,21 @@ def main():
     ap.add_argument("--effort", default="xhigh")
     ap.add_argument("--budget", type=float, default=8.0)
     ap.add_argument("--timeout", type=int, default=45 * 60)
+    ap.add_argument("--revise-from", help="이 iteration의 초안 사본으로 revise 모드 케이스를 만든다")
     args = ap.parse_args()
     with open(args.cases, encoding="utf-8") as f:
         cases = json.load(f)["cases"]
+    if args.revise_from:
+        src_iter = os.path.join(args.work, args.revise_from)
+        cases = []
+        for name in sorted(os.listdir(src_iter)):
+            d = os.path.join(src_iter, name)
+            if not (os.path.isfile(os.path.join(d, "article.unrevised.md")) and os.path.isfile(os.path.join(d, "meta.json"))):
+                continue
+            with open(os.path.join(d, "meta.json"), encoding="utf-8") as f:
+                orig = json.load(f)["case"]
+            cases.append(dict(orig, mode="revise", tone="default", tone_orig=orig.get("tone", "default"),
+                              revise_from=f"{args.revise_from}/{name}"))
     if args.only:
         cases = [c for c in cases if c["name"] in args.only]
     iter_dir = os.path.join(args.work, args.iter)

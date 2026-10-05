@@ -5,6 +5,9 @@
 - run.jsonl(stream-json)에서 도구 호출 순서, 권한 거부, 비용, turn 수를 읽는다.
 - 스킬이 lint_ko.py와 tone_check.py를 실제로 실행했는지, Default 초안을 Casual보다 먼저 썼는지 본다.
 - article.md에 lint_ko.py를 다시 돌리고, Casual이면 초안과 tone_check.py를 다시 돌린다.
+- 후처리(6단계): 초안 사본(article.unrevised.md)과 후처리를 마친 합니다체 글(Default는 article.md, Casual은
+  article.draft.md)을 revise_ko.compare로 비교하고, 반복 후보 수, revise_ko.py 실행 순서, start 이후의 토큰 비율,
+  context compaction 횟수를 기록한다.
 - 결과를 eval.json에 쓰고 요약 표를 출력한다.
 
 사용법
@@ -12,6 +15,7 @@
 """
 
 import argparse
+import datetime
 import json
 import os
 import subprocess
@@ -19,13 +23,18 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SCRIPTS = os.path.join(ROOT, "skills", "techblog", "scripts")
+sys.path.insert(0, SCRIPTS)
+import lint_ko as L  # noqa: E402
+import revise_ko as RV  # noqa: E402
 DEFAULT_WORK = os.path.join(os.environ.get("TEMP", "/tmp"), "techblog-work", "dogfood")
 KEY_METRICS = ("A1.np", "A2.comma_per_sentence", "A2.connective_comma_ratio", "A3.salience", "A4.para_end",
                "A5.style_words_per_1k", "A8.sent_len_mean", "A8.sent_len_cv", "A8.long_ratio", "A8.ending_run4",
                "A9.bold_per_1k", "A9.list_ratio", "A10.triad_per_1k", "A13.demonstrative_start_per_1k")
 
 
-def parse_transcript(path):
+def parse_transcript(path, events=None):
+    """도구 호출 목록, init, result를 돌려준다. events에 list를 주면 순서대로 ("ts", timestamp),
+    ("tool", 도구 번호), ("usage", 메시지 id, usage), ("compact",) 항목을 채운다."""
     tools, init, result = [], {}, {}
     if not os.path.exists(path):
         return init, tools, result
@@ -36,13 +45,22 @@ def parse_transcript(path):
             except ValueError:
                 continue
             t = e.get("type")
+            if events is not None and e.get("timestamp"):
+                events.append(("ts", e["timestamp"]))
             if t == "system" and e.get("subtype") == "init":
                 init = {"model": e.get("model"), "permissionMode": e.get("permissionMode"),
                         "techblog_loaded": any("techblog" in str(s) for s in e.get("skills", []))}
             elif t == "assistant":
-                for c in e.get("message", {}).get("content", []):
+                msg = e.get("message", {})
+                if events is not None and msg.get("usage"):
+                    events.append(("usage", msg.get("id"), msg["usage"]))
+                for c in msg.get("content", []):
                     if c.get("type") == "tool_use":
                         tools.append({"id": c.get("id"), "name": c.get("name"), "input": c.get("input", {}), "error": False})
+                        if events is not None:
+                            events.append(("tool", len(tools) - 1))
+            elif t == "system" and e.get("subtype") == "compact_boundary" and events is not None:
+                events.append(("compact",))
             elif t == "user":
                 content = e.get("message", {}).get("content")
                 if isinstance(content, list):
@@ -55,6 +73,101 @@ def parse_transcript(path):
                 result = {k: e.get(k) for k in ("is_error", "num_turns", "duration_ms", "total_cost_usd",
                                                 "permission_denials", "subtype")}
     return init, tools, result
+
+
+def final_default(case_dir, tone):
+    """후처리를 마친 합니다체 글. Casual 케이스는 Default 초안(article.draft.md)이다."""
+    if tone == "casual" and os.path.isfile(os.path.join(case_dir, "article.draft.md")):
+        return os.path.join(case_dir, "article.draft.md")
+    return os.path.join(case_dir, "article.md")
+
+
+def _ts(v):
+    try:
+        return datetime.datetime.fromisoformat(v.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+
+
+def _usage_share(events, start_tool):
+    """start 명령 이후의 입력 토큰 비율과 경과 시간 비율.
+    stream-json의 assistant 이벤트는 메시지 시작 시점의 사용량만 담아서 출력 토큰은 메시지별로 셀 수 없다.
+    입력 토큰(cache 포함)은 메시지마다 한 번만 센다."""
+    seen, total, after = set(), 0, 0
+    passed, first, last, start = False, None, None, None
+    for ev in events:
+        if ev[0] == "ts":
+            t = _ts(ev[1])
+            if t is not None:
+                first = first or t
+                last = t
+            continue
+        if ev[0] == "tool" and ev[1] == start_tool and not passed:
+            passed, start = True, last
+        if ev[0] != "usage" or ev[1] in seen:
+            continue
+        seen.add(ev[1])
+        u = ev[2]
+        inp = sum(u.get(k) or 0 for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
+        total += inp
+        if passed:
+            after += inp
+    out = {"input_share": round(after / total, 3) if total else None}
+    if first and last and start:
+        whole = (last - first).total_seconds()
+        out["minutes_after_start"] = round((last - start).total_seconds() / 60, 1)
+        out["time_share"] = round((last - start).total_seconds() / whole, 3) if whole else None
+    return out
+
+
+def revise_summary(case_dir, tone, tools, events):
+    """6단계 후처리를 점검한다. 초안 사본이 없으면 None."""
+    snap = os.path.join(case_dir, "article.unrevised.md")
+    if not os.path.isfile(snap):
+        return None
+    post = final_default(case_dir, tone)
+    target = os.path.basename(post)
+    facts = os.path.join(case_dir, "article.facts.md")
+    facts_text = L.read_text(facts) if os.path.isfile(facts) else None
+    res = RV.compare(L.read_text(snap), L.read_text(post), facts_text)
+
+    def cmd_index(sub):
+        for i, t in enumerate(tools):
+            c = t["input"].get("command", "") if t["name"] in ("Bash", "PowerShell") else ""
+            if "revise_ko.py" in c and f" {sub} " in c + " ":
+                return i
+        return None
+
+    def path_of(t):
+        return os.path.basename(str(t["input"].get("file_path", "")))
+
+    i_start, i_rep, i_check = cmd_index("start"), cmd_index("repeats"), cmd_index("check")
+    edits_after = sum(1 for i, t in enumerate(tools)
+                      if i_start is not None and i > i_start and t["name"] in ("Edit", "Write") and path_of(t) == target)
+    read_before_repeats = None
+    if i_start is not None and i_rep is not None:
+        read_before_repeats = any(t["name"] == "Read" and path_of(t) == target for t in tools[i_start + 1:i_rep])
+
+    def counts(path):
+        c = {}
+        for x in RV.find_repeats(L.read_text(path))["candidates"]:
+            c[x["id"]] = c.get(x["id"], 0) + 1
+        return c
+    return {"target": target, "sentences": res["sentences"], "changed": res["changed"], "written": res["written"],
+            "changed_share": res["changed_share"], "chars": res["structure"]["chars"],
+            "headings_same": res["structure"]["headings_same"], "code_same": res["structure"]["code_same"],
+            "tables": res["structure"]["tables"],
+            "lost_numbers": [x["raw"] for x in res["lost_numbers"]],
+            "new_numbers": [[x["raw"], x["in_facts"]] for x in res["new_numbers"]],
+            "lint_before": res["lint_before"], "lint_after": res["lint_after"],
+            "worse_ai": [f"{r['status']} {r['id']}={r['value']}" for r in res["worse_ai"]],
+            "worse_dist": [f"{r['status']} {r['id']}={r['value']}" for r in res["worse_dist"]],
+            "long_new": len(res["long_new"]), "must_fix": res["must_fix"],
+            "repeats_before": counts(snap), "repeats_after": counts(post),
+            "ran": {"start": i_start is not None, "repeats": i_rep is not None, "check": i_check is not None},
+            "read_before_repeats": read_before_repeats, "edits_after_start": edits_after,
+            "usage_after_start": _usage_share(events, i_start) if i_start is not None else None,
+            "compactions": sum(1 for ev in events if ev[0] == "compact")}
 
 
 def run_json(cmd):
@@ -70,7 +183,8 @@ def evaluate_case(case_dir):
     meta = json.load(open(os.path.join(case_dir, "meta.json"), encoding="utf-8"))
     case = meta["case"]
     tone = case.get("tone", "default")
-    init, tools, result = parse_transcript(os.path.join(case_dir, "run.jsonl"))
+    events = []
+    init, tools, result = parse_transcript(os.path.join(case_dir, "run.jsonl"), events)
     bash = [t["input"].get("command", "") for t in tools if t["name"] in ("Bash", "PowerShell")]
     writes = [os.path.basename(t["input"].get("file_path", "")) for t in tools if t["name"] == "Write"]
     reads = [t["input"] for t in tools if t["name"] == "Read" and str(t["input"].get("file_path", "")).endswith(".pdf")]
@@ -108,6 +222,12 @@ def evaluate_case(case_dir):
             ev["draft_lint"] = summarize_lint(dl)
     else:
         ev["lint"] = {"verdict": "NO_ARTICLE"}
+    rv = revise_summary(case_dir, tone, tools, events)
+    if rv:
+        ev["revise"] = rv
+        snap_lint = run_json([os.path.join(SCRIPTS, "lint_ko.py"), os.path.join(case_dir, "article.unrevised.md"),
+                              "--tone", "default", "--json"] + (["--facts", facts] if os.path.exists(facts) else []))
+        ev["unrevised_lint"] = summarize_lint(snap_lint)
     with open(os.path.join(case_dir, "eval.json"), "w", encoding="utf-8") as f:
         json.dump(ev, f, ensure_ascii=False, indent=1)
     return ev
@@ -159,6 +279,17 @@ def main():
             print("tone_check:", e["tone_check"])
         print("metrics:", json.dumps(l.get("metrics", {}), ensure_ascii=False))
         print("writes:", e["writes"], "| pdf pages:", e["pdf_reads"], "| draft_before_final:", e.get("draft_before_final"))
+        rv = e.get("revise")
+        if rv:
+            lb, la = rv["lint_before"], rv["lint_after"]
+            print(f"revise: {rv['target']} 바뀐 문장 {rv['changed']}/{rv['sentences'][0]}({rv['changed_share']}) "
+                  f"새 문장 {rv['written']} 글자 {rv['chars'][0]}→{rv['chars'][1]} 헤딩 같음={rv['headings_same']} "
+                  f"표 {rv['tables']} lint {lb['gate_fail']}/{lb['fail']}/{lb['warn']}→{la['gate_fail']}/{la['fail']}/{la['warn']}")
+            print(f"    실행 {rv['ran']} 읽고 나서 repeats={rv['read_before_repeats']} start 뒤 Edit {rv['edits_after_start']} "
+                  f"compaction {rv['compactions']} 토큰 비율 {rv['usage_after_start']}")
+            print(f"    반복 후보 {rv['repeats_before']} → {rv['repeats_after']} | 사라진 수치 {rv['lost_numbers']} | "
+                  f"새 수치 {rv['new_numbers']} | AI 악화 {rv['worse_ai']} | 분포 악화 {rv['worse_dist']} | "
+                  f"긴 새 문장 {rv['long_new']}")
         if e["denials"]:
             print("denials:", json.dumps(e["denials"], ensure_ascii=False)[:500])
 

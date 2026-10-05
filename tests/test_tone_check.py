@@ -93,15 +93,16 @@ class ToneCheckTest(unittest.TestCase):
     def test_cleanup_only_work_files(self):
         with tempfile.TemporaryDirectory() as d:
             keep = os.path.join(d, "article.md")
-            work = os.path.join(d, "article.facts.md")
-            for p in (keep, work):
+            work = [os.path.join(d, "article" + suf) for suf in (".facts.md", ".draft.md", ".unrevised.md")]
+            for p in [keep] + work:
                 with open(p, "w", encoding="utf-8") as f:
                     f.write("x")
-            r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "tone_check.py"), "--cleanup", keep, work],
+            r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "tone_check.py"), "--cleanup", keep] + work,
                                capture_output=True)
             self.assertEqual(r.returncode, 0)
             self.assertTrue(os.path.exists(keep))
-            self.assertFalse(os.path.exists(work))
+            for p in work:
+                self.assertFalse(os.path.exists(p), p)
 
     def test_cli(self):
         with tempfile.TemporaryDirectory() as d:

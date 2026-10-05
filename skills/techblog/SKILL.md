@@ -5,7 +5,7 @@ license: MIT
 compatibility: Claude Code. 검사 스크립트는 Python 3.8 이상이 있으면 실행하고, 없으면 rubric 수동 점검으로 대신한다.
 allowed-tools: Read Write Edit Glob Grep WebFetch Bash(python "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python ${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/*)
 metadata:
-  version: "0.3.0"
+  version: "0.4.0"
   repository: https://github.com/KANG-YEONWOOK/Skill-Techblog
 ---
 
@@ -13,27 +13,31 @@ metadata:
 
 이 스킬은 자료를 읽고 그 핵심을 한국어 기술 블로그 아티클로 쓴다. 글의 독자는 자료의 분야를 아는 개발자이고, 글은 토스, 카카오, 당근 기술 블로그에 실린 글처럼 읽혀야 한다. 글의 모든 문장은 따로 읽어도 무엇에 대한 말인지 알 수 있어야 한다.
 
+글은 초안과 후처리로 나눠 쓴다. 1~5단계에서는 모든 글에 같은 규칙으로 초안을 쓰고 점검한다. 6단계(후처리)에서는 초안을 이 글의 독자 입장에서 다시 읽고 이 글에 맞게 고친다.
+
 입력: $ARGUMENTS
 
 ## 인자 해석
 
 - 입력에 `casual`, `Casual`, `해요체`가 있으면 Casual 글을 쓴다. `default`, `Default`, `합니다체`가 있거나 어투를 지정하지 않았으면 Default 글을 쓴다.
 - `-o <경로>`는 글을 저장할 파일 경로다. 이 인자가 없으면 현재 작업 디렉터리에 글 주제를 나타내는 영문 kebab-case 이름(예: `cache-invalidation-latency.md`)으로 저장한다.
-- `--retone`이 있으면 입력 파일을 완성된 아티클로 보고 6단계(어투 적용)만 한다. 출력 경로가 없으면 `<입력 이름>.<casual|default>.md`에 저장한다.
+- `--retone`이 있으면 입력 파일을 완성된 아티클로 보고 7단계(어투 적용)만 한다. 6단계(후처리)는 하지 않는다. `--retone` 없이 이미 쓴 글의 어투만 바꿔 달라고 요청해도 `--retone`으로 본다. 출력 경로가 없으면 `<입력 이름>.<casual|default>.md`에 저장한다.
 - `--keep-work`가 있으면 작업 파일을 지우지 않는다.
 - 나머지 입력은 자료(파일 경로, URL)와 추가 지시(독자, 분량, 강조할 부분)다. 입력에 자료가 없으면 대화에 붙여넣은 텍스트를 자료로 쓴다. 붙여넣은 텍스트도 없으면 무엇을 정리할지 사용자에게 묻는다.
 
 ## 파일
 
 - 글은 `<이름>.md`에 저장한다.
-- 작업 파일은 출력 파일과 같은 폴더에 만든다. fact sheet는 `<이름>.facts.md`이고, Casual 글을 쓸 때만 만드는 Default 초안은 `<이름>.draft.md`다. 두 작업 파일은 7단계에서 지운다.
+- 작업 파일은 출력 파일과 같은 폴더에 만든다. fact sheet는 `<이름>.facts.md`이고, Casual 글을 쓸 때만 만드는 Default 초안은 `<이름>.draft.md`다. 6단계를 시작할 때 스크립트가 후처리 전 초안을 `<이름>.unrevised.md`에 복사해 둔다. 작업 파일은 8단계에서 지운다.
+- 후처리 대상은 합니다체 글이다. Default 글이면 출력 파일 `<이름>.md`, Casual 글이면 Default 초안 `<이름>.draft.md`다.
 
 ## 스크립트 실행
 
 - 검사 스크립트는 Bash 도구로 실행한다. Windows에서는 `python`, macOS와 Linux에서는 `python3`를 쓴다. 경로는 큰따옴표로 감싼다. 한 번에 명령 하나만 실행하고, `;`나 `&&`로 다른 명령(`cat` 등)을 이어 붙이지 않는다. 이 스킬이 허용하는 Bash 명령은 아래 검사 스크립트뿐이다. 참고 문서와 PDF는 Read 도구로 읽고, 파일 목록은 Glob 도구로 본다.
   - 문체 검사: `python "${CLAUDE_SKILL_DIR}/scripts/lint_ko.py" "<글>" --tone default --facts "<이름>.facts.md"`
+  - 후처리: `python "${CLAUDE_SKILL_DIR}/scripts/revise_ko.py" start "<후처리 대상>"`, 같은 스크립트의 `repeats "<후처리 대상>"`, `check "<후처리 대상>"`
   - 어투 검사: `python "${CLAUDE_SKILL_DIR}/scripts/tone_check.py" "<이름>.draft.md" "<이름>.md"`
-  - 작업 파일 삭제: `python "${CLAUDE_SKILL_DIR}/scripts/tone_check.py" --cleanup "<이름>.facts.md" "<이름>.draft.md"`
+  - 작업 파일 삭제: `python "${CLAUDE_SKILL_DIR}/scripts/tone_check.py" --cleanup "<이름>.facts.md" "<이름>.draft.md" "<이름>.unrevised.md"`
 - Python이 없거나 Bash를 쓸 수 없으면 `references/rubric.md`의 Gate와 자동 측정 항목을 직접 세서 같은 기준으로 점검한다.
 
 ## 작업 순서
@@ -138,22 +142,35 @@ Casual로 요청받아도 초안은 먼저 합니다체로 쓴다. Casual 글이
    - 도입 장면과 적용 절: 두 곳은 자료의 문장을 옮기지 않고 풀어 쓰는 곳이라 빈도와 일반화가 덧붙기 쉽다. 적용 절에서 자료에 없는 내용은 조건("~라면")이나 가능성("~수 있습니다")으로 쓰였는지 본다.
 6. `references/rubric.md`의 판정 항목 J1~J9로 글을 직접 읽고 점검한다. 특히 J1(자료의 문제, 방법, 결과, 한계가 다 있는가), J3(지워도 되는 문장이 없는가), J5(한국 개발자가 쓴 글처럼 읽히는가), J9(문장을 따로 읽어도 무엇에 대한 말인지 알 수 있는가)를 본다.
 
-### 6. 어투 적용 (Casual일 때, `--retone`일 때)
+### 6. 후처리
+
+초안은 모든 글에 같은 규칙을 적용해서 썼다. 후처리는 초안을 이 글의 독자 입장에서 처음부터 다시 읽고, 이 글에 필요 없는 반복과 이 글에 필요한데 빠진 정보를 고친다. 일반 규칙이나 lint 기준치와 다른 형태라도 이 글의 독자에게 더 읽기 쉬우면 그 형태를 쓴다.
+
+1. `references/revision.md`를 읽는다.
+2. 후처리 시작 명령(`revise_ko.py start`)으로 후처리 전 초안 사본을 만든다.
+3. 후처리 대상을 Read로 처음부터 끝까지 읽고, 독자가 읽다가 멈출 곳을 줄 번호와 이유와 함께 적는다. 다 읽은 뒤 `revise_ko.py repeats`의 반복 후보를 revision.md의 판단 질문으로 판단한다.
+4. 적은 곳만 Edit 도구로 고친다. 글쓴이가 계산한 값과 고친 수치 문장은 자료 원문으로 다시 확인한다.
+5. `revise_ko.py check`를 실행하고, 종료 코드가 0이 될 때까지 걸린 항목을 revision.md의 "고친 뒤 확인"대로 처리한다.
+- Bash를 쓸 수 없으면 사본 없이 고치고 revision.md의 "스크립트를 쓸 수 없을 때"를 따른다.
+
+### 7. 어투 적용 (Casual일 때, `--retone`일 때)
 
 1. `references/tone.md`를 읽는다.
-2. 초안의 문장마다 종결부(마지막 1~2 어절)만 바꿔 출력 파일에 쓴다. 어투를 바꿀 때 문장의 내용, 주어, 수치는 고치지 않는다. 문장을 나누거나 합치지 않는다. 헤딩, 코드, 표, 인용, 명사구 목록은 그대로 둔다.
+2. 후처리를 마친 Default 초안의 문장마다 종결부(마지막 1~2 어절)만 바꿔 출력 파일에 쓴다. 어투를 바꿀 때 문장의 내용, 주어, 수치는 고치지 않는다. 문장을 나누거나 합치지 않는다. 헤딩, 코드, 표, 인용, 명사구 목록은 그대로 둔다.
 3. 어투 검사를 실행한다. 인자 순서는 항상 Default 글, Casual 글이다. FAIL이 나온 문장은 종결부만 다시 고친다.
-4. 출력 파일에 문체 검사를 `--tone casual`로 실행한다. 종결어미 항목(G4, T.*)이 걸리면 출력 파일에서 고친다. 그 밖의 항목이 걸리면 초안의 해당 문장을 고치고 그 문장을 다시 변환한다.
-- `--retone`이면 입력 파일이 초안이다. Casual 글을 Default로 바꿀 때도 같은 대응표를 반대로 쓰고, 어투 검사의 인자 순서는 Default 글, Casual 글로 둔다.
+4. 출력 파일에 문체 검사를 `--tone casual`로 실행한다. 종결어미 항목(G4, T.*)이 걸리면 출력 파일에서 고친다. 그 밖의 항목이 걸리면 Default 초안(`<이름>.draft.md`)의 해당 문장을 고치고 그 문장을 다시 변환한다.
+- `--retone`이면 입력 파일이 Default 초안이다. Casual 글을 Default로 바꿀 때도 같은 대응표를 반대로 쓰고, 어투 검사의 인자 순서는 Default 글, Casual 글로 둔다.
 
-### 7. 정리하고 보고하기
+### 8. 정리하고 보고하기
 
 - `--keep-work`가 없으면 작업 파일 삭제 명령을 실행한다.
-- 사용자에게 짧게 보고한다. 보고에는 저장 경로, 어투, 본문 글자 수, 문체 검사 판정(Gate, FAIL, WARN 수), 어투 검사 결과(Casual일 때), 사용한 자료를 쓴다. 글 본문을 대화에 다시 붙이지 않는다.
+- 사용자에게 짧게 보고한다. 보고에는 저장 경로, 어투, 본문 글자 수, 초안과 최종 글의 문체 검사 판정(Gate, FAIL, WARN 수), 후처리에서 고친 문장 수, 남긴 WARN과 남긴 이유, 어투 검사 결과(Casual일 때), 사용한 자료를 쓴다. 글 본문을 대화에 다시 붙이지 않는다.
+- 최종 글의 조건은 Gate 위반 0, FAIL 0, 후처리로 나빠진 AI 문체 항목 0이다. 문장·문단 분포 항목(A8, A9, A16, A17)의 WARN은 후처리에서 의도한 형태면 남길 수 있어서, 최종 글의 WARN은 3개를 넘을 수 있다.
 
 ## 참고 문서
 
 - `references/style-guide.md`는 글 골격, 문장과 문단, 용어와 수치 표기를 다룬다. 3단계에서 읽는다.
 - `references/ai-patterns.md`는 AI 문체 패턴과 고치는 방법을 다룬다. 5단계에서 읽는다.
 - `references/rubric.md`는 평가 기준과 근거 자료를 다룬다. 5단계에서 읽는다.
-- `references/tone.md`는 Default와 Casual의 종결어미 대응표다. 6단계에서 읽는다.
+- `references/revision.md`는 후처리의 판단 질문, 고칠 곳과 고치는 방법, 수치 재확인 방법을 다룬다. 6단계에서 읽는다.
+- `references/tone.md`는 Default와 Casual의 종결어미 대응표다. 7단계에서 읽는다.
