@@ -5,9 +5,13 @@
   J2~J6, J8 점수와 "AI가 쓴 것처럼 읽히는 문장" 인용을 받고, 인용이 원문에 그대로 있는지 확인해 J7을 센다.
 - fidelity: 글의 수치·주장을 자료 원문과 대조한다(supported / unsupported / contradicted, coverage).
 - pairwise: 같은 자료로 쓴 두 글(이번 iteration과 비교 대상)을 순서를 바꿔 두 번 비교한다.
+- clarity(J9): 글 한 편씩 판정한다. 문단의 첫 문장, 수치가 든 문장, lint 점검 후보(A18) 문장을 뽑아
+  헤딩과 바로 앞 문장과 함께 보여 주고, 그 문장만으로 무엇에 대한 말인지 알 수 있는지 묻는다.
+  사람 글 대조군 6편(합니다체 3, 해요체 3)도 같은 방식으로 판정하고 결과를 work 폴더에 저장해 다시 쓴다.
 
 사용법
-  python dev/dogfood/judge.py --iter iter-1 [--compare iter-0] [--skip style fidelity pairwise]
+  python dev/dogfood/judge.py --iter iter-1 [--compare iter-0] [--skip style fidelity pairwise clarity]
+  python dev/dogfood/judge.py --iter iter-8b --skip style fidelity pairwise --extra s1-930779c=examples/paged-attention.casual.md
 """
 
 import argparse
@@ -49,10 +53,10 @@ STYLE_PROMPT = """당신은 한국 테크 기업 기술 블로그의 편집자�
 글마다 아래 항목을 0~2점으로 매기세요.
 - J2 구체성: 주장마다 수치, 이름, 동작 원리가 붙어 있는가. 2: 평가어만 있는 문장이 없다 / 1: 1~2개 / 0: 3개 이상
 - J3 deletion test: 지워도 정보(사실, 수치, 동작 원리, 할 일)가 줄지 않는 문장(강조, 의의 부여, 예고, 교훈)이 있는가. 2: 없다 / 1: 1~2개 / 0: 3개 이상
-- J4 구조: 제목이 내용을 특정하는가, 도입이 독자 상황이나 다루는 문제에서 시작하는가, 마무리가 구체 사실이나 열린 질문으로 끝나는가. 2: 모두 그렇다 / 1: 하나가 어긋난다 / 0: 둘 이상
+- J4 구조: 제목이 내용을 특정하는가, 글의 핵심 주제가 제목과 도입에 드러나고 각 절이 그 주제를 설명하는가, 도입이 독자 상황이나 다루는 문제에서 시작하는가, 마무리가 구체 사실이나 열린 질문으로 끝나는가. 2: 모두 그렇다 / 1: 하나가 어긋난다 / 0: 둘 이상
 - J5 한국어 자연스러움: 한국 개발자가 쓴 기술 블로그처럼 읽히는가. 번역투, 추상 명사 나열, 어색한 조사, 억지 번역어가 있는가. 2: 없다 / 1: 1~2곳 / 0: 3곳 이상
 - J6 어투 품질: 합니다체 글이면 공문체가 아닌가, 해요체 글이면 정중하고 반말·과한 구어·이모지가 없는가, 어투가 섞이지 않았는가. 2 / 1 / 0
-- J8 과교정: 문장이 지나치게 단조롭거나, 자연스러운 대조·단서·괄호 보충·긴 문장이 사라져 기계적으로 읽히는가. 2: 자연스럽다 / 1: 다소 단조롭다 / 0: 내용이나 흐름이 손상됐다
+- J8 과교정: 문장이 지나치게 단조롭거나, 자연스러운 대조, 단서, 원어와 단위 보충, 긴 문장이 사라져 기계적으로 읽히는가. 같은 주어를 문장마다 되풀이해 늘어진 곳도 과교정이다. 2: 자연스럽다 / 1: 다소 단조롭다 / 0: 내용이나 흐름이 손상됐다
 
 그리고 "AI가 쓴 것처럼 읽히는 문장"을 모두 찾아 ai_like에 원문 그대로 인용하세요. 인용은 글에 있는 문자열과 정확히 같아야 하고 한 문장 이내여야 합니다. 각 인용에 수사 동작(move)을 하나 고르고, 그 구절을 지우면 잃는 정보(lost_if_deleted, 없으면 "없음")를 적으세요.
 move: salience(중요하다고 말하기), contrast_reframe(X가 아니라 Y), summary_marker(결국·요컨대 등), lesson_ending(문단 끝 교훈), hedge_stack(추정 중첩), calque_metaphor(번역투 표현·상투 은유), triplet(근거 없는 셋 묶음), rhetorical_q(자문자답), translationese(번역투 문장), tone_slip(어투 이탈), generic_claim(근거 없는 일반론), other.
@@ -90,8 +94,24 @@ PAIR_SCHEMA = {
     "required": ["winner", "reasons"]}
 
 PAIR_PROMPT = """X.md와 Y.md는 같은 자료를 정리한 한국어 기술 블로그 글입니다. 두 글을 Read 도구로 끝까지 읽고, 한국 테크 기업 기술 블로그 편집자의 관점에서 어느 글이 나은지 고르세요.
-기준(앞의 것이 더 중요): 1) 사람 개발자가 쓴 것처럼 자연스러운 한국어인가(강조 문장, 부정 대구, 요약 표지, 번역투, 상투 은유, 기계적인 리듬이 적은가) 2) 자료의 핵심을 정확하고 구체적으로 전달하는가 3) 구조와 읽기 쉬움.
+기준(앞의 것이 더 중요): 1) 독자가 이해하기 쉬운가(문장을 따로 읽어도 무엇에 대한 말인지, 수치가 무엇을 잰 값인지 알 수 있는가, 글의 핵심 주제가 분명한가) 2) 사람 개발자가 쓴 것처럼 자연스러운 한국어인가(강조 문장, 부정 대구, 요약 표지, 번역투, 상투 은유, 기계적인 리듬이 적은가) 3) 자료의 핵심을 정확하고 구체적으로 전달하는가 4) 구조.
 어투(합니다체/해요체) 차이는 판단에 넣지 마세요. winner는 "X", "Y", "tie" 중 하나, reasons에는 판단 근거 2~4개를 각 글의 문장을 인용해 적으세요."""
+
+CLARITY_SCHEMA = {
+    "type": "object",
+    "properties": {"items": {"type": "array", "items": {"type": "object", "properties": {
+        "id": {"type": "integer"}, "clear": {"type": "boolean"}, "question": {"type": "string"}},
+        "required": ["id", "clear", "question"]}}},
+    "required": ["items"]}
+
+CLARITY_PROMPT = """현재 폴더의 items.md에는 한국어 기술 블로그 글 한 편에서 뽑은 문장이 번호와 함께 있습니다. 번호마다 그 문장이 속한 절의 헤딩, 바로 앞 문장, 판정할 문장이 적혀 있습니다. Read 도구로 items.md를 끝까지 읽고 모든 번호에 답하세요.
+
+질문: 헤딩과 바로 앞 문장과 이 문장만 읽고, 이 문장이 무엇에 대한 말인지, 문장 안의 수치가 무엇을 잰 값이고 무엇과 비교한 값인지 알 수 있는가?
+- clear=true: 알 수 있다. 주어가 생략됐어도 바로 앞 문장으로 주어를 알 수 있으면 true다. 한국어에서 자연스러운 생략은 문제로 보지 않는다.
+- clear=false: 알 수 없다. question에 독자가 갖게 되는 질문을 한 문장으로 적는다. 예: "무엇이 22배인가?", "무엇과 무엇의 차이인가?", "'이 방식'은 어떤 방식인가?"
+clear=true이면 question은 빈 문자열로 둡니다. 독자는 그 분야를 아는 개발자이므로 전문 용어를 모르는 것은 판정 이유가 아닙니다. 판정할 문장이 표나 목록 바로 뒤에 있으면 앞 문장 칸에 그렇게 적혀 있습니다."""
+
+CLARITY_CONTROLS = 3  # 어투마다 사람 글 대조군 수
 
 
 def call_judge(prompt, schema, cwd, model, extra_tools=None, timeout=1800):
@@ -244,6 +264,132 @@ def run_pairwise(iter_dir, cmp_dir, model):
     return out
 
 
+def _restore_inline(sentences, codes):
+    """clean_inline이 바꾼 placeholder를 judge가 읽을 수 있는 글자로 되돌린다."""
+    out, ci = [], 0
+    for s in sentences:
+        def rep(m):
+            nonlocal ci
+            if m.group(0) == L.PH_CODE:
+                ci += 1
+                return "`" + codes[ci - 1] + "`" if ci <= len(codes) else ""
+            return "URL" if m.group(0) == L.PH_URL else ""
+        out.append(L.PH_RE.sub(rep, s).strip())
+    return out
+
+
+def _check_sentences(text):
+    """lint 점검 후보(A18)로 걸린 문장의 앞부분 목록. lint에 A18이 없으면 빈 집합."""
+    keys = set()
+    for mid, m in L.analyze(text)["metrics"].items():
+        if mid.startswith("A18."):
+            for h in m["hits"]:
+                keys.add(_norm(h["text"])[:60])
+    return keys
+
+
+def clarity_items(text):
+    """문단의 첫 문장, 수치가 든 문장, A18 후보 문장을 헤딩과 바로 앞 문장과 함께 뽑는다."""
+    flagged = _check_sentences(text)
+    items, heading, prev, in_refs = [], "(헤딩 없음)", None, False
+    for b in L.parse_blocks(L.normalize_text(text)):
+        if b.type == "heading":
+            heading, _, _ = L.clean_inline(b.text)
+            in_refs = bool(L.REF_HEADING_RE.search(heading)) and b.level >= 2
+            prev = None
+            continue
+        if in_refs:
+            continue
+        if b.type in ("table", "code", "blockquote"):
+            prev = {"table": "(바로 앞은 표)", "code": "(바로 앞은 코드 블록)"}.get(b.type, "(바로 앞은 인용문)")
+            continue
+        if b.type not in ("paragraph", "list_item"):
+            continue
+        clean, _, codes = L.clean_inline(b.text)
+        sents = _restore_inline(L.split_sentences(clean), codes)
+        for i, s in enumerate(sents):
+            if not s:
+                continue
+            first = b.type == "paragraph" and i == 0
+            numeric = bool(L.NUM_RE.search(s))
+            check = _norm(s)[:60] in flagged
+            if first or numeric or check:
+                items.append({"heading": heading, "prev": prev or "(절의 첫 문장)", "sentence": s,
+                              "first": first, "numeric": numeric, "check": check})
+            prev = s
+    return items
+
+
+def judge_clarity(path, jdir, model):
+    os.makedirs(jdir, exist_ok=True)
+    text = L.read_text(path)
+    items = clarity_items(text)
+    lines = []
+    for n, it in enumerate(items, 1):
+        lines += [f"## {n}", f"- 헤딩: {it['heading']}", f"- 바로 앞 문장: {it['prev']}", f"- 판정할 문장: {it['sentence']}", ""]
+    with open(os.path.join(jdir, "items.md"), "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    res = call_judge(CLARITY_PROMPT, CLARITY_SCHEMA, jdir, model)
+    verdict = {x["id"]: x for x in res.get("items", []) if isinstance(x.get("id"), int)}
+    unclear = []
+    for n, it in enumerate(items, 1):
+        v = verdict.get(n)
+        if v is not None and not v["clear"]:
+            unclear.append(dict(it, question=v.get("question", "")))
+    answered = sum(1 for n in range(1, len(items) + 1) if n in verdict)
+    chars = L.analyze(text)["stats"]["chars"] or 1
+    check_hits = [it for it in items if it["check"]]
+    return {"checked": len(items), "answered": answered, "unclear": len(unclear),
+            "rate": round(len(unclear) / answered, 3) if answered else None,
+            "per_1k": round(len(unclear) * 1000 / chars, 2), "chars": chars,
+            "check_hits": len(check_hits), "check_unclear": sum(1 for it in unclear if it["check"]),
+            "unclear_items": unclear, "cost": res.get("_cost"), "error": res.get("error")}
+
+
+def clarity_controls(work):
+    """사람 글 대조군: 어투마다 길이가 비슷한 글을 고정 seed로 고른다. 원문이 캐시에 없으면 멈춘다."""
+    stats = json.load(open(os.path.join(ROOT, "dev", "baseline", "stats.json"), encoding="utf-8"))
+    out = []
+    for tone in ("default", "casual"):
+        pool = sorted((a for a in stats["articles"] if a["group"] == tone and 3500 <= a["chars"] <= 10000),
+                      key=lambda a: a["id"])
+        random.Random(f"clarity-controls-{tone}").shuffle(pool)
+        picked = []
+        for a in pool:
+            path = os.path.join(work, "baseline", "cache", "md", a["id"] + ".md")
+            if os.path.exists(path):
+                picked.append((a["id"], path))
+            if len(picked) == CLARITY_CONTROLS:
+                break
+        if len(picked) < CLARITY_CONTROLS:
+            raise SystemExit(f"사람 글 대조군({tone})이 캐시에 부족하다: {len(picked)}편. measure.py collect를 먼저 실행한다.")
+        out += picked
+    return out
+
+
+def run_clarity(iter_dir, work, model, extras=()):
+    out = {}
+    for c in sorted(os.listdir(iter_dir)):
+        path = os.path.join(iter_dir, c, "article.md")
+        if os.path.isfile(path):
+            out[c] = dict(judge_clarity(path, os.path.join(iter_dir, "_judge", f"clarity-{c}"), model), human=False)
+    for spec in extras:
+        name, path = spec.split("=", 1)
+        path = path if os.path.isabs(path) else os.path.join(ROOT, path)
+        out[name] = dict(judge_clarity(path, os.path.join(iter_dir, "_judge", f"clarity-{name}"), model), human=False)
+    cache_path = os.path.join(work, "dogfood", "_clarity_humans.json")
+    key = hashlib.sha1((CLARITY_PROMPT + model).encode("utf-8")).hexdigest()[:12]
+    cache = json.load(open(cache_path, encoding="utf-8")) if os.path.exists(cache_path) else {}
+    for hid, hpath in clarity_controls(work):
+        ck = f"{key}:{hid}"
+        if ck not in cache:
+            cache[ck] = judge_clarity(hpath, os.path.join(work, "dogfood", "_clarity_humans", hid), model)
+            with open(cache_path, "w", encoding="utf-8") as f:
+                json.dump(cache, f, ensure_ascii=False, indent=1)
+        out[hid] = dict(cache[ck], human=True)
+    return out
+
+
 def main():
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -256,16 +402,21 @@ def main():
     ap.add_argument("--model", default="sonnet")
     ap.add_argument("--skip", nargs="*", default=[])
     ap.add_argument("--only", nargs="*")
+    ap.add_argument("--extra", action="append", default=[], help="clarity만 판정할 추가 글: 이름=경로")
     args = ap.parse_args()
     iter_dir = os.path.join(args.work, "dogfood", args.iter)
-    report = {}
+    report_path = os.path.join(iter_dir, "judge.json")
+    # 이미 판정한 단계는 남기고 이번에 실행한 단계만 덮어쓴다.
+    report = json.load(open(report_path, encoding="utf-8")) if os.path.exists(report_path) else {}
     if "style" not in args.skip:
         report["style"] = run_style(iter_dir, args.work, args.model)
     if "fidelity" not in args.skip:
         report["fidelity"] = run_fidelity(iter_dir, args.model, args.only)
     if "pairwise" not in args.skip and args.compare:
         report["pairwise"] = run_pairwise(iter_dir, os.path.join(args.work, "dogfood", args.compare), args.model)
-    with open(os.path.join(iter_dir, "judge.json"), "w", encoding="utf-8") as f:
+    if "clarity" not in args.skip:
+        report["clarity"] = run_clarity(iter_dir, args.work, args.model, args.extra)
+    with open(report_path, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=1)
     # 요약
     for name, rec in report.get("style", {}).items():
@@ -286,6 +437,12 @@ def main():
             print(f"    - {x['verdict']}: {x['article_quote'][:90]} | {x['note'][:120]}")
     for name, p in report.get("pairwise", {}).items():
         print(f"[pairwise] {name} vs {p['against']}: {p['result']}")
+    for name, c in report.get("clarity", {}).items():
+        print(f"[clarity] {'HUMAN ' if c['human'] else ''}{name}: unclear {c['unclear']}/{c['answered']} "
+              f"(rate {c['rate']}, {c['per_1k']}/1k) check_hits={c['check_hits']} check_unclear={c['check_unclear']}"
+              + (f" error={c['error'][:80]}" if c.get("error") else ""))
+        for it in c["unclear_items"][:6]:
+            print(f"    - {it['sentence'][:80]} | {it['question'][:60]}")
 
 
 if __name__ == "__main__":

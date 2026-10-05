@@ -54,7 +54,8 @@ def main():
     ap.add_argument("--work", default=DEFAULT_WORK)
     args = ap.parse_args()
 
-    cols = {k: {"metrics": {}, "n": 0, "lint_pass": 0, "fid": [], "style": [], "j7": [], "cases": []} for k, _ in COLUMNS}
+    cols = {k: {"metrics": {}, "n": 0, "lint_pass": 0, "fid": [], "style": [], "j7": [], "j9": [], "cases": []}
+            for k, _ in COLUMNS}
     stats = json.load(open(os.path.join(ROOT, "dev", "baseline", "stats.json"), encoding="utf-8"))
     for a in stats["articles"]:
         if a.get("included") and a.get("group") in ("default", "casual"):
@@ -93,6 +94,18 @@ def main():
             sc = [v for r in st["runs"] for v in r["scores"].values()]
             col["style"].append(sum(sc) / len(sc))
             col["j7"].extend(r["j7_per_1k"] for r in st["runs"])
+        cl = judges[it].get("clarity", {}).get(case)
+        if cl and cl.get("answered"):
+            col["j9"].append((cl["unclear"], cl["answered"]))
+
+    # J9 사람 글 대조군: judge.py가 work 폴더에 저장한 판정 결과
+    group = {a["id"]: a["group"] for a in stats["articles"]}
+    hpath = os.path.join(args.work, "_clarity_humans.json")
+    if os.path.exists(hpath):
+        for ck, v in json.load(open(hpath, encoding="utf-8")).items():
+            g = group.get(ck.split(":", 1)[1])
+            if g in ("default", "casual") and v.get("answered"):
+                cols["human-" + g]["j9"].append((v["unclear"], v["answered"]))
 
     print("| 지표 | " + " | ".join(f"{name} (n={cols[k]['n']})" for k, name in COLUMNS) + " |")
     print("|---|" + "---|" * len(COLUMNS))
@@ -104,6 +117,11 @@ def main():
           " | ".join(med(cols[k]["fid"], 1) for k in gen) + " |")
     print("| style judge 평균(0~2) | - | - | " + " | ".join(med(cols[k]["style"], 2) for k in gen) + " |")
     print("| AI처럼 읽힌다고 인용된 문장(1,000자당) | - | - | " + " | ".join(med(cols[k]["j7"], 2) for k in gen) + " |")
+
+    def pooled(pairs):
+        u, a = sum(x[0] for x in pairs), sum(x[1] for x in pairs)
+        return f"{u / a:.3f} ({u}/{a})" if a else "-"
+    print("| J9 이해하기 어려운 문장 비율(판정한 문장 중) | " + " | ".join(pooled(cols[k]["j9"]) for k, _ in COLUMNS) + " |")
     for k, name in COLUMNS:
         if cols[k]["cases"]:
             print(f"\n{name}: " + ", ".join(cols[k]["cases"]))
