@@ -93,7 +93,7 @@ class ToneCheckTest(unittest.TestCase):
     def test_cleanup_only_work_files(self):
         with tempfile.TemporaryDirectory() as d:
             keep = os.path.join(d, "article.md")
-            work = [os.path.join(d, "article" + suf) for suf in (".facts.md", ".draft.md", ".unrevised.md")]
+            work = [os.path.join(d, "article" + suf) for suf in (".facts.md", ".draft.md", ".unrevised.md", ".repeats.md")]
             for p in [keep] + work:
                 with open(p, "w", encoding="utf-8") as f:
                     f.write("x")

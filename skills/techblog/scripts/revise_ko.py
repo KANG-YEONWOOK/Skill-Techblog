@@ -9,7 +9,8 @@
 ARTICLE은 후처리할 합니다체 글이다. Default 글이면 출력 파일(<이름>.md), Casual 글이면 Default 초안
 (<이름>.draft.md)이다. 초안 사본(<이름>.unrevised.md)과 fact sheet(<이름>.facts.md)의 경로는 ARTICLE 이름에서 정한다.
 
-- start: ARTICLE을 초안 사본으로 복사한다. 사본이 이미 있으면 --force 없이는 덮어쓰지 않는다.
+- start: ARTICLE을 초안 사본으로 복사하고, 반복 후보를 <이름>.repeats.md에 적는다. 6단계를 맡은 subagent에
+  Bash 권한이 없어도 후보를 Read로 볼 수 있게 하려는 파일이다. 사본이 이미 있으면 --force 없이는 덮어쓰지 않는다.
 - repeats: 다시 읽을 위치(반복 후보)를 출력한다. 판정은 하지 않는다. 후보마다 이 글의 독자에게 필요한
   반복인지는 글쓴이가 판단한다.
 - check: 초안 사본과 ARTICLE을 비교한다. 바뀐 문장 수, 초안에만 있는 수치와 새 수치, 헤딩·코드·표 변경,
@@ -32,6 +33,7 @@ import lint_ko as L  # noqa: E402
 
 SNAPSHOT_SUFFIX = ".unrevised.md"
 FACTS_SUFFIX = ".facts.md"
+REPEATS_SUFFIX = ".repeats.md"
 MAX_LINES = 8
 CHANGED_SHARE_RECHECK = 0.25
 SHORT_LEN = 35
@@ -83,6 +85,10 @@ def snapshot_path(path):
 
 def facts_path(path):
     return stem_of(path) + FACTS_SUFFIX
+
+
+def repeats_path(path):
+    return stem_of(path) + REPEATS_SUFFIX
 
 
 # ---------------------------------------------------------------- 문장
@@ -451,8 +457,13 @@ def cmd_start(args):
         print(f"초안 사본이 이미 있습니다: {snap}. 후처리를 처음부터 다시 하려면 --force를 붙입니다.", file=sys.stderr)
         return 2
     shutil.copyfile(args.article, snap)
-    st = L.analyze(L.read_text(args.article))["stats"]
+    text = L.read_text(args.article)
+    st = L.analyze(text)["stats"]
+    rp = repeats_path(args.article)
+    with open(rp, "w", encoding="utf-8") as f:
+        f.write(render_repeats(args.article, find_repeats(text)) + "\n")
     print(f"초안 사본: {snap} ({st['sentences']}문장, {st['chars']:,}자). 후처리는 {args.article}을 고친다.")
+    print(f"반복 후보 파일: {rp}. 글을 처음부터 끝까지 읽고 멈출 곳을 적은 뒤에 연다.")
     return 0
 
 
@@ -503,7 +514,7 @@ def main(argv=None):
         args = ap.parse_args(argv)
     except SystemExit as e:
         return 2 if e.code else 0
-    if args.article.endswith((SNAPSHOT_SUFFIX, FACTS_SUFFIX)):
+    if args.article.endswith((SNAPSHOT_SUFFIX, FACTS_SUFFIX, REPEATS_SUFFIX)):
         print(f"후처리할 글의 경로를 줍니다. 받은 경로는 작업 파일입니다: {args.article}", file=sys.stderr)
         return 2
     if not os.path.isfile(args.article):

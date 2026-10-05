@@ -3,7 +3,7 @@ name: techblog
 description: 전달받은 자료(논문 PDF, 문서 PDF, 마크다운, URL, 붙여넣은 텍스트)의 핵심 내용을 토스, 카카오, 당근 같은 한국 테크 기업의 기술 블로그 문체로 정리한 한국어 아티클을 쓴다. 근거 기반 rubric과 검사 스크립트로 AI 글에서 자주 보이는 문체 패턴(부정 대구, 강조 문장, 쉼표 과다, 요약 표지, 지어낸 경험)을 찾아 고치고, 문장마다 무엇에 대한 말인지 드러나게 쓴다. 글의 어투는 Default(합니다체)와 Casual(해요체) 중에서 고를 수 있고, 두 어투로 쓴 글의 내용은 같다. "/techblog", "기술 블로그 글로 정리해줘", "아티클로 써줘", "블로그 포스트로 요약해줘" 같은 요청에 쓴다.
 license: MIT
 compatibility: Claude Code. 검사 스크립트는 Python 3.8 이상이 있으면 실행하고, 없으면 rubric 수동 점검으로 대신한다.
-allowed-tools: Read Write Edit Glob Grep WebFetch Bash(python "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python ${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/*)
+allowed-tools: Read Write Edit Glob Grep WebFetch Agent Bash(python "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python ${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/*)
 metadata:
   version: "0.4.0"
   repository: https://github.com/KANG-YEONWOOK/Skill-Techblog
@@ -28,7 +28,7 @@ metadata:
 ## 파일
 
 - 글은 `<이름>.md`에 저장한다.
-- 작업 파일은 출력 파일과 같은 폴더에 만든다. fact sheet는 `<이름>.facts.md`이고, Casual 글을 쓸 때만 만드는 Default 초안은 `<이름>.draft.md`다. 6단계를 시작할 때 스크립트가 후처리 전 초안을 `<이름>.unrevised.md`에 복사해 둔다. 작업 파일은 8단계에서 지운다.
+- 작업 파일은 출력 파일과 같은 폴더에 만든다. fact sheet는 `<이름>.facts.md`이고, Casual 글을 쓸 때만 만드는 Default 초안은 `<이름>.draft.md`다. 6단계를 시작할 때 스크립트가 후처리 전 초안을 `<이름>.unrevised.md`에 복사하고 반복 후보를 `<이름>.repeats.md`에 적는다. 작업 파일은 8단계에서 지운다.
 - 후처리 대상은 합니다체 글이다. Default 글이면 출력 파일 `<이름>.md`, Casual 글이면 Default 초안 `<이름>.draft.md`다.
 
 ## 스크립트 실행
@@ -37,7 +37,7 @@ metadata:
   - 문체 검사: `python "${CLAUDE_SKILL_DIR}/scripts/lint_ko.py" "<글>" --tone default --facts "<이름>.facts.md"`
   - 후처리: `python "${CLAUDE_SKILL_DIR}/scripts/revise_ko.py" start "<후처리 대상>"`, 같은 스크립트의 `repeats "<후처리 대상>"`, `check "<후처리 대상>"`
   - 어투 검사: `python "${CLAUDE_SKILL_DIR}/scripts/tone_check.py" "<이름>.draft.md" "<이름>.md"`
-  - 작업 파일 삭제: `python "${CLAUDE_SKILL_DIR}/scripts/tone_check.py" --cleanup "<이름>.facts.md" "<이름>.draft.md" "<이름>.unrevised.md"`
+  - 작업 파일 삭제: `python "${CLAUDE_SKILL_DIR}/scripts/tone_check.py" --cleanup "<이름>.facts.md" "<이름>.draft.md" "<이름>.unrevised.md" "<이름>.repeats.md"`
 - Python이 없거나 Bash를 쓸 수 없으면 `references/rubric.md`의 Gate와 자동 측정 항목을 직접 세서 같은 기준으로 점검한다.
 
 ## 작업 순서
@@ -146,12 +146,13 @@ Casual로 요청받아도 초안은 먼저 합니다체로 쓴다. Casual 글이
 
 초안은 모든 글에 같은 규칙을 적용해서 썼다. 후처리는 초안을 이 글의 독자 입장에서 처음부터 다시 읽고, 이 글에 필요 없는 반복과 이 글에 필요한데 빠진 정보를 고친다. 일반 규칙이나 lint 기준치와 다른 형태라도 이 글의 독자에게 더 읽기 쉬우면 그 형태를 쓴다.
 
-1. `references/revision.md`를 읽는다.
-2. 후처리 시작 명령(`revise_ko.py start`)으로 후처리 전 초안 사본을 만든다.
-3. 후처리 대상을 Read로 처음부터 끝까지 읽고, 독자가 읽다가 멈출 곳을 줄 번호와 이유와 함께 적는다. 다 읽고 적은 뒤에 `revise_ko.py repeats`를 실행하고(start와 같은 차례에 실행하지 않는다), 반복 후보를 revision.md의 판단 질문으로 판단한다.
-4. 적은 곳만 Edit 도구로 고친다. 글쓴이가 계산한 값과 고친 수치 문장은 자료 원문으로 다시 확인한다.
-5. `revise_ko.py check`를 실행하고, 종료 코드가 0이 될 때까지 걸린 항목을 revision.md의 "고친 뒤 확인"대로 처리한다.
-- Bash를 쓸 수 없으면 사본 없이 고치고 revision.md의 "스크립트를 쓸 수 없을 때"를 따른다.
+후처리는 초안을 쓴 context 밖에서 한다. 같은 초안 4건을 초안을 쓴 context와 새 context에서 각각 후처리해 judge에게 비교하게 했을 때, 4건 모두 두 순서에서 새 context의 글을 골랐다. 초안을 쓴 context는 설명 문장, 단서, 적용 절 문단을 지웠고 새 context는 빠진 비교 기준과 정의를 채웠다.
+
+1. 후처리 시작 명령(`revise_ko.py start`)으로 후처리 전 초안 사본과 반복 후보 파일을 만든다.
+2. Agent 도구로 general-purpose subagent 하나를 띄워 후처리를 맡긴다. prompt는 아래 문단을 그대로 쓰고 `<...>`만 실제 절대 경로나 URL로 바꾼다. 자료 내용, fact sheet 내용, 초안을 쓰며 내린 판단은 prompt에 넣지 않는다.
+   > `<후처리 대상>`은 techblog skill이 1~5단계(초안 쓰기와 점검)를 마친 합니다체 글이다. 이 글에 techblog skill의 6단계(후처리)만 한다. 먼저 `${CLAUDE_SKILL_DIR}/references/revision.md`를 읽고 그 절차를 따른다. fact sheet는 `<이름>.facts.md`, 자료는 `<자료 경로 또는 URL>`, 반복 후보 파일은 `<이름>.repeats.md`다. 반복 후보 파일은 글을 처음부터 끝까지 읽고 멈출 곳을 적은 뒤에 연다. 적은 곳만 Edit 도구로 고친다. 어투, 헤딩, 표, 코드 블록, 참고자료는 바꾸지 않는다. 후처리 대상 말고 고칠 수 있는 파일은 fact sheet뿐이고, 새로 계산한 값을 적을 때만 고친다. 끝나면 고친 곳마다 줄 번호와 이유를 한 줄씩 보고하고, 일반 규칙과 다르게 남긴 형태가 있으면 그 이유도 보고한다.
+3. subagent가 끝나면 `revise_ko.py check`를 실행한다. 종료 코드가 1이면 걸린 항목을 revision.md의 "고친 뒤 확인"대로 직접 고친다. subagent가 보고한 남긴 형태와 이유는 8단계 보고에 쓴다.
+- Agent 도구를 쓸 수 없으면 revision.md를 읽고 2의 절차를 직접 한다. Bash를 쓸 수 없으면 사본과 후보 파일 없이 revision.md의 "스크립트를 쓸 수 없을 때"를 따른다.
 
 ### 7. 어투 적용 (Casual일 때, `--retone`일 때)
 

@@ -73,6 +73,7 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(R.snapshot_path("a.md"), "a.unrevised.md")
         self.assertEqual(R.snapshot_path("a.draft.md"), "a.unrevised.md")
         self.assertEqual(R.facts_path("a.draft.md"), "a.facts.md")
+        self.assertEqual(R.repeats_path("a.draft.md"), "a.repeats.md")
 
 
 class TestRepeats(unittest.TestCase):
@@ -160,6 +161,8 @@ class TestCli(unittest.TestCase):
         code, out, _ = self.run_cli("start", self.art)
         self.assertEqual(code, 0, out)
         self.assertTrue(os.path.exists(os.path.join(self.tmp.name, "article.unrevised.md")))
+        with open(os.path.join(self.tmp.name, "article.repeats.md"), encoding="utf-8") as f:
+            self.assertIn("techblog repeats", f.read())
         code, _, err = self.run_cli("start", self.art)
         self.assertEqual(code, 2)
         self.assertIn("--force", err)

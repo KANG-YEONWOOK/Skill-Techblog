@@ -146,6 +146,13 @@ def revise_summary(case_dir, tone, tools, events):
         return os.path.basename(str(t["input"].get("file_path", "")))
 
     i_start, i_rep, i_check = cmd_index("start"), cmd_index("repeats"), cmd_index("check")
+    # 0.4.0 subagent 설계: 반복 후보는 start가 만든 <이름>.repeats.md를 Read로 연다
+    rep_reads = [i for i, t in enumerate(tools) if t["name"] == "Read"
+                 and str(t["input"].get("file_path", "")).endswith(".repeats.md")]
+    if rep_reads and (i_rep is None or rep_reads[0] < i_rep):
+        i_rep = rep_reads[0]
+    agent_calls = [i for i, t in enumerate(tools) if t["name"] in ("Agent", "Task")
+                   and i_start is not None and i > i_start]
     checks = [i for i, t in enumerate(tools) if t["name"] in ("Bash", "PowerShell")
               and "revise_ko.py" in t["input"].get("command", "") and " check " in t["input"].get("command", "") + " "]
     i_last_check = checks[-1] if checks else None
@@ -174,7 +181,8 @@ def revise_summary(case_dir, tone, tools, events):
             "worse_dist": [f"{r['status']} {r['id']}={r['value']}" for r in res["worse_dist"]],
             "long_new": len(res["long_new"]), "must_fix": res["must_fix"],
             "repeats_before": counts(snap), "repeats_after": counts(post),
-            "ran": {"start": i_start is not None, "repeats": i_rep is not None, "check": i_check is not None},
+            "ran": {"start": i_start is not None, "repeats": i_rep is not None, "check": i_check is not None,
+                    "subagent": len(agent_calls)},
             "read_before_repeats": read_before_repeats, "edits_after_start": edits_after,
             "usage_after_start": _usage_share(events, i_start, i_last_check) if i_start is not None else None,
             "compactions": sum(1 for ev in events if ev[0] == "compact")}

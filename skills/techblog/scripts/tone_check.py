@@ -3,7 +3,7 @@
 
 사용법
   python tone_check.py DEFAULT.md CASUAL.md [--json]
-  python tone_check.py --cleanup FILE [FILE ...]   # .facts.md, .draft.md, .unrevised.md 작업 파일만 지운다
+  python tone_check.py --cleanup FILE [FILE ...]   # .facts.md, .draft.md, .unrevised.md, .repeats.md 작업 파일만 지운다
 
 검사 순서
   1. 블록 종류(헤딩, 문단, 목록, 코드, 표, 인용) 순서가 같다.
@@ -164,7 +164,7 @@ def check(default_text, casual_text):
 def cleanup(paths):
     removed = []
     for p in paths:
-        if not p.endswith((".facts.md", ".draft.md", ".unrevised.md")):
+        if not p.endswith((".facts.md", ".draft.md", ".unrevised.md", ".repeats.md")):
             print(f"건너뜀(작업 파일이 아님): {p}", file=sys.stderr)
             continue
         if os.path.isfile(p):
@@ -180,7 +180,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="techblog 어투 불변성 검사")
     ap.add_argument("files", nargs="+")
     ap.add_argument("--json", action="store_true")
-    ap.add_argument("--cleanup", action="store_true", help="주어진 .facts.md, .draft.md, .unrevised.md 파일을 지운다")
+    ap.add_argument("--cleanup", action="store_true", help="주어진 .facts.md, .draft.md, .unrevised.md, .repeats.md 파일을 지운다")
     try:
         args = ap.parse_args(argv)
     except SystemExit as e:
