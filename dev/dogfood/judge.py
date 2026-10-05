@@ -5,8 +5,9 @@
   J2~J6, J8 점수와 "AI가 쓴 것처럼 읽히는 문장" 인용을 받고, 인용이 원문에 그대로 있는지 확인해 J7을 센다.
 - fidelity: 글의 수치·주장을 자료 원문과 대조한다(supported / unsupported / contradicted, coverage).
 - pairwise: 같은 자료로 쓴 두 글(이번 iteration과 비교 대상)을 순서를 바꿔 두 번 비교한다.
-- clarity(J9): 글 한 편씩 판정한다. 문단의 첫 문장, 수치가 든 문장, lint 점검 후보(A18) 문장을 뽑아
-  헤딩과 바로 앞 문장과 함께 보여 주고, 그 문장만으로 무엇에 대한 말인지 알 수 있는지 묻는다.
+- clarity(J9): 글 한 편씩 판정한다. 문단의 첫 문장, 수치가 든 문장, A18에 걸린 문장을 뽑아
+  헤딩과 바로 앞 문장과 함께 보여 준다. judge는 문장마다 그 문장만으로 무엇에 대한 말인지 알 수 있는지(self_contained),
+  바로 앞 문장을 읽어야 알 수 있는지(needs_prev), 앞 문장까지 읽어도 알 수 없는지(unclear)를 고른다.
   사람 글 대조군 6편(합니다체 3, 해요체 3)도 같은 방식으로 판정하고 결과를 work 폴더에 저장해 다시 쓴다.
 
 사용법
@@ -100,16 +101,19 @@ PAIR_PROMPT = """X.md와 Y.md는 같은 자료를 정리한 한국어 기술 블
 CLARITY_SCHEMA = {
     "type": "object",
     "properties": {"items": {"type": "array", "items": {"type": "object", "properties": {
-        "id": {"type": "integer"}, "clear": {"type": "boolean"}, "question": {"type": "string"}},
-        "required": ["id", "clear", "question"]}}},
+        "id": {"type": "integer"},
+        "verdict": {"type": "string", "enum": ["self_contained", "needs_prev", "unclear"]},
+        "question": {"type": "string"}},
+        "required": ["id", "verdict", "question"]}}},
     "required": ["items"]}
 
 CLARITY_PROMPT = """현재 폴더의 items.md에는 한국어 기술 블로그 글 한 편에서 뽑은 문장이 번호와 함께 있습니다. 번호마다 그 문장이 속한 절의 헤딩, 바로 앞 문장, 판정할 문장이 적혀 있습니다. Read 도구로 items.md를 끝까지 읽고 모든 번호에 답하세요.
 
-질문: 헤딩과 바로 앞 문장과 이 문장만 읽고, 이 문장이 무엇에 대한 말인지, 문장 안의 수치가 무엇을 잰 값이고 무엇과 비교한 값인지 알 수 있는가?
-- clear=true: 알 수 있다. 주어가 생략됐어도 바로 앞 문장으로 주어를 알 수 있으면 true다. 한국어에서 자연스러운 생략은 문제로 보지 않는다.
-- clear=false: 알 수 없다. question에 독자가 갖게 되는 질문을 한 문장으로 적는다. 예: "무엇이 22배인가?", "무엇과 무엇의 차이인가?", "'이 방식'은 어떤 방식인가?"
-clear=true이면 question은 빈 문자열로 둡니다. 독자는 그 분야를 아는 개발자이므로 전문 용어를 모르는 것은 판정 이유가 아닙니다. 판정할 문장이 표나 목록 바로 뒤에 있으면 앞 문장 칸에 그렇게 적혀 있습니다."""
+판정할 문장이 무엇에 대한 말인지(주어와 목적어), 문장 안의 수치가 무엇을 잰 값이고 무엇과 비교한 값인지를 기준으로 셋 중 하나를 고르세요.
+- self_contained: 헤딩과 이 문장만 읽어도 알 수 있다.
+- needs_prev: 이 문장만으로는 알 수 없고, 바로 앞 문장을 읽어야 알 수 있다. 예: 앞 문장의 주어를 생략한 문장, "그 값은", "차이는"처럼 앞 문장을 가리키는 말로 시작하는 문장, 비교 기준이 앞 문장에만 있는 수치 문장.
+- unclear: 바로 앞 문장까지 읽어도 알 수 없다.
+needs_prev나 unclear이면 question에 이 문장만 읽은 독자가 갖게 되는 질문을 한 문장으로 적습니다. 예: "무엇이 22배인가?", "무엇과 무엇의 차이인가?", "'이 방식'은 어떤 방식인가?" self_contained이면 question은 빈 문자열로 둡니다. 독자는 그 분야를 아는 개발자이므로 전문 용어를 모르는 것은 판정 이유가 아닙니다. 판정할 문장이 표나 목록 바로 뒤에 있으면 앞 문장 칸에 그렇게 적혀 있습니다."""
 
 CLARITY_CONTROLS = 3  # 어투마다 사람 글 대조군 수
 
@@ -308,8 +312,8 @@ def clarity_items(text):
         clean, _, codes = L.clean_inline(b.text)
         sents = _restore_inline(L.split_sentences(clean), codes)
         for i, s in enumerate(sents):
-            if not s:
-                continue
+            if not s or len(re.findall(r"[가-힣]", s)) < 4:
+                continue  # 목록 번호("1.")나 영어 조각은 판정하지 않는다
             first = b.type == "paragraph" and i == 0
             numeric = bool(L.NUM_RE.search(s))
             check = _norm(s)[:60] in flagged
@@ -331,19 +335,28 @@ def judge_clarity(path, jdir, model):
         f.write("\n".join(lines))
     res = call_judge(CLARITY_PROMPT, CLARITY_SCHEMA, jdir, model)
     verdict = {x["id"]: x for x in res.get("items", []) if isinstance(x.get("id"), int)}
-    unclear = []
+    flagged = []  # needs_prev 또는 unclear
     for n, it in enumerate(items, 1):
         v = verdict.get(n)
-        if v is not None and not v["clear"]:
-            unclear.append(dict(it, question=v.get("question", "")))
+        if v is not None and v["verdict"] != "self_contained":
+            flagged.append(dict(it, verdict=v["verdict"], question=v.get("question", "")))
     answered = sum(1 for n in range(1, len(items) + 1) if n in verdict)
+    unclear = [x for x in flagged if x["verdict"] == "unclear"]
     chars = L.analyze(text)["stats"]["chars"] or 1
-    check_hits = [it for it in items if it["check"]]
-    return {"checked": len(items), "answered": answered, "unclear": len(unclear),
-            "rate": round(len(unclear) / answered, 3) if answered else None,
-            "per_1k": round(len(unclear) * 1000 / chars, 2), "chars": chars,
-            "check_hits": len(check_hits), "check_unclear": sum(1 for it in unclear if it["check"]),
-            "unclear_items": unclear, "cost": res.get("_cost"), "error": res.get("error")}
+
+    def share(sel):
+        tot = [n for n, it in enumerate(items, 1) if sel(it) and n in verdict]
+        dep = [n for n in tot if verdict[n]["verdict"] != "self_contained"]
+        return [len(dep), len(tot)]
+    return {"checked": len(items), "answered": answered,
+            "dependent": len(flagged), "unclear": len(unclear),
+            "rate": round(len(flagged) / answered, 3) if answered else None,
+            "unclear_rate": round(len(unclear) / answered, 3) if answered else None,
+            "first_dep": share(lambda it: it["first"]), "numeric_dep": share(lambda it: it["numeric"]),
+            "per_1k": round(len(flagged) * 1000 / chars, 2), "chars": chars,
+            "check_hits": sum(1 for it in items if it["check"]),
+            "check_flagged": sum(1 for it in flagged if it["check"]),
+            "unclear_items": flagged, "cost": res.get("_cost"), "error": res.get("error")}
 
 
 def clarity_controls(work):
@@ -416,6 +429,12 @@ def main():
         report["pairwise"] = run_pairwise(iter_dir, os.path.join(args.work, "dogfood", args.compare), args.model)
     if "clarity" not in args.skip:
         report["clarity"] = run_clarity(iter_dir, args.work, args.model, args.extra)
+    # 같은 iteration에 judge를 동시에 돌려도 서로의 결과를 덮어쓰지 않게, 저장 직전에 파일을 다시 읽고
+    # 이번에 실행한 단계만 바꾼다.
+    ran = [k for k in ("style", "fidelity", "pairwise", "clarity") if k in report and k not in args.skip]
+    latest = json.load(open(report_path, encoding="utf-8")) if os.path.exists(report_path) else {}
+    latest.update({k: report[k] for k in ran})
+    report = latest
     with open(report_path, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=1)
     # 요약
@@ -438,11 +457,12 @@ def main():
     for name, p in report.get("pairwise", {}).items():
         print(f"[pairwise] {name} vs {p['against']}: {p['result']}")
     for name, c in report.get("clarity", {}).items():
-        print(f"[clarity] {'HUMAN ' if c['human'] else ''}{name}: unclear {c['unclear']}/{c['answered']} "
-              f"(rate {c['rate']}, {c['per_1k']}/1k) check_hits={c['check_hits']} check_unclear={c['check_unclear']}"
+        print(f"[clarity] {'HUMAN ' if c['human'] else ''}{name}: 앞 문장 필요 {c['dependent']}/{c['answered']} "
+              f"(rate {c['rate']}), unclear {c['unclear']}, 문단 첫 문장 {c['first_dep']}, 수치 문장 {c['numeric_dep']}, "
+              f"check_hits={c['check_hits']} check_flagged={c['check_flagged']}"
               + (f" error={c['error'][:80]}" if c.get("error") else ""))
         for it in c["unclear_items"][:6]:
-            print(f"    - {it['sentence'][:80]} | {it['question'][:60]}")
+            print(f"    - ({it['verdict']}) {it['sentence'][:80]} | {it['question'][:60]}")
 
 
 if __name__ == "__main__":

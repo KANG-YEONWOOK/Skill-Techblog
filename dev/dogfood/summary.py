@@ -96,7 +96,7 @@ def main():
             col["j7"].extend(r["j7_per_1k"] for r in st["runs"])
         cl = judges[it].get("clarity", {}).get(case)
         if cl and cl.get("answered"):
-            col["j9"].append((cl["unclear"], cl["answered"]))
+            col["j9"].append((cl["dependent"], cl["answered"]))
 
     # J9 사람 글 대조군: judge.py가 work 폴더에 저장한 판정 결과
     group = {a["id"]: a["group"] for a in stats["articles"]}
@@ -104,8 +104,8 @@ def main():
     if os.path.exists(hpath):
         for ck, v in json.load(open(hpath, encoding="utf-8")).items():
             g = group.get(ck.split(":", 1)[1])
-            if g in ("default", "casual") and v.get("answered"):
-                cols["human-" + g]["j9"].append((v["unclear"], v["answered"]))
+            if g in ("default", "casual") and v.get("answered") and "dependent" in v:
+                cols["human-" + g]["j9"].append((v["dependent"], v["answered"]))
 
     print("| 지표 | " + " | ".join(f"{name} (n={cols[k]['n']})" for k, name in COLUMNS) + " |")
     print("|---|" + "---|" * len(COLUMNS))
@@ -121,7 +121,7 @@ def main():
     def pooled(pairs):
         u, a = sum(x[0] for x in pairs), sum(x[1] for x in pairs)
         return f"{u / a:.3f} ({u}/{a})" if a else "-"
-    print("| J9 이해하기 어려운 문장 비율(판정한 문장 중) | " + " | ".join(pooled(cols[k]["j9"]) for k, _ in COLUMNS) + " |")
+    print("| J9 앞 문장에 기대거나 이해되지 않는 문장 비율(판정한 문장 중) | " + " | ".join(pooled(cols[k]["j9"]) for k, _ in COLUMNS) + " |")
     for k, name in COLUMNS:
         if cols[k]["cases"]:
             print(f"\n{name}: " + ", ".join(cols[k]["cases"]))
