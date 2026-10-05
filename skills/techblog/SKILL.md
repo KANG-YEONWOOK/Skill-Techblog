@@ -1,11 +1,11 @@
 ---
 name: techblog
-description: 전달받은 자료(논문·문서 PDF, 마크다운, URL, 붙여넣은 텍스트)의 핵심 내용을 한국 테크 기업 기술 블로그(토스·카카오·당근) 문체의 아티클로 정리한다. 근거 기반 rubric과 검사 스크립트로 AI 글에서 자주 보이는 문체 패턴(부정 대구, 강조 문장, 쉼표 과다, 요약 표지, 지어낸 경험)을 걸러 자연스러운 한국어로 쓴다. 어투는 Default(합니다체)와 Casual(해요체) 중 고르며 어투만 바뀌고 내용은 같다. "/techblog", "기술 블로그 글로 정리해줘", "아티클로 써줘", "블로그 포스트로 요약해줘" 같은 요청에 쓴다.
+description: 전달받은 자료(논문 PDF, 문서 PDF, 마크다운, URL, 붙여넣은 텍스트)의 핵심 내용을 토스, 카카오, 당근 같은 한국 테크 기업의 기술 블로그 문체로 정리한 한국어 아티클을 쓴다. 근거 기반 rubric과 검사 스크립트로 AI 글에서 자주 보이는 문체 패턴(부정 대구, 강조 문장, 쉼표 과다, 요약 표지, 지어낸 경험)을 찾아 고치고, 문장마다 무엇에 대한 말인지 드러나게 쓴다. 글의 어투는 Default(합니다체)와 Casual(해요체) 중에서 고를 수 있고, 두 어투로 쓴 글의 내용은 같다. "/techblog", "기술 블로그 글로 정리해줘", "아티클로 써줘", "블로그 포스트로 요약해줘" 같은 요청에 쓴다.
 license: MIT
 compatibility: Claude Code. 검사 스크립트는 Python 3.8 이상이 있으면 실행하고, 없으면 rubric 수동 점검으로 대신한다.
 allowed-tools: Read Write Edit Glob Grep WebFetch Bash(python "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python ${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/*)
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
   repository: https://github.com/KANG-YEONWOOK/Skill-Techblog
 ---
 
