@@ -77,3 +77,5 @@ iteration은 최대 6회로 정했다. 결과가 수렴하지 않거나, 개선 
 실제로는 iteration 7까지 실행했다. iteration 6에서 문단을 나누라는 지시가 회귀를 만들어서, 그 지시를 고친 iteration 7을 한 번 더 실행했다. 종료 기준을 연속 2회 만족하지는 못했다. A 케이스의 pairwise 결과와 style 평균이 기준에 못 미쳤고, held-out round는 iteration 7 버전으로 실행했다. 판단 근거는 `REPORT.md`의 "종료 판단" 절에 있다.
 
 iteration 8~10은 문장을 따로 읽어도 이해되는 글을 목표로 한 수정이다. 수정 전 버전(iter-8b)과 각 수정 버전을 같은 4개 케이스(B, D, E, S1)로 실행해 clarity, style, fidelity, pairwise judge로 비교했다. 수정은 계획대로 최대 2회(iteration 9, 10) 했고, 결과와 남은 문제는 `REPORT.md`의 iteration 8~10 절과 "수정 종료 판단" 절에 있다.
+
+iteration 11~12는 0.4.0의 후처리 단계를 시험한 기록이다. 초안을 쓴 context에서 후처리한 iteration 11, 같은 초안을 새 세션에서 후처리한 비교(iter-11r, iter-11s, `run.py --revise-from`), subagent에 후처리를 맡긴 iteration 12의 결과와 판단은 `REPORT.md`의 iteration 11~12 절에 있다. `run.py --skill-dir`은 지침을 고치는 동안 revise 모드 실행이 고치기 전 지침을 읽게 고정할 때 쓴다.

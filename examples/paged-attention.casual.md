@@ -1,30 +1,38 @@
-# PagedAttention: KV cache를 블록으로 나눠 LLM 서빙 처리량을 2~4배 올린 방법
+# PagedAttention: KV cache를 블록으로 나눠 LLM 서빙 처리량을 2~4배 높인 방법
 
-최대 시퀀스 길이가 2048토큰인 모델에 "Four score and seven years ago our"라는 7토큰짜리 프롬프트가 들어왔다고 해 볼게요. 기존 LLM 서빙 시스템은 이 요청이 몇 토큰을 생성할지 모르기 때문에 KV cache를 저장할 연속 공간을 2048토큰만큼 미리 잡아 둬요. 요청이 세 토큰을 더 생성하고 끝나면 미리 잡은 슬롯 중 2038개는 한 번도 쓰이지 않아요.
+LLM 서빙 시스템에 최대 시퀀스 길이가 2048 토큰인 요청 하나가 들어왔다고 해 볼게요. 프롬프트는 "Four score and seven years ago our"라는 7토큰이고 모델은 토큰 세 개를 더 만들고 끝나요. FasterTransformer나 Orca 같은 기존 서빙 시스템은 이 요청을 받을 때 KV cache 자리를 2048 토큰만큼 연속으로 잡아 두므로 2038 자리는 요청이 끝날 때까지 한 번도 쓰이지 않아요.
 
-쓰이지 않는 슬롯도 요청이 끝날 때까지는 다른 요청이 쓸 수 없어요. GPU 메모리에 함께 올릴 수 있는 요청 수가 줄면 배치 크기가 줄고 처리량도 떨어져요.
+UC Berkeley 등의 연구진은 SOSP 2023 논문 「Efficient Memory Management for Large Language Model Serving with PagedAttention」에서 이 낭비를 OS의 가상 메모리와 페이징 기법으로 줄였어요. KV cache를 고정 크기 블록으로 나눠 필요할 때 할당하는 attention 알고리즘이 PagedAttention이고, 그 위에 만든 서빙 엔진이 vLLM이에요. 이 글에서는 PagedAttention이 KV cache 메모리를 관리하는 방식과 그 방식이 처리량을 얼마나 바꿨는지 정리해요.
 
-PagedAttention은 UC Berkeley 등의 연구진이 SOSP 2023 논문 "Efficient Memory Management for Large Language Model Serving with PagedAttention"에서 제안한 attention 알고리즘이에요. PagedAttention은 운영체제의 virtual memory와 paging처럼 KV cache를 고정 크기 블록으로 나눠 비연속 메모리에 저장해요. 같은 논문의 vLLM은 PagedAttention 위에 만든 LLM 서빙 시스템이에요.
+vLLM은 FasterTransformer, Orca와 비슷한 latency를 유지하면서 처리량을 2~4배 높였어요. 개선 폭은 시퀀스가 길고 모델이 크고 디코딩 알고리즘이 복잡할 때 더 컸어요.
 
-이 글에서는 PagedAttention이 KV cache 낭비를 블록 하나 안으로 줄이고 블록을 시퀀스 사이에 공유해 처리량을 올리는 방식을 정리해요. vLLM은 같은 수준의 latency에서 FasterTransformer와 Orca보다 처리량을 2~4배 높였어요.
+## KV cache가 배치 크기를 정하는 이유
 
-## KV cache 메모리는 어디서 새는가
+LLM은 토큰을 한 번에 하나씩 생성해요. 새 토큰을 만들 때마다 앞선 모든 토큰의 key 벡터와 value 벡터가 필요하므로 서빙 시스템은 이 벡터를 GPU 메모리에 저장해 두고 다시 써요. 이 저장 공간을 KV cache라고 불러요.
 
-LLM은 토큰을 하나씩 생성하고, 새 토큰을 만들 때마다 앞선 모든 토큰의 key 벡터와 value 벡터를 써요. 이 벡터들을 매번 다시 계산하지 않도록 저장해 둔 것이 KV cache예요.
+토큰을 하나씩 만드는 생성 단계는 GPU 연산 능력을 다 쓰지 못하는 memory-bound 작업이에요. 여러 요청을 배치로 묶으면 요청들이 같은 모델 가중치를 함께 읽어서 가중치를 옮기는 비용이 요청 수만큼 나뉘어요. 그래서 배치에 요청을 많이 넣을 수 있으면 처리량이 오르죠.
 
-OPT-13B에서 토큰 하나의 KV cache는 800KB예요. 이 값은 key와 value 2개, hidden state 크기 5120, layer 수 40, FP16 한 값의 2바이트를 곱해 나와요. OPT는 최대 2048토큰까지 생성하므로 요청 하나의 KV cache는 최대 1.6GB까지 커질 수 있어요.
+13B 파라미터 모델을 NVIDIA A100 40GB 한 장에서 서빙하면 GPU 메모리의 약 65%(26GB)는 모델 가중치가, 30% 가까이는 KV cache가 차지해요. 가중치는 서빙 내내 그대로이고 activation이 쓰는 메모리는 작아요. 그래서 최대 배치 크기는 KV cache를 관리하는 방식에 달려 있어요.
 
-40GB A100 한 장에서 13B 모델을 서빙하면 메모리의 약 65%인 26GB를 모델 가중치가 차지해요. KV cache에는 메모리의 30% 가까이가 쓰이고 activation은 나머지 소량을 써요. 가중치는 서빙 중에 바뀌지 않으므로 한 번에 배치할 수 있는 요청 수는 KV cache 관리 방식이 정해요.
+OPT-13B에서 토큰 하나의 KV cache는 800KB예요. key와 value 두 벡터에 hidden state 크기 5120, layer 수 40, FP16 한 값의 크기 2바이트를 곱한 값이에요.
 
-GPU 연산 속도는 메모리 용량보다 빠르게 늘고 있어요. A100에서 H100으로 가면서 FLOPS는 2배 넘게 늘었지만 GPU 메모리는 최대 80GB 그대로예요. 저자들은 메모리가 점점 더 큰 병목이 될 것으로 봐요.
+OPT는 최대 2048 토큰까지 생성하므로 요청 하나의 KV cache는 최대 1.6GB까지 커져요.
 
-### 최대 길이만큼 미리 잡는 연속 할당
+Orca가 쓰는 iteration-level scheduling은 iteration마다 끝난 요청을 배치에서 빼고 새 요청을 넣어서 요청의 대기 시간과 padding으로 버리는 연산을 줄였어요. 이 방식에서도 한 번에 배치할 수 있는 요청 수는 KV cache에 쓸 수 있는 GPU 메모리가 제한해요.
 
-FasterTransformer와 Orca 같은 기존 서빙 시스템은 요청 하나의 KV cache를 연속 메모리에 저장해요. 대부분의 딥러닝 프레임워크가 텐서를 연속 메모리에 두도록 요구하거든요. 출력 길이는 미리 알 수 없으므로 요청마다 최대 시퀀스 길이만큼 청크를 할당해요.
+A100에서 H100으로 넘어가면서 FLOPS는 2배 넘게 늘었지만 GPU 메모리는 최대 80GB로 같았는데요. 저자들은 이 추세 때문에 메모리가 점점 더 큰 병목이 될 것으로 봐요.
 
-앞으로 생성할 토큰을 위해 잡아 둔 예약(reserved) 슬롯은 결국 쓰이지만 요청이 끝날 때까지 다른 요청이 쓰지 못해요. 실제 시퀀스가 최대 길이보다 짧으면 남은 슬롯이 끝까지 쓰이지 않는 내부 단편화(internal fragmentation)가 생겨요. buddy allocator 같은 할당기가 요청마다 크기가 다른 청크를 잡으면 청크 사이에는 외부 단편화(external fragmentation)가 남아요.
+## 기존 시스템은 KV cache 메모리를 얼마나 버릴까
 
-vLLM 논문의 프로파일링에서 기존 시스템이 실제 토큰 상태를 저장하는 데 쓴 KV cache 메모리는 20.4~38.2%였어요. 아래 표는 Orca 세 버전의 평균 KV cache 메모리 사용 내역이에요.
+FasterTransformer와 Orca는 요청 하나의 KV cache를 연속된 메모리 공간에 저장해요. 대부분의 딥러닝 프레임워크가 tensor를 연속 메모리에 두도록 요구하거든요. 출력 길이는 생성이 끝나야 알 수 있으므로 두 시스템은 요청이 들어올 때 그 요청의 최대 시퀀스 길이만큼 메모리를 한 번에 잡아요.
+
+미리 잡은 공간 가운데 앞으로 생성할 토큰에 쓸 예약(reserved) 공간은 결국 쓰이지만 요청이 끝날 때까지 다른 요청이 쓸 수 없어요. 실제 길이보다 크게 잡아서 끝까지 쓰이지 않는 부분은 내부 단편화(internal fragmentation)예요. 외부 단편화(external fragmentation)는 요청마다 잡는 크기가 달라서 buddy allocator 같은 할당기의 chunk 사이에 남는 공간이에요.
+
+Orca는 코드가 공개되지 않아 연구진이 직접 구현했고, 출력 공간을 얼마나 넉넉히 잡는지에 따라 세 버전을 만들었어요. Orca (Max)는 항상 모델의 최대 길이인 2048 토큰을 잡아요. Orca (Pow2)는 실제 출력 길이의 최대 2배를 잡아서 출력이 25토큰이면 32토큰을 잡아요.
+
+Orca (Oracle)은 실제 출력 길이를 미리 안다고 가정한 버전이고 실제로는 만들 수 없는 상한이에요.
+
+기본 샘플링 실험 동안 세 Orca 버전의 KV cache 메모리가 평균적으로 어디에 쓰였는지 비율로 나누면 다음과 같아요.
 
 | 시스템 | 토큰 상태 | 예약 | 내부 단편화 | 외부 단편화와 기타 |
 |---|---|---|---|---|
@@ -32,207 +40,153 @@ vLLM 논문의 프로파일링에서 기존 시스템이 실제 토큰 상태를
 | Orca (Pow2) | 26.8% | 17.9% | 13.6% | 41.6% |
 | Orca (Oracle) | 38.2% | 25.2% | - | 36.6% |
 
-Orca의 세 버전은 출력 공간을 얼마나 예약하는지만 달라요. Orca (Max)는 항상 최대 길이인 2048토큰을, Orca (Pow2)는 실제 출력 길이의 최대 2배를 예약하고, Orca (Oracle)는 실제 출력 길이를 미리 안다고 가정해요. 출력 길이를 미리 아는 Orca (Oracle)도 KV cache 메모리의 61.8%를 토큰 상태가 아닌 곳에 썼어요.
+세 Orca 버전이 실제 토큰 상태를 저장한 비율은 20.4~38.2%였어요. Orca (Oracle)은 출력 길이를 정확히 알고도 38.2%만 토큰 상태에 썼어요. 예약 25.2%와 외부 단편화와 기타 36.6%는 출력 길이를 알아도 남는 낭비이고, 두 낭비 모두 요청마다 연속 공간을 통째로 잡는 방식에서 생겨요.
 
-같은 실험에서 vLLM은 KV cache 메모리의 96.3%를 토큰 상태 저장에 썼어요.
+같은 실험에서 vLLM은 KV cache 메모리의 96.3%에 토큰 상태를 저장했어요.
 
-### 시퀀스끼리 공유하지 못하는 KV cache
+연속 공간 방식에서는 메모리를 공유할 수도 없어요. parallel sampling과 beam search는 요청 하나에서 출력 시퀀스를 여러 개 만들고 이 시퀀스들은 같은 프롬프트의 KV cache를 가져요. 기존 시스템은 시퀀스마다 KV cache를 별도의 연속 공간에 저장하므로 같은 프롬프트의 KV cache를 시퀀스마다 따로 둬요.
 
-parallel sampling과 beam search는 요청 하나에서 출력 시퀀스를 여러 개 만들어요. 이 시퀀스들은 같은 프롬프트에서 출발하므로 KV cache 일부를 공유할 수 있어요. 기존 시스템은 시퀀스마다 KV cache를 별도 연속 공간에 저장하기 때문에 이 공유를 하지 못해요.
+## PagedAttention과 block table
 
-vLLM 실험에서 parallel sampling의 프롬프트 KV cache는 전체 KV cache 메모리의 12%를 차지했어요. beam search에서는 후보끼리 공유할 수 있는 부분이 더 크고, 공유 패턴이 디코딩 중에 바뀌어요.
+PagedAttention은 시퀀스의 KV cache를 KV block으로 나누고, 블록들이 메모리에 떨어져 있어도 attention을 계산할 수 있게 만든 attention 알고리즘이에요. 블록 하나에는 정해진 수의 토큰에 대한 key와 value 벡터가 들어가고 이 토큰 수를 블록 크기라고 불러요. attention kernel은 블록을 하나씩 찾아와 query 벡터와 그 블록의 key 벡터로 attention score를 구하고 이 score를 그 블록의 value 벡터에 곱해요.
 
-## PagedAttention: KV cache를 고정 크기 블록으로 나누기
+OS의 가상 메모리에 대응시키면 블록은 페이지, 토큰은 바이트, 요청은 프로세스예요.
 
-PagedAttention은 시퀀스의 KV cache를 KV 블록으로 나눠요. 블록 하나에는 블록 크기 B만큼의 토큰에 대한 key 벡터와 value 벡터가 들어가요. 한 시퀀스의 블록들은 물리 메모리에서 서로 떨어져 있어도 돼요.
+vLLM의 KV cache manager는 요청의 KV cache를 logical block의 목록으로 보고 왼쪽부터 채워요. GPU worker의 block engine은 GPU DRAM에 연속된 공간을 잡아 physical block으로 나눠 둬요. 요청마다 있는 block table은 logical block이 어느 physical block에 있는지와 블록마다 몇 자리가 찼는지를 기록해요.
 
-운영체제의 virtual memory에 대응하면 블록은 페이지, 토큰은 바이트, 요청은 프로세스예요. 블록이 작고 필요할 때마다 할당되므로 내부 단편화가 줄어들어요. 모든 블록의 크기가 같으므로 외부 단편화는 생기지 않아요.
+블록 크기가 4이고 프롬프트가 7토큰인 요청은 아래 순서로 메모리를 받아요.
 
-### 블록 단위로 attention 계산하기
+1. 프롬프트 단계에서 vLLM은 logical block 0과 1을 physical block 7과 1에 매핑해요. 처음 4토큰의 KV cache는 logical block 0에, 나머지 3토큰은 logical block 1에 들어가고 logical block 1에 한 자리가 남아요.
+2. 첫 디코딩 단계에서 새 토큰의 KV cache는 logical block 1의 빈자리에 들어가고, block table에 기록한 찬 자리 수가 3에서 4로 바뀌어요.
+3. 두 번째 디코딩 단계에서는 logical block 1이 가득 찼으므로 vLLM이 새 logical block을 만들고 physical block 3을 할당해 block table에 적어요.
 
-j번째 key 블록을 $K_j$, value 블록을 $V_j$라고 하면 토큰 $i$의 attention은 블록 단위 계산으로 바뀌어요.
+vLLM은 앞 블록이 다 찼을 때만 physical block을 새로 할당하므로 요청 하나가 버리는 메모리는 블록 하나 안으로 제한돼요. 블록 크기가 16이면 요청 하나에서 비는 자리는 많아야 15개죠. 요청이 끝나면 그 요청의 블록은 반납되어 다른 요청의 KV cache를 담아요.
 
-$$
-A_{ij} = \frac{\exp(q_i^\top K_j / \sqrt{d})}{\sum_{t=1}^{\lceil i/B \rceil} \exp(q_i^\top K_t \mathbf{1} / \sqrt{d})}, \quad o_i = \sum_{j=1}^{\lceil i/B \rceil} V_j A_{ij}^\top
-$$
+모델을 여러 GPU에 나눠 실행할 때도 KV cache manager는 중앙 scheduler 안에 하나만 있어요. Megatron-LM 방식의 tensor parallelism에서는 GPU마다 같은 입력 토큰을 처리하므로 worker들은 같은 block table을 받고 각자 맡은 attention head의 KV cache만 저장해요.
 
-$A_{ij}$는 j번째 KV 블록에 대한 attention score 행 벡터예요. PagedAttention 커널은 KV 블록을 하나씩 찾아 가져와 query 벡터 $q_i$와 블록의 key 벡터를 곱해 score를 구하고, 이 score를 같은 블록의 value 벡터와 곱해 출력 $o_i$를 만들어요. 예를 들어 query 토큰이 "forth"이면 커널은 "Four score and seven"이 담긴 블록의 key 벡터와 "forth"의 query 벡터를 곱해 그 블록의 score를 구해요.
+### 블록 크기를 16으로 정한 이유
 
-Transformer의 key와 value 벡터는 층과 attention head마다 따로 있어요. 이 벡터를 한 블록에 모으는 설계와 층과 헤드마다 블록을 따로 두는 설계는 성능 차이가 없었고, vLLM은 구현이 쉬운 후자를 골랐어요.
+블록이 작으면 kernel이 KV cache를 읽고 처리할 때 GPU 병렬성을 다 쓰지 못하는데요. 블록이 크면 마지막 블록의 빈자리가 늘어 내부 단편화가 커지고 블록을 공유할 확률은 줄어들어요.
 
-### block table로 논리 블록과 물리 블록 잇기
+고정된 요청률에서 기본 샘플링으로 잰 end-to-end latency는 데이터셋마다 달랐어요. 평균 입력 161토큰, 평균 출력 338토큰인 ShareGPT 트레이스에서는 블록 크기 16~128의 성능이 가장 좋았어요. 평균 입력 19토큰, 평균 출력 58토큰인 Alpaca 트레이스에서는 16과 32가 좋았고 그보다 큰 블록에서는 시퀀스가 블록보다 짧아져 성능이 크게 떨어졌어요.
 
-vLLM의 KV cache manager는 요청의 KV cache를 논리 블록의 나열로 표현하고, 새 토큰이 생기면 논리 블록을 왼쪽부터 채워요. GPU worker의 block engine은 GPU DRAM에서 연속 청크를 잡아 물리 블록으로 나눠 둬요. block table은 요청마다 논리 블록이 어느 물리 블록에 있는지와 블록에 채워진 위치 수를 기록해요.
+저자들은 블록 크기 16이 대부분의 워크로드에서 GPU를 충분히 활용할 만큼 크고 내부 단편화를 피할 만큼 작다고 보고 vLLM의 기본 블록 크기를 16으로 정했어요.
 
-아래 표는 블록 크기가 4일 때 7토큰 프롬프트 "Four score and seven years ago our"를 처리하는 block table의 상태예요.
+PagedAttention의 attention kernel은 block table을 읽고 분기를 더 실행하고 가변 시퀀스 길이를 처리해야 해서 FasterTransformer의 attention kernel보다 latency가 20~26% 높았어요. 이 오버헤드는 attention 연산자에만 생기고 Linear 같은 다른 연산자에는 생기지 않아요. vLLM은 block table대로 KV cache를 읽는 과정과 attention 계산을 kernel 하나로 합치고, 블록 하나를 GPU warp 하나가 읽게 해서 메모리 접근을 coalesced access로 맞췄어요.
 
-| 논리 블록 | 물리 블록 | 채워진 수 | 저장된 토큰 |
-|---|---|---|---|
-| 0 | 7 | 4 | Four score and seven |
-| 1 | 1 | 3 → 4 | years ago our, fathers |
-| 2 | 3 | 1 | brought |
+vLLM 엔진은 Python 8.5K줄과 C++/CUDA 2K줄로 되어 있어요. scheduler와 block manager는 Python으로, PagedAttention 같은 핵심 연산은 CUDA kernel로 작성했어요.
 
-1. 프롬프트 단계에서 vLLM은 최대 길이만큼 예약하지 않고 프롬프트에 필요한 논리 블록 0, 1만 물리 블록 7, 1에 매핑해요. 논리 블록 1의 남은 한 칸은 생성 단계에서 써요.
-2. 첫 디코딩 단계에서 "fathers"의 KV cache가 논리 블록 1의 빈 칸에 들어가고, 채워진 수가 3에서 4로 바뀌어요.
-3. 두 번째 디코딩 단계에서는 논리 블록 1이 가득 차 있으므로 vLLM이 논리 블록 2를 만들고 물리 블록 3을 새로 할당해요.
+## 블록 단위로 KV cache 공유하기
 
-vLLM은 이전 블록이 모두 찬 뒤에만 새 물리 블록을 할당해요. 그래서 요청 하나의 메모리 낭비는 블록 하나 안으로 제한되죠. 요청이 끝나면 그 요청의 블록은 해제되어 다른 요청의 KV cache를 저장해요.
+vLLM에서는 physical block 하나를 여러 logical block에 매핑할 수 있어서 같은 KV cache를 여러 시퀀스가 함께 써요. vLLM은 physical block마다 reference count를 두어 그 블록을 가리키는 logical block 수를 세요.
 
-블록 크기를 1보다 크게 잡으면 커널이 더 많은 위치의 KV cache를 병렬로 처리해 하드웨어 활용률이 오르고 latency가 줄어드는데요. 반대로 블록이 클수록 단편화는 늘어나요.
+### Parallel sampling과 copy-on-write
 
-vLLM 스케줄러는 반복마다 배치할 시퀀스를 고르고 새로 필요한 논리 블록에 물리 블록을 할당해요. 그다음 프롬프트 단계 요청의 전체 토큰과 생성 단계 요청의 최신 토큰을 한 시퀀스로 이어 모델에 넣어요.
+parallel sampling은 프롬프트 하나로 출력을 여러 개 만들어 사용자가 고르게 하는 방식이고 프로그래밍 어시스턴트에서 써요. 출력 두 개를 만드는 요청에서 vLLM은 두 시퀀스의 프롬프트용 logical block 0, 1을 같은 physical block 7, 1에 매핑해요. 두 physical block의 reference count는 2예요.
 
-### vLLM의 커널과 분산 실행
+생성 단계에서는 두 샘플 A1과 A2가 서로 다른 토큰을 만들어요. 샘플 A1이 마지막 logical block에 새 KV cache를 쓰려 하면 vLLM은 physical block 1의 reference count가 1보다 큰 것을 보고 새 physical block 3에 block 1의 내용을 복사한 뒤 block 1의 reference count를 1로 줄여요. 다음에 샘플 A2가 쓸 때는 reference count가 이미 1이므로 physical block 1에 바로 써요.
 
-vLLM 엔진은 Python 8.5K줄과 C++/CUDA 2K줄로 되어 있어요. 스케줄러와 블록 매니저는 Python으로, PagedAttention 같은 핵심 연산은 CUDA 커널로 구현했어요. 프론트엔드는 FastAPI로 만들었고 OpenAI API 인터페이스를 확장해 요청마다 최대 시퀀스 길이와 beam width를 지정할 수 있어요.
+이 방식은 OS가 fork한 프로세스의 페이지를 다루는 copy-on-write를 블록 단위로 옮긴 거예요. 프롬프트의 KV cache는 마지막 logical block을 뺀 나머지를 모든 샘플이 공유해요. copy-on-write가 떨어진 블록 여러 개를 복사할 때 cudaMemcpyAsync를 블록마다 부르면 작은 데이터 이동이 많이 생기므로 vLLM은 여러 블록의 복사를 kernel launch 한 번으로 묶었어요.
 
-블록 단위 메모리 접근은 기존 커널이 효율적으로 지원하지 않는 패턴이라 vLLM은 아래 커널을 따로 만들었어요.
+### Beam search
 
-- fused reshape and block write 커널은 새 KV cache를 블록으로 나누고 블록 읽기에 맞는 레이아웃으로 바꿔 block table 위치에 저장하는 과정을 커널 하나로 합쳐요.
-- fused block read and attention 커널은 FasterTransformer의 attention 커널을 고쳐 block table을 따라 KV cache를 읽으면서 attention을 계산해요. coalesced memory access를 위해 블록마다 GPU warp 하나를 배정해요.
-- fused block copy 커널은 copy-on-write가 일으키는 비연속 블록 복사를 cudaMemcpyAsync로 하나씩 호출하지 않고 커널 한 번 실행으로 묶어요.
+beam search는 매 단계에서 확률이 높은 후보 k개를 남기는 디코딩 방식이고 기계 번역 같은 작업에 써요. beam 후보들은 프롬프트 블록과 함께 갈라지기 전까지 생성한 블록도 공유하고, 공유 관계는 디코딩이 진행되면서 바뀌어요.
 
-모델이 GPU 한 장에 들어가지 않으면 vLLM은 Megatron-LM 방식의 tensor model parallelism으로 attention head를 GPU worker에 나눠요. 모든 worker가 같은 입력 토큰을 처리하므로 KV cache manager는 중앙 스케줄러에 하나만 있어요. worker는 같은 물리 블록 ID를 쓰되 자기 attention head의 KV cache만 저장해요.
+k가 4인 예에서 다음 단계의 상위 4개 후보가 모두 기존 후보 1과 2에서 나오면 탈락한 후보 0과 3만 쓰던 physical block 4개는 reference count가 0이 되어 반납돼요. 기존 서빙 시스템은 이런 상황에서 beam 후보 사이에 KV cache를 자주 복사해야 했어요. vLLM에서는 후보들이 블록 대부분을 공유하고 새 토큰이 공유 중인 블록에 들어갈 때만 그 블록 하나를 copy-on-write로 복사해요.
 
-스케줄러는 반복마다 입력 토큰 ID와 block table을 worker에 broadcast해요. 그래서 worker끼리는 메모리 관리를 위해 따로 동기화하지 않아요.
+### Shared prefix
 
-## 블록을 공유하는 디코딩
+LLM 서비스는 instruction과 예시 입출력이 든 system prompt를 사용자 입력 앞에 붙여 프롬프트를 만들기도 해요. 이런 서비스에서는 여러 요청이 같은 prefix를 가지므로 서비스 제공자가 prefix의 KV cache를 physical block에 미리 저장해 둘 수 있어요. 요청이 오면 vLLM은 prefix 부분의 logical block을 캐시된 physical block에 매핑하고, 프롬프트 단계 계산은 사용자 입력 부분에만 해요.
 
-### parallel sampling과 copy-on-write
+디코딩 방식이 다른 요청도 한 배치에 넣을 수 있어요. logical block을 physical block으로 옮기는 매핑 계층이 공유 관계를 감추므로 모델과 kernel은 시퀀스마다 physical block ID 목록만 받아요. vLLM은 이런 디코딩 방식을 시퀀스를 복제하는 fork, 토큰을 붙이는 append, 시퀀스를 지우는 free 세 메서드로 구현해요.
 
-parallel sampling은 프롬프트 하나에서 출력을 여러 개 샘플링하는 방식이고, 코드 어시스턴트처럼 사용자가 후보 중 하나를 고르는 서비스에서 써요. 출력 두 개를 만드는 요청에서 두 시퀀스의 프롬프트 논리 블록은 같은 물리 블록을 가리켜요. vLLM은 물리 블록마다 reference count를 두고, 이 경우 프롬프트 물리 블록의 reference count는 2예요.
+## 메모리가 모자랄 때 선점하고 복구하기
 
-생성 단계에서 두 출력은 서로 다른 토큰을 샘플링하므로 KV cache를 따로 저장해야 해요. 첫 번째 샘플이 공유 중인 마지막 블록에 쓰려고 하면 vLLM은 그 물리 블록의 reference count가 1보다 큰 것을 확인하고 새 물리 블록을 할당해 내용을 복사한 뒤 reference count를 1로 줄여요. 두 번째 샘플이 쓸 때는 reference count가 이미 1이므로 원래 물리 블록에 바로 써요.
+요청이 몰리고 출력이 길어지면 GPU의 physical block이 바닥날 수 있어요. vLLM은 요청을 도착 순서대로 처리하는 FCFS(first-come-first-serve) 정책을 쓰고 선점이 필요하면 가장 늦게 온 요청부터 선점해요.
 
-블록 단위 copy-on-write는 운영체제가 프로세스를 fork할 때 쓰는 copy-on-write와 같은 방식이에요. 이 방식에서 샘플들은 마지막 논리 블록을 뺀 프롬프트 KV cache를 함께 써요.
+한 시퀀스의 블록은 함께 접근되므로 vLLM은 시퀀스의 블록을 전부 내보내거나 하나도 내보내지 않아요. beam search 후보처럼 요청 하나에 속한 시퀀스들은 메모리를 공유할 수 있어서 sequence group으로 묶어 함께 선점하고 함께 다시 스케줄해요.
 
-### beam search에서 바뀌는 공유 패턴
+내보낸 블록을 되살리는 방법은 swapping과 recomputation이에요. swapping은 내보낸 블록을 CPU 메모리로 복사해 두었다가 다시 가져와요.
 
-beam search에서는 프롬프트 블록과 함께 후보끼리 겹치는 생성 블록도 공유되고, 공유 패턴은 디코딩이 진행되면서 바뀌어요. 어떤 후보가 상위 k개에서 빠지면 그 후보의 논리 블록이 해제되고, reference count가 0이 된 물리 블록이 반납돼요. 새 후보는 살아남은 후보의 블록을 공유한 채 새 KV cache를 담을 블록만 새로 받아요.
+선점이 일어나면 vLLM은 선점한 시퀀스가 모두 끝날 때까지 새 요청을 받지 않아요. 이 설계에서 CPU로 나간 블록 수는 GPU의 전체 physical block 수를 넘지 않으므로 CPU 쪽 swap 공간은 KV cache에 할당한 GPU 메모리 크기로 제한돼요.
 
-기존 서빙 시스템은 beam 후보 사이에서 KV cache를 자주 복사해야 해요. vLLM에서는 새 토큰이 기존 공유 블록 안에 들어갈 때만 copy-on-write가 일어나고, 그때도 블록 하나만 복사해요.
+recomputation은 선점한 시퀀스를 다시 스케줄할 때 KV cache를 새로 계산해요. 이미 생성한 토큰을 원래 프롬프트 뒤에 붙여 새 프롬프트로 넣으면 프롬프트 단계 한 번에 모든 위치의 KV cache를 만들 수 있어서 처음 생성할 때보다 latency가 훨씬 짧을 수 있어요.
 
-### 공유 접두사와 섞인 디코딩
+두 방법의 비용은 블록 크기에 따라 갈렸어요. 블록이 작으면 CPU와 GPU 사이에 작은 전송이 많이 생겨 유효 PCIe 대역폭이 줄고 swapping 오버헤드가 커졌어요. recomputation은 KV block을 쓰지 않아서 오버헤드가 블록 크기와 상관없이 일정했어요. OPT-13B와 ShareGPT 트레이스로 잰 end-to-end 성능은 블록 크기 16~64에서 두 방법이 비슷했고, 기본 블록 크기 16도 이 구간에 들어가요.
 
-여러 요청이 같은 system prompt를 쓰는 서비스라면 서비스 제공자가 그 접두사의 KV cache를 미리 물리 블록에 저장해 둘 수 있어요. 사용자 요청은 자기 논리 블록을 이 물리 블록에 매핑하고 마지막 블록만 copy-on-write로 표시해요. 그러면 프롬프트 단계 계산은 사용자 입력 부분에만 실행돼요.
-
-모델과 커널은 시퀀스마다 물리 블록 ID 목록만 받고 시퀀스 사이의 공유 패턴은 알 필요가 없어요. 그래서 vLLM은 디코딩 방식이 다른 요청을 한 배치에 함께 처리할 수 있어요.
-
-vLLM은 이런 디코딩을 fork, append, free 세 메서드로 구현해요. parallel sampling은 입력 시퀀스를 fork해 출력 시퀀스를 여러 개 만들고, 반복마다 append로 토큰을 붙이고, 종료 조건을 만족한 시퀀스를 free로 지워요.
-
-## GPU 블록이 바닥날 때의 선점과 복구
-
-요청이 많아지고 출력이 길어지면 vLLM도 새 KV cache를 저장할 물리 블록이 모자랄 수 있어요. vLLM은 모든 요청을 FCFS(first-come-first-serve)로 처리하고, 선점이 필요하면 가장 늦게 들어온 요청부터 선점해요.
-
-한 시퀀스의 블록은 함께 접근되므로 vLLM은 그 블록을 전부 내보내거나 하나도 내보내지 않는 all-or-nothing eviction을 써요. beam 후보처럼 요청 하나에 속한 시퀀스들은 메모리를 공유할 수 있어서 sequence group으로 묶이고, 항상 함께 선점되고 함께 다시 스케줄돼요.
-
-내보낸 블록은 swapping이나 재계산(recomputation)으로 되살려요. swapping은 내보낸 블록을 CPU 메모리로 복사하고 CPU block allocator가 이 블록을 관리해요. 선점이 일어나면 vLLM은 선점된 시퀀스가 모두 끝날 때까지 새 요청을 받지 않아요. 이 규칙 덕분에 CPU로 옮기는 블록 수는 GPU의 전체 물리 블록 수를 넘지 않아요.
-
-재계산은 선점된 시퀀스를 다시 스케줄할 때 KV cache를 새로 계산해요. 디코딩에서 생성한 토큰을 원래 프롬프트 뒤에 이어 새 프롬프트로 만들면 모든 위치의 KV cache를 프롬프트 단계 한 번으로 만들 수 있어요. 그래서 재계산 latency는 처음 생성할 때의 latency보다 크게 낮을 수 있어요.
-
-블록 크기를 바꾼 실험에서 swapping은 블록이 작을 때 오버헤드가 컸어요. 작은 블록은 CPU와 GPU 사이에 작은 전송을 많이 만들어 실효 PCIe 대역폭을 떨어뜨려요. 재계산은 KV 블록을 쓰지 않으므로 오버헤드가 블록 크기와 관계없이 일정했어요.
-
-블록이 작으면 재계산이, 크면 swapping이 더 효율적이에요. 원문은 블록이 큰 구간에서도 재계산 오버헤드가 "never higher than 20% of swapping's latency"라고 적었어요.
-
-블록 크기 16~64에서는 두 방식의 end-to-end 성능이 비슷했어요.
-
-## Orca, FasterTransformer와 비교한 실험
+## Orca, FasterTransformer와 비교한 처리량
 
 ### 실험 설정
 
-vLLM 평가 실험은 Google Cloud의 A2 인스턴스에서 NVIDIA A100으로 했어요. 모델은 OPT 13B, 66B, 175B와 LLaMA 13B를 썼고, 모델별 서버 구성은 아래와 같아요.
+실험은 Google Cloud의 A2 인스턴스(NVIDIA A100)에서 OPT 13B, 66B, 175B와 LLaMA 13B로 했어요. 모델 크기별 GPU 구성과 KV cache에 쓸 수 있는 메모리는 다음과 같아요.
 
-| 모델 크기 | 13B | 66B | 175B |
-|---|---|---|---|
-| GPU | A100 | 4×A100 | 8×A100-80GB |
-| 전체 GPU 메모리 | 40GB | 160GB | 640GB |
-| 파라미터 크기 | 26GB | 132GB | 346GB |
-| KV cache용 메모리 | 12GB | 21GB | 264GB |
-| 최대 KV cache 슬롯 수 | 15.7K | 9.7K | 60.1K |
+| 모델 크기 | GPU | 전체 GPU 메모리 | 파라미터 크기 | KV cache 메모리 | 최대 KV cache 슬롯 |
+|---|---|---|---|---|---|
+| 13B | A100 | 40GB | 26GB | 12GB | 15.7K |
+| 66B | 4×A100 | 160GB | 132GB | 21GB | 9.7K |
+| 175B | 8×A100-80GB | 640GB | 346GB | 264GB | 60.1K |
 
-13B 설정의 슬롯 수 15.7K는 KV cache용 메모리 12GB를 토큰당 800KB로 나눈 값과 맞아요. 66B 설정은 KV cache에 21GB를 쓰지만 슬롯은 9.7K개로 13B 설정보다 적어요.
+워크로드는 ShareGPT와 Alpaca 데이터셋의 입력 길이와 출력 길이로 합성했어요. ShareGPT는 사용자들이 공유한 ChatGPT 대화 모음이고 평균 입력이 161토큰, 평균 출력이 338토큰이에요. Alpaca는 GPT-3.5가 self-instruct로 만든 instruction 데이터셋이고 평균 입력이 19토큰, 평균 출력이 58토큰이에요. ShareGPT의 평균 입력은 Alpaca의 8.4배, 평균 출력은 5.8배예요.
 
-워크로드는 ShareGPT와 Alpaca 데이터셋의 입력과 출력 길이로 합성했어요. ShareGPT는 사용자가 공유한 ChatGPT 대화 모음이고 Alpaca는 GPT-3.5로 만든 instruction 데이터셋이에요. ShareGPT의 평균 길이는 입력 161.31토큰, 출력 337.99토큰이고 Alpaca는 입력 19.31토큰, 출력 58.45토큰이에요.
+요청 도착 시각은 Poisson 분포로 만들었어요.
 
-두 데이터셋에 타임스탬프가 없어서 요청 도착 시간은 Poisson 분포로 만들었어요.
+FasterTransformer는 latency에 최적화된 분산 추론 엔진이고 자체 scheduler가 없어서 연구진이 Triton과 비슷한 dynamic batching scheduler를 붙였어요. Orca는 출력 공간을 잡는 방식에 따라 Max, Pow2, Oracle 세 버전을 직접 구현해 썼어요.
 
-FasterTransformer는 자체 스케줄러가 없어서 dynamic batching 스케줄러를 붙이고 최대 배치 크기를 GPU 메모리가 허용하는 만큼 크게 잡았어요. Orca는 공개되지 않아 재구현한 버전을 썼고 buddy allocator를 쓴다고 가정했어요. Orca (Pow2)는 실제 출력 길이가 25이면 32칸을 예약하는 식이에요.
+지표는 normalized latency예요. normalized latency는 요청마다 end-to-end latency를 출력 길이로 나눈 값의 평균(s/token)이고, 처리량이 높은 시스템은 요청률이 높아져도 이 값을 낮게 유지해요. 트레이스는 1시간 길이를 썼고 OPT-175B만 비용 때문에 15분 트레이스를 썼어요.
 
-지표는 normalized latency예요. normalized latency는 요청마다 end-to-end latency를 출력 길이로 나눈 값의 평균이고, 요청률을 올려도 이 값이 낮게 유지되는 시스템이 처리량이 높은 시스템이에요. trace 길이는 대부분 1시간이고 OPT-175B만 비용 때문에 15분이에요.
+### 기본 샘플링
 
-### 기본 샘플링: 요청 하나에 출력 하나
+요청 하나에 출력 하나를 만드는 기본 샘플링에서 요청률을 올리면 normalized latency는 천천히 오르다가 요청률이 시스템 용량을 넘는 지점에서 갑자기 치솟아요. 용량을 넘으면 큐가 끝없이 길어지거든요.
 
-요청률이 시스템 용량을 넘으면 큐가 계속 길어지고 latency가 급격히 올라요.
+ShareGPT 워크로드에서 vLLM은 비슷한 latency를 유지하면서 Orca (Oracle)보다 1.7~2.7배, Orca (Max)보다 2.7~8배 높은 요청률을 처리했어요. FasterTransformer와 비교하면 vLLM이 처리한 요청률은 최대 22배였어요. FasterTransformer는 fine-grained scheduling이 없고 메모리도 Orca (Max)처럼 비효율적으로 관리하기 때문이에요.
 
-ShareGPT에서 vLLM은 비슷한 latency를 유지하면서 Orca (Oracle)보다 1.7~2.7배, Orca (Max)보다 2.7~8배 높은 요청률을 처리했어요. FasterTransformer와 비교하면 vLLM이 처리한 요청률은 최대 22배였어요.
+요청률 차이는 한 번에 배치한 요청 수에서 나와요. OPT-13B를 서빙할 때 평균 배치 요청 수는 다음과 같아요.
 
-OPT-13B에서 동시에 배치한 평균 요청 수는 아래와 같아요.
-
-| 워크로드 | Orca (Max) | Orca (Pow2) | Orca (Oracle) | vLLM |
-|---|---|---|---|---|
-| ShareGPT, 2 req/s | 7.00 | 9.81 | 13.62 | 30.42 |
-| Alpaca, 30 req/s | 7.00 | 43.24 | 72.75 | 132.44 |
-
-ShareGPT 2 req/s에서 vLLM은 Orca (Oracle)보다 2.2배, Orca (Max)보다 4.3배 많은 요청을 동시에 처리했어요. Orca (Max)의 평균 배치 요청 수는 두 워크로드에서 모두 7.00개예요. 13B 설정의 슬롯 15.7K개를 요청당 예약량 2048로 나누면 7.7이므로 요청마다 2048토큰을 잡는 Orca (Max)는 요청을 7개까지만 올릴 수 있어요.
-
-Alpaca에서도 경향은 같았지만 OPT-175B에서는 vLLM과 Orca (Oracle), Orca (Pow2)의 차이가 작았어요. OPT-175B 설정은 KV cache용 메모리가 264GB로 크고 Alpaca 시퀀스는 짧아서 Orca도 요청을 많이 배치할 수 있어요. 이 조건에서 시스템 성능은 compute-bound가 돼요.
-
-### 공유가 있는 디코딩과 접두사 공유
-
-OPT-13B와 Alpaca로 parallel sampling을 돌린 실험에서 샘플 수를 2, 4, 6으로 늘릴수록 vLLM의 Orca 대비 개선 폭이 커졌어요. beam search는 공유가 더 많아서 개선 폭이 더 컸어요. Orca (Oracle) 대비 개선은 기본 샘플링의 1.3배에서 beam width 6인 beam search의 2.3배로 늘었어요.
-
-메모리 절약률은 공유로 아낀 블록 수를 공유하지 않았을 때의 전체 블록 수로 나눈 값이에요.
-
-| 데이터셋 | parallel sampling | beam search |
+| 시스템 | ShareGPT (2 req/s) | Alpaca (30 req/s) |
 |---|---|---|
-| Alpaca | 6.1~9.8% | 37.6~55.2% |
-| ShareGPT | 16.2~30.5% | 44.3~66.3% |
+| Orca (Max) | 7.00 | 7.00 |
+| Orca (Pow2) | 9.81 | 43.24 |
+| Orca (Oracle) | 13.62 | 72.75 |
+| vLLM | 30.42 | 132.44 |
 
-ShareGPT의 메모리 절약률이 Alpaca보다 높은 것은 ShareGPT 프롬프트가 평균 8.4배 길어 공유할 프롬프트 KV cache가 많기 때문일 수 있어요.
+ShareGPT에서 vLLM은 Orca (Oracle)보다 2.2배, Orca (Max)보다 4.3배 많은 요청을 동시에 처리했어요. Orca (Max)의 평균 배치 요청 수는 두 데이터셋에서 모두 7.00이었어요. 13B 설정의 KV cache 슬롯 15.7K를 Orca (Max)가 요청마다 잡는 2048 토큰으로 나누면 7.7이에요. 이 계산대로라면 Orca (Max)의 KV cache 메모리에는 데이터셋과 상관없이 요청이 7개까지만 들어가요.
 
-접두사 공유 실험은 다국어 모델인 LLaMA-13B로 WMT16 영어→독일어 번역을 했어요. 예시 1개를 담은 80토큰 접두사를 공유하면 vLLM의 처리량은 Orca (Oracle)의 1.67배였고, 예시 5개를 담은 341토큰 접두사를 공유하면 3.58배였어요.
+Alpaca 워크로드에서 잰 요청률도 ShareGPT와 같은 경향이었지만 OPT-175B에서는 vLLM이 Orca (Oracle)와 Orca (Pow2)를 앞선 폭이 다른 모델 크기보다 작았어요. OPT-175B 설정은 KV cache에 264GB를 쓸 수 있고 Alpaca는 시퀀스가 짧아서 Orca도 요청을 많이 배치할 수 있었기 때문이에요. 이 설정에서 시스템은 compute-bound 상태였어요.
 
-### 챗봇 워크로드
+### 공유가 많은 워크로드
 
-챗봇 실험은 ShareGPT 대화 기록과 마지막 질문을 이어 프롬프트로 만들었어요. OPT-13B의 컨텍스트 길이 제한 때문에 프롬프트를 마지막 1024토큰으로 자르고 최대 1024토큰을 생성하게 했어요.
+parallel sampling과 beam search 실험은 OPT-13B와 Alpaca 워크로드로 했어요. 요청 하나에서 만드는 샘플 수를 2, 4, 6으로 늘리자 vLLM이 Orca보다 앞선 폭이 커졌고, 공유할 블록이 더 많은 beam search에서는 차이가 더 컸어요. Orca (Oracle) 대비 vLLM의 개선 폭은 기본 샘플링의 1.3배에서 beam width 6인 beam search의 2.3배로 늘었어요.
 
-챗봇 워크로드에서 vLLM은 세 Orca 버전보다 2배 높은 요청률을 처리했어요.
+블록 공유로 아낀 메모리는 공유로 아낀 블록 수를 공유하지 않았을 때의 전체 블록 수로 나눠 쟀어요. Alpaca 워크로드에서 잰 절감률은 다음과 같아요.
 
-ShareGPT에는 긴 대화가 많아 대부분 요청의 입력이 1024토큰이었어요. Orca는 buddy allocator 때문에 출력 길이 예측과 관계없이 출력용으로 1024토큰을 예약했고, 그래서 Orca 세 버전의 결과가 비슷했어요.
+| 설정 | 2 | 4 | 6 |
+|---|---|---|---|
+| parallel sampling (출력 수) | 6.09% | 8.53% | 9.79% |
+| beam search (beam width) | 37.56% | 53.13% | 55.16% |
 
-## 블록 크기 16과 커널 오버헤드
+ShareGPT 워크로드에서 잰 절감률은 parallel sampling에서 16.2~30.5%, beam search에서 44.3~66.3%로 Alpaca보다 높았어요. ShareGPT의 평균 입력이 Alpaca의 8.4배라서 샘플들이 공유하는 프롬프트 블록이 더 많기 때문으로 보여요.
 
-PagedAttention 커널은 block table 접근, 추가 분기, 가변 시퀀스 길이 처리 때문에 FasterTransformer 커널보다 attention 커널 latency가 20~26% 높았어요.
+shared prefix 실험은 다국어 모델인 LLaMA-13B로 WMT16 영어-독일어 번역을 하면서 instruction과 번역 예시가 든 prefix를 요청들이 공유하게 했어요. 예시 1개가 든 80토큰 prefix에서 vLLM의 처리량은 Orca (Oracle)의 1.67배였고, 예시 5개가 든 341토큰 prefix에서는 3.58배였어요.
 
-저자들은 이 오버헤드가 attention 연산자에만 생기고 Linear 같은 다른 연산자에는 영향이 없어서 작다고 봐요. end-to-end 실험에서 vLLM은 이 오버헤드를 안고도 FasterTransformer보다 최대 22배 높은 요청률을 처리했어요.
+챗봇 실험은 OPT-13B에 ShareGPT의 대화 기록과 마지막 질문을 프롬프트로 넣었어요. 프롬프트는 마지막 1024토큰으로 자르고 출력은 최대 1024토큰으로 제한했어요. 이 실험에서 vLLM은 세 Orca 버전보다 2배 높은 요청률을 처리했어요.
 
-블록이 너무 작으면 KV cache를 읽고 처리할 때 GPU 병렬성을 다 쓰지 못해요. 블록이 너무 크면 내부 단편화가 늘고 블록을 공유할 확률이 줄어들어요.
+ShareGPT에는 긴 대화가 많아 대부분 요청의 입력이 1024토큰이었고, buddy allocation 때문에 세 Orca 버전 모두 출력 길이 예측과 상관없이 출력용으로 1024토큰을 잡았어요.
 
-고정 요청률에서 블록 크기를 바꾼 실험에서 ShareGPT trace는 블록 크기 16~128에서 가장 좋았어요. Alpaca trace는 16과 32에서 좋았고, 그보다 큰 블록에서는 시퀀스가 블록보다 짧아져 성능이 크게 떨어졌어요. Alpaca의 평균 입력과 출력을 더하면 77.76토큰이므로 블록 크기가 128이면 평균적인 요청 하나가 블록 하나도 다 채우지 못해요.
+## 한국어 서비스에 옮긴다면
 
-vLLM의 기본 블록 크기는 16이에요. 저자들은 블록 크기 16이 대부분의 워크로드에서 GPU를 효율적으로 쓸 만큼 크고 내부 단편화를 피할 만큼 작다고 봤어요.
+한국어 텍스트를 영어보다 많은 토큰으로 나누는 토크나이저를 쓰는 서비스라면 같은 내용의 대화도 시퀀스가 길어지고 요청당 KV cache가 커져요. vLLM의 개선 폭은 시퀀스가 긴 워크로드에서 컸으므로 이런 서비스의 결과는 Alpaca보다 ShareGPT 쪽에 가까울 수 있어요.
 
-## 이득이 커지는 워크로드와 줄어드는 워크로드
+모든 요청 앞에 같은 system prompt를 붙이는 서비스라면 shared prefix 실험이 가장 가까운 조건이에요. 이 실험에서는 공유 prefix가 80토큰에서 341토큰으로 길어지자 Orca (Oracle) 대비 처리량이 1.67배에서 3.58배로 커졌어요. system prompt가 5-shot 실험의 341토큰처럼 길다면 prefix의 KV cache를 미리 저장해 두는 설정부터 확인해 볼 수 있어요.
 
-paging이 LLM 서빙의 KV cache에 맞는 이유는 출력 길이를 몰라 메모리를 동적으로 할당해야 하고 성능이 GPU 메모리 용량에 묶여 있기 때문이에요.
-
-DNN 학습은 텐서 모양이 대개 정해져 있어 메모리 할당을 미리 최적화할 수 있어요. LLM이 아닌 DNN 서빙은 주로 compute-bound라서 메모리 효율이 성능으로 이어지지 않을 수 있어요. 이런 워크로드에서는 메모리 간접 참조와 비연속 블록의 오버헤드 때문에 vLLM의 기법이 오히려 성능을 떨어뜨릴 수 있어요.
-
-LLM 서빙 안에서도 OPT-175B와 Alpaca 조합처럼 KV cache 메모리가 넉넉하고 시퀀스가 짧으면 vLLM과 Orca (Oracle)의 차이가 작았어요. 응답이 짧은 분류나 추출 위주 서비스를 큰 GPU 메모리로 돌린다면 PagedAttention으로 얻는 처리량 이득도 작을 수 있어요.
-
-접두사 공유 실험에서 공유 접두사를 80토큰에서 341토큰으로 늘리자 vLLM의 Orca (Oracle) 대비 처리량은 1.67배에서 3.58배로 늘었어요. 긴 system prompt나 few-shot 예시를 모든 요청에 붙이는 서비스라면 접두사 공유의 효과가 이 실험에 가까울 수 있어요.
-
-한국어 서비스에서 쓰는 토크나이저가 한 단어를 여러 토큰으로 나눈다면 같은 대화도 시퀀스가 길어져요. 그런 서비스의 시퀀스 길이 분포는 Alpaca보다 ShareGPT에 가까울 수 있어요. 그렇다면 블록 크기는 ShareGPT trace에서 성능이 가장 좋았던 16~128 구간을 기준으로 고를 수 있어요.
+짧은 질문에 짧게 답하는 요청이 대부분이고 KV cache에 쓸 GPU 메모리가 넉넉한 서비스라면 OPT-175B와 Alpaca 조합처럼 compute-bound가 되어 vLLM의 이득이 작을 수 있어요. 이런 워크로드에서 블록 크기를 32보다 키우면 Alpaca 실험처럼 시퀀스가 블록보다 짧아져 성능이 떨어질 수 있어요.
 
 ## 마치며
 
-vLLM의 2~4배 처리량 개선은 KV cache 메모리가 배치 크기를 제한하는 memory-bound 서빙에서 잰 값이에요. 실험은 A100 GPU에서 OPT 13B~175B와 LLaMA-13B로 했고, 워크로드는 ShareGPT와 Alpaca의 길이 분포에 Poisson 도착 시간을 붙여 합성했어요. 비교 대상인 Orca는 공개 구현이 없어 재구현한 버전이에요. 챗봇 실험은 대화 라운드 사이에 KV cache를 저장하지 않았으므로 이전 대화의 KV cache를 재사용하는 멀티턴 서빙은 이 실험 범위 밖이에요.
+PagedAttention의 이득은 KV cache 메모리가 배치 크기를 제한하는 memory-bound 워크로드에서 나와요. 저자들은 LLM이 아닌 DNN 서빙처럼 연산이 병목인 워크로드에 같은 기법을 쓰면 블록을 거치는 간접 참조와 비연속 메모리 때문에 성능이 오히려 떨어질 수 있다고 봐요. 실험은 A100에서 OPT 13B, 66B, 175B와 LLaMA-13B로 했고 요청은 ShareGPT, Alpaca, WMT16의 길이로 합성했어요. 챗봇 실험은 대화 라운드 사이에 KV cache를 남기지 않았으므로 이전 대화의 KV cache를 다음 라운드까지 들고 있는 구성은 이 결과의 범위 밖이에요.
 
 ## 참고자료
 
-- [1] Woosuk Kwon, Zhuohan Li, Siyuan Zhuang, Ying Sheng, Lianmin Zheng, Cody Hao Yu, Joseph E. Gonzalez, Hao Zhang, Ion Stoica, Efficient Memory Management for Large Language Model Serving with PagedAttention (2023). https://doi.org/10.1145/3600006.3613165
-- [2] vLLM project, vLLM (2023). https://github.com/vllm-project/vllm
-- [3] NVIDIA, FasterTransformer (2023). https://github.com/NVIDIA/FasterTransformer
-- [4] Gyeong-In Yu, Joo Seong Jeong, Geon-Woo Kim, Soojeong Kim, Byung-Gon Chun, Orca: A Distributed Serving System for Transformer-Based Generative Models (2022). OSDI 22
-- [5] ShareGPT Team, ShareGPT (2023). https://sharegpt.com/
-- [6] Rohan Taori et al., Stanford Alpaca: An Instruction-following LLaMA model (2023). https://github.com/tatsu-lab/stanford_alpaca
+[1] Woosuk Kwon, Zhuohan Li 외, Efficient Memory Management for Large Language Model Serving with PagedAttention (2023). https://arxiv.org/abs/2309.06180
+[2] vLLM 프로젝트, vLLM (2023). https://github.com/vllm-project/vllm
+[3] Gyeong-In Yu 외, Orca: A Distributed Serving System for Transformer-Based Generative Models (2022). OSDI 22
+[4] NVIDIA, FasterTransformer (2023). https://github.com/NVIDIA/FasterTransformer
