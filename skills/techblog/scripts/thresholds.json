@@ -2,7 +2,7 @@
   "schema": 1,
   "version": "v1",
   "generated_at": "2026-10-05",
-  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit dfdd5f3",
+  "basis": "사람 글 baseline(dev/baseline/stats.json, holdout 제외) Default 40편, Casual 26편. calibrate.py가 생성. 기준 commit 5048688",
   "max_warn": 3,
   "metrics": {
     "G2.exp_ending": {
@@ -374,6 +374,15 @@
       "fixed": true,
       "note": "사람 글 baseline 224편 중 2편(둘 다 2025년 이후 글)에서 1회씩 나왔다. 1회는 WARN, 2회부터 FAIL"
     },
+    "A7.see_as": {
+      "kind": "poisson",
+      "rate_per_1k": 0.023,
+      "pass_q": 0.95,
+      "warn_q": 0.995,
+      "title": "추론 표지 \"~다고 볼 수 있습니다\"",
+      "hint": "근거를 조건으로 앞에 쓰고 결론을 쓴다. 저자가 한 해석이면 \"저자들은 ~라고 봅니다\"로 옮긴다.",
+      "n": 66
+    },
     "A8.ending_run4": {
       "kind": "upper",
       "title": "같은 종결 4회 연속",
@@ -417,7 +426,7 @@
       "pass_min": 0.37,
       "warn_min": 0.225,
       "title": "문장 길이 변동계수",
-      "hint": "짧은 문장과 긴 문장을 섞는다.",
+      "hint": "사실 하나만 전하는 문장을 짧게 쓴다. 주어를 지워서 문장을 짧게 만들지 않는다.",
       "min_chars": 1500,
       "n": 66
     },

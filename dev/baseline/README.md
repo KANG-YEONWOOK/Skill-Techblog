@@ -87,6 +87,7 @@ Gate는 사람 글에서 거의 나오지 않아야 한다. policy 표시가 있
 | A2.comma_per_sentence | 0 | 2 | 0 |
 | A8.sent_len_cv | 0 | 1 | 0 |
 | A4.para_end | 0 | 1 | 0 |
+| A7.see_as | 0 | 1 | 0 |
 | A7.must_may | 0 | 1 | 0 |
 | A8.ending_run4 | 0 | 1 | 0 |
 | A5.style_words_per_1k | 0 | 1 | 0 |
@@ -97,3 +98,4 @@ Gate는 사람 글에서 거의 나오지 않아야 한다. policy 표시가 있
 ## pooled rate
 
 - A1.np: pooled 75회 / 305,607자
+- A7.see_as: pooled 7회 / 305,607자

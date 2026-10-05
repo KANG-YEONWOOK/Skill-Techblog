@@ -167,6 +167,13 @@ class PatternTest(unittest.TestCase):
         self.assertEqual(m["A18.paren_clause"]["value"], 1)
         self.assertEqual(m["A18.bundle"]["value"], 1)
 
+    def test_a7_see_as(self):
+        text = ("표에서 지연 대부분이 배치 대기에서 생긴다고 볼 수 있습니다. "
+                "이 설정이 처리량을 낮췄다고 볼 수 있어요. "
+                "그래프에서 p99 지연이 줄어든 결과를 볼 수 있습니다.\n")
+        m = L.analyze(text)["metrics"]
+        self.assertEqual(m["A7.see_as"]["value"], 2)  # "결과를 볼 수 있습니다"는 추론 표지가 아니다
+
     def test_a16_source_subject(self):
         text = ("원문은 배치 크기를 10으로 줄였다고 씁니다. 논문은 지연을 쟀습니다. 저자들은 원인을 추정합니다. "
                 "원문 그대로 옮기면 메시지가 늦게 도착합니다. 배치 크기를 10으로 줄인 설정에서 p99 지연은 0.8초였습니다.\n")
