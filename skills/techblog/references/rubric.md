@@ -7,12 +7,13 @@ techblog 스킬이 쓴 글을 점검하는 기준이다. 스킬의 점검 단계
   - **Gate (G)**: 위반 1건이면 불합격.
   - **자동 측정 (A, T)**: `scripts/lint_ko.py`가 세고 PASS / WARN / FAIL로 판정한다.
   - **참고 지표 (INFO)**: 값만 보고하고 판정에 넣지 않는다.
+  - **점검 후보 (CHECK)**: 판정에 넣지 않고, 걸린 문장을 "단독 읽기 점검 후보"로 보여 준다. 스킬은 5단계의 단독 읽기 점검에서 이 문장들을 먼저 읽는다.
   - **판정 (J)**: 사람이나 judge model이 0~2점으로 매긴다.
 - "AI 문체 패턴"은 영어권 연구에서 tell이라고 부르는 표현이다. 이 문서는 영어 목록을 옮기지 않고 한국어 실측 자료(KCI 초록, KatFishNet, im-not-ai, 블로그 측정)를 우선한다.
 
 ## 판정 방식
 
-- 합격 조건: Gate 위반 0, 자동 측정 FAIL 0, WARN 3개 이하, 판정 항목 평균 1.6 이상이고 0점 없음.
+- 합격 조건: Gate 위반 0, 자동 측정 FAIL 0, WARN 3개 이하, 판정 항목(J1~J9) 평균 1.6 이상이고 0점 없음. 점검 후보(CHECK)는 합격 조건에 들어가지 않는다.
 - 자동 측정 기준치(사람 글 기준)
   - 많을수록 나쁜 지표: PASS ≤ 사람 p95, WARN ≤ max(p99, 사람 최댓값)에 여유(횟수 +1, 비율 ×1.2), 그 위는 FAIL.
   - 적을수록 나쁜 지표(문장 길이 변동계수, 긴 문장 비율, 한 문장 문단 비율): PASS ≥ 사람 p5, WARN ≥ min(p1, 최솟값)×0.8.
@@ -147,17 +148,20 @@ judge는 항목마다 점수와 근거 문장(본문 그대로 인용)을 적는
 |---|---|---|---|---|
 | J1 | coverage | 자료의 문제, 방법, 핵심 결과, 한계가 모두 있다 | 하나가 빠졌다 | 둘 이상 빠졌거나 핵심 결과가 없다 |
 | J2 | 구체성 | 주장마다 자료의 수치, 이름, 동작 원리가 붙어 있다 | 평가어만 있는 문장이 1~2개 | 3개 이상 |
-| J3 | deletion test | 지워도 정보(사실, 수치, 동작 원리, 할 일)가 줄지 않는 문장이 없다 | 1~2개 | 3개 이상 |
-| J4 | 구조 | 제목이 내용을 특정하고, 도입이 독자 상황이나 자료 맥락에서 시작하고, 마무리가 구체 사실이나 자료의 열린 질문으로 끝나고, 참고자료가 있다 | 한 가지가 어긋난다 | 두 가지 이상 |
+| J3 | deletion test | 지워도 정보(사실, 수치, 동작 원리, 할 일)가 줄지 않는 문장이 없다. 주어, 목적어, 비교 기준, 수치가 가리키는 대상은 정보로 본다 | 1~2개 | 3개 이상 |
+| J4 | 구조와 주제 | 제목이 내용을 특정하고, 글의 핵심 주제가 제목과 도입에 드러나고, 각 절이 그 주제를 설명하고, 도입이 독자 상황이나 자료 맥락에서 시작하고, 마무리가 구체 사실이나 자료가 밝힌 한계로 끝나고, 참고자료가 있다 | 한 가지가 어긋난다 | 두 가지 이상 |
 | J5 | 한국어 자연스러움 | 한국 개발자가 쓴 기술 블로그처럼 읽히고 용어 표기 규칙을 지킨다 | 번역투나 어색한 표현이 1~2곳 | 3곳 이상 |
 | J6 | 어투 품질 | Default는 공문체가 아닌 합니다체, Casual은 정중한 해요체이고 허용 변형 비율 안이다 | 어색한 종결이 1~2곳 | 3곳 이상이거나 반말·과한 구어 |
 | J7 | AI처럼 읽히는 문장 | 1,000자당 개수가 같은 묶음의 사람 글 대조군 p75 이하 | p75 초과, 최댓값 이하 | 사람 글 최댓값 초과 |
-| J8 | 과교정 없음 | 자연스러운 대조, 단서("다만", "정확히는"), 괄호 보충, 긴 문장이 남아 있다 | 문장이 다소 단조롭다 | 패턴을 지우느라 내용이나 흐름이 손상됐다 |
+| J8 | 과교정 없음 | 자연스러운 대조, 단서("다만", "정확히는"), 원어와 단위 보충, 긴 문장이 남아 있고, 같은 주어를 문장마다 되풀이하지 않는다 | 문장이 다소 단조롭다 | 패턴을 지우느라 내용이나 흐름이 손상됐다 |
+| J9 | 문장 완결성 | 문장을 바로 앞 문장과 함께 읽으면 무엇에 대한 말인지, 수치가 무엇을 잰 값이고 무엇과 비교한 값인지 알 수 있다. 이해하기 어려운 문장의 비율이 사람 글 대조군 이하다 | 사람 글 대조군보다 높고 그 2배 이하다 | 사람 글 대조군의 2배를 넘는다 |
 
 - J3 deletion test는 Arize가 쓴 방식이다. "이 구절을 지웠을 때 글이 정보를 잃는가"를 묻는 기준을 넣자 judge precision이 약 40%에서 30건 중 26건으로 올랐다[9].
 - J4 구조의 세부 기준은 `style-guide.md`를 따른다.
 - J5 용어 표기: 한글 표기가 굳어진 외래어(서버, 캐시, 쿠버네티스)는 한글, 그 외 기술 용어(race condition, connection pool, latency)는 영어 원문, 번역어(경쟁 상태, 연결 풀)는 쓰지 않고, "한국어(English)" 병기는 첫 등장 1회.
 - J7 대조군: 같은 judge 묶음에 사람이 쓴 테크 블로그 글을 섞고, 어떤 글이 사람 글인지 judge에게 알리지 않는다.
+- J9 측정: judge에게 문단의 첫 문장, 수치가 든 문장, 점검 후보(A18) 문장을 하나씩 보여 준다. 각 문장에는 그 문장이 속한 절의 헤딩과 바로 앞 문장을 함께 보여 주고, judge는 그 문장으로 무엇에 대한 말인지 알 수 있는지 예와 아니오로 답한다. 아니오이면 독자에게 남는 질문("무엇이 22배인가?")을 적는다. 바로 앞 문장으로 알 수 있는 주어 생략은 문제로 세지 않는다. 사람 글 대조군 6편(합니다체 3편, 해요체 3편)을 같은 방식으로 판정해 비율을 비교한다.
+- J9 근거: 사용자 검토에서 "어투만 바뀌고 내용은 같습니다"처럼 누가 무엇을 하는지, 무엇과 무엇을 비교하는지가 빠진 문장이 이해하기 어렵다는 지적이 나왔다. Im & Färber(2026)의 실험에서 독자가 이해하기 어렵다고 가장 자주 표시한 것은 여러 명사를 붙인 복합어, 설명 없는 약어, 전문 용어였고, 편집자는 압축된 용어를 풀고 문장 사이의 흐름을 고치고 지칭 대상을 분명히 하는 방향으로 글을 고쳤다[22].
 - J8 근거: Boggia(2026)에서 한 줄 지시로 Sonnet과 Opus의 부정 대구가 0이 됐고 사후 rewrite는 모든 장르에서 0을 만들었다[12]. im-not-ai에서 괄호는 사람 1,000문장당 10.6개, AI 1.2개였다[3].
 
 ## 감점하지 않는 표현
@@ -195,3 +199,4 @@ judge는 항목마다 점수와 근거 문장(본문 그대로 인용)을 적는
 19. The Conversation, Slanguage: why AI's stylistic negation "it's not X, it's Y" is both annoying and doesn't work. https://theconversation.com/slanguage-why-ais-stylistic-negation-its-not-x-its-y-is-both-annoying-and-doesnt-work-278967
 20. 토스·카카오·당근 기술 블로그 측정. 측정 도구와 결과는 저장소의 `dev/baseline/`(URL 목록 `urls.json`, 측정값 `stats.json`, 보고서 `README.md`).
 21. Aixploria (2026), Arena 분석 요약: Opus 5.5의 em dash, 세미콜론, hedging 변화. 표본 크기와 통계적 유의성은 공개되지 않았다. https://www.aixploria.com/en/ai-radar/95-percent-fewer-em-dashes-claude-opus-5-5-learns-to-hide/
+22. Im, Färber (2026), A Human-in-the-Loop Corpus for LLM-Based Simplification of Scientific Summaries, CEUR Workshop Proceedings (FG WM at KI 2026). §4.1: "participants most frequently flagged multi-noun compounds, unexplained abbreviations, and domain-specific terminology. These annotations informed Phase 2 editing by identifying where simplification should expand compressed terminology, improve discourse flow, or clarify referents." https://arxiv.org/abs/2607.25630
