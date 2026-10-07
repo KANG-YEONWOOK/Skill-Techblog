@@ -1,6 +1,6 @@
 # techblog
 
-techblog는 Claude Code에서 쓰는 skill입니다. 이 skill에 논문 PDF, 기술 문서, 웹 페이지, 대화에 붙여넣은 텍스트 같은 자료를 주면, Claude가 그 자료의 핵심 내용을 정리한 한국어 기술 블로그 글을 씁니다. 글의 문체는 토스, 카카오, 당근 같은 한국 테크 기업의 기술 블로그에 실린 글을 기준으로 맞춥니다.
+techblog는 Claude Code와 Codex에서 쓰는 skill입니다. 논문 PDF, 기술 문서, 웹 페이지, 대화에 붙여넣은 텍스트 같은 자료를 주면 핵심 내용을 정리한 한국어 기술 블로그 글을 씁니다. 두 환경은 같은 글쓰기 지침과 검사 스크립트를 사용합니다. 글의 문체는 토스, 카카오, 당근 같은 한국 테크 기업의 기술 블로그에 실린 글을 기준으로 맞춥니다.
 
 AI가 쓴 글에는 사람이 쓴 글보다 훨씬 자주 나오는 표현 습관이 있습니다. "A가 아니라 B입니다" 같은 대구, 문단마다 붙는 굵은 글씨, 근거 없이 항목 셋으로 맞춘 나열, 앞 내용을 다시 요약하는 마무리 문장이 대표적입니다. 이 skill은 글을 쓴 뒤 검사 스크립트로 이런 표현이 얼마나 자주 나오는지 재고, 사람이 쓴 기술 블로그 글에서 잰 기준을 넘는 문장만 고칩니다.
 
@@ -14,7 +14,7 @@ AI가 쓴 글에는 사람이 쓴 글보다 훨씬 자주 나오는 표현 습�
 
 ## 설치
 
-### Plugin marketplace로 설치하기
+### Claude Code: plugin marketplace
 
 Claude Code 세션에서 아래 두 명령을 차례로 실행합니다.
 
@@ -32,7 +32,7 @@ claude plugin install techblog@skill-techblog
 
 설치한 뒤에는 `/techblog` 명령으로 skill을 실행합니다. 다른 plugin이나 skill에 같은 이름의 명령이 있으면 `/techblog:techblog`로 실행합니다. 새 버전은 `/plugin marketplace update skill-techblog` 명령으로 받습니다.
 
-### 저장소에서 직접 복사하기
+### Claude Code: 직접 설치
 
 이 저장소의 `skills/techblog` 폴더를 Claude Code의 개인 skill 폴더(`~/.claude/skills/`)에 복사해도 같은 skill을 쓸 수 있습니다.
 
@@ -52,18 +52,86 @@ New-Item -ItemType Directory -Force "$HOME\.claude\skills" | Out-Null
 Copy-Item -Recurse Skill-Techblog\skills\techblog "$HOME\.claude\skills\techblog"
 ```
 
+### Codex: plugin marketplace
+
+Codex CLI에서 다음 명령을 실행합니다. `codex plugin add`가 있는 CLI가 필요하며, 검증에 사용한 버전은 0.155.1입니다.
+
+```bash
+codex plugin marketplace add KANG-YEONWOOK/Skill-Techblog
+codex plugin add techblog@skill-techblog
+```
+
+설치 후 새 세션에서 `$techblog`로 호출하거나 스킬 선택기에서 techblog를 선택합니다. 플러그인 화면에서도 `skill-techblog` 마켓플레이스의 techblog를 확인할 수 있습니다. 업데이트할 때는 다음 명령을 실행하고 새 세션을 엽니다.
+
+```bash
+codex plugin marketplace upgrade skill-techblog
+codex plugin add techblog@skill-techblog
+```
+
+저장소의 수정본을 시험할 때는 GitHub 주소 대신 로컬 저장소 경로를 등록합니다.
+
+```bash
+codex plugin marketplace add /absolute/path/to/Skill-Techblog
+codex plugin add techblog@skill-techblog
+```
+
+### Codex: 직접 설치
+
+Codex 대화에서 기본 제공 설치 스킬에 아래처럼 요청할 수 있습니다.
+
+```text
+$skill-installer KANG-YEONWOOK/Skill-Techblog 저장소의 skills/techblog 스킬을 설치해줘.
+```
+
+직접 복사하려면 macOS/Linux에서 다음 명령을 실행합니다. 목적지에 techblog가 없는 첫 설치 기준입니다.
+
+```bash
+git clone https://github.com/KANG-YEONWOOK/Skill-Techblog.git
+mkdir -p "$HOME/.agents/skills"
+cp -R Skill-Techblog/skills/techblog "$HOME/.agents/skills/techblog"
+```
+
+Windows PowerShell:
+
+```powershell
+git clone https://github.com/KANG-YEONWOOK/Skill-Techblog.git
+New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
+Copy-Item -Recurse Skill-Techblog\skills\techblog "$HOME\.agents\skills\techblog"
+```
+
+특정 프로젝트에서만 쓸 때는 그 프로젝트의 `.agents/skills/techblog`에 복사합니다. `$skill-installer`가 사용하는 `~/.codex/skills`도 지원되는 설치 위치입니다. 직접 설치와 플러그인 설치 중 하나를 선택하면 스킬이 중복으로 표시되는 것을 피할 수 있습니다. 직접 복사한 스킬은 저장소를 업데이트한 뒤 기존 폴더를 백업하고 새 폴더로 교체합니다. 설치나 업데이트가 표시되지 않으면 새 Codex 세션을 엽니다.
+
 ### 필요한 환경
 
-- Claude Code가 필요합니다.
-- Python 3.8 이상이 설치돼 있으면 skill이 검사 스크립트(`lint_ko.py`, `revise_ko.py`, `tone_check.py`)를 실행합니다. Python이 없으면 Claude가 같은 기준을 문서로 읽고 직접 점검합니다. 검사 스크립트는 외부 패키지를 쓰지 않습니다.
+- Claude Code 또는 Codex가 필요합니다.
+- Python 3.8 이상이 설치돼 있으면 skill이 검사 스크립트(`lint_ko.py`, `revise_ko.py`, `tone_check.py`)를 실행합니다. Python이나 셸이 없으면 같은 기준을 문서로 읽고 직접 점검하며 자동 검사를 하지 못했다고 보고합니다. 검사 스크립트는 외부 패키지를 쓰지 않습니다.
+- Claude Code는 PDF를 Read로 읽습니다. Codex에 PDF 읽기 기능이 없으면 Poppler의 `pdftotext`와 `pdftoppm`을 사용합니다. 읽기에 필요한 도구가 없으면 읽을 수 있는 원문을 요청합니다. 스킬이 도구를 자동 설치하지는 않습니다.
+- 후처리는 독립 subagent가 제공되면 해당 기능을 사용합니다. 사용할 수 없으면 같은 후처리 지침을 직접 수행하고 그 사실을 보고합니다.
 
 ## 사용법
+
+Claude Code:
 
 ```
 /techblog paper.pdf
 /techblog casual https://arxiv.org/pdf/2309.06180 -o paged-attention.md
 /techblog default design-doc.md 독자는 백엔드 개발자, 분량은 5,000자 안팎
 /techblog casual --retone paged-attention.md
+```
+
+Codex:
+
+```text
+$techblog paper.pdf
+$techblog casual https://arxiv.org/pdf/2309.06180 -o paged-attention.md
+$techblog default design-doc.md 독자는 백엔드 개발자, 분량은 5,000자 안팎
+$techblog casual --retone paged-attention.md
+```
+
+위 호출은 각 제품의 대화 입력입니다. 셸에서 비대화형으로 호출할 때는 `$`가 확장되지 않도록 인용합니다.
+
+```bash
+codex exec '$techblog default design-doc.md -o article.md'
 ```
 
 | 인자 | 설명 |
@@ -79,12 +147,12 @@ Copy-Item -Recurse Skill-Techblog\skills\techblog "$HOME\.claude\skills\techblog
 
 skill은 아래 순서로 글을 씁니다.
 
-1. 자료를 끝까지 읽습니다. PDF는 20쪽씩 나눠 마지막 쪽까지 읽고, 웹 페이지는 본문 전체를 가져옵니다.
+1. 자료를 끝까지 읽습니다. Claude Code의 PDF Read는 20쪽 이하로 나누고, Codex는 PDF 도구 또는 텍스트 추출과 페이지 확인을 사용합니다. 웹 페이지는 본문 전체를 가져옵니다.
 2. 글의 핵심 주제를 한 문장으로 정하고, 자료의 수치, 주장, 한계를 fact sheet에 적습니다. 글에 쓰는 수치와 주장은 이 파일에서만 가져옵니다.
 3. `references/style-guide.md`를 읽고 글의 제목과 절 구성을 정합니다.
 4. Default(합니다체)로 초안을 씁니다. Casual로 요청해도 초안은 먼저 합니다체로 씁니다.
 5. `scripts/lint_ko.py`로 초안을 검사하고 기준을 넘은 문장만 고칩니다. 이어서 문장을 하나씩 따로 읽어 무엇에 대한 말인지 알 수 있는지 확인하고, 글의 수치와 주장을 fact sheet와 대조합니다.
-6. 후처리 단계에서는 Claude가 초안 사본과 반복 후보 목록을 만든 뒤, 초안을 쓰지 않은 subagent에게 후처리를 맡깁니다. subagent는 초안을 처음부터 끝까지 읽고 독자가 읽다가 멈출 곳을 먼저 적습니다. 그다음 `scripts/revise_ko.py`가 찾은 반복 후보(같은 비교 기준의 반복, 비교 기준 없이 쓴 변화량, 같은 문형의 연속)를 `references/revision.md`의 판단 질문으로 판단해 필요한 곳만 고칩니다. 글쓴이가 계산한 차이와 비율은 자료 원문의 표로 다시 확인합니다. subagent가 끝나면 Claude가 초안 사본과 고친 글을 비교해 검사 기준에 걸린 곳을 고칩니다.
+6. 후처리 단계에서는 초안 사본과 반복 후보 목록을 만든 뒤, 초안을 쓰지 않은 subagent에게 후처리를 맡깁니다. subagent는 초안을 처음부터 끝까지 읽고 독자가 읽다가 멈출 곳을 먼저 적습니다. 그다음 `scripts/revise_ko.py`가 찾은 반복 후보(같은 비교 기준의 반복, 비교 기준 없이 쓴 변화량, 같은 문형의 연속)를 `references/revision.md`의 판단 질문으로 판단해 필요한 곳만 고칩니다. 글쓴이가 계산한 차이와 비율은 자료 원문의 표로 다시 확인합니다. subagent가 끝나면 상위 agent가 초안 사본과 고친 글을 비교해 검사 기준에 걸린 곳을 고칩니다. 독립 subagent가 없으면 이 절차를 직접 수행합니다.
 7. Casual이면 후처리를 마친 초안의 문장마다 문장 끝(종결어미)만 해요체로 바꾸고, `scripts/tone_check.py`로 두 글의 문장 수와 수치가 같은지 확인합니다.
 8. 작업 파일을 지우고, 글을 저장한 경로, 초안과 최종 글의 검사 결과, 후처리에서 고친 문장 수를 짧게 보고합니다.
 
@@ -128,7 +196,7 @@ AI 문체 표현의 목록(`references/ai-patterns.md`)은 초안을 쓴 뒤에�
 - 자료와 다른 내용이 글에 들어가지 않는다는 것은 한 번의 실행으로 보장되지 않습니다. 같은 Discord 블로그 글을 두 번 정리하게 했을 때 fidelity judge가 찾은 문제는 0건과 6건이었고, 6건 중 3건이 글의 실제 오류였습니다. 실제 오류는 자료에 없는 "수십만 명"이라는 수치, 글쓴이의 추론을 사실처럼 단정한 문장, 두 수치의 기준을 혼동한 문장이었습니다. 글을 공개하기 전에 수치와 고유명사를 원문과 대조해야 합니다.
 - 초안 규칙은 수치를 쓰는 문장마다 무엇과 비교한 값인지를 쓰게 합니다. 0.3.0 버전에서는 수치가 많은 글이 "무작위 추측 정확도 20%보다" 같은 비교 기준을 문단마다 되풀이했습니다. 0.4.0의 후처리는 이런 반복을 찾아 줄이도록 만들었지만, 0.4.0 평가에 쓴 초안 9건에서는 이 반복이 다시 나오지 않아서 효과를 확인하지 못했습니다.
 - 후처리는 고친 문장과 글쓴이가 계산한 값만 원문으로 다시 확인합니다. 초안 단계에서 생긴 사실 오류는 후처리 뒤에도 남을 수 있습니다.
-- 후처리 때문에 실행 시간이 4~6분 늘어납니다. 0.4.0 평가에서 한 번 실행하는 데 12~17분이 걸렸습니다.
+- Claude Code로 수행한 0.4.0 평가에서는 후처리로 실행 시간이 4~6분 늘었고 한 번 실행하는 데 12~17분이 걸렸습니다. Codex의 0.5.0 호환성 검증 시간은 [`dev/codex/REPORT.md`](dev/codex/REPORT.md)에 별도로 기록했습니다.
 - Windows에서 `claude plugin eval`을 실행하면 eval 안에서 Bash를 쓸 수 없습니다. 그래서 eval을 실행할 때 skill은 검사 스크립트 대신 rubric 문서를 읽고 직접 점검합니다.
 - 이 skill은 글에 넣을 이미지나 상호작용하는 컴포넌트를 만들지 않습니다.
 
@@ -143,6 +211,9 @@ claude plugin eval . --allow-tools Write Edit --scaffold   # evals/ 케이스로
 - `dev/baseline/` 폴더에는 사람 글을 측정하는 스크립트(`measure.py`), 측정값으로 기준치를 만드는 스크립트(`calibrate.py`), 후처리 반복 후보가 사람 글에서 몇 개 나오는지 재는 스크립트(`repeats_stats.py`)가 있습니다.
 - `dev/dogfood/` 폴더에는 headless Claude Code로 skill을 실행하는 스크립트(`run.py`), 결과 글을 다시 검사하는 스크립트(`evaluate.py`), judge 모델로 결과 글을 평가하는 스크립트(`judge.py`)가 있습니다. `judge.py --within`은 같은 실행의 후처리 전 초안과 후처리를 마친 글을 비교합니다. 실행 기록은 `REPORT.md`에 있습니다.
 - `evals/` 폴더에는 `claude plugin eval`로 실행하는 평가 케이스가 있습니다.
+- [`dev/codex/`](dev/codex/README.md)에는 Codex 직접 설치·플러그인 설치와 실제 글 작성을 검증하는 실행기가 있습니다. 임시 환경에서 실행하므로 개인 스킬이나 플러그인 설정을 바꾸지 않습니다. 검사 기준과 결과는 해당 문서에 기록합니다.
+
+Codex 구성은 [공식 스킬 문서](https://learn.chatgpt.com/docs/build-skills)와 [공식 플러그인 문서](https://developers.openai.com/plugins/build/plugins)를 참고했습니다.
 
 ## License
 

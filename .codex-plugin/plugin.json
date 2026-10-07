@@ -1,0 +1,23 @@
+{
+  "name": "techblog",
+  "version": "0.5.0",
+  "description": "자료를 한국어 기술 블로그 글로 정리하고 사실과 문체를 점검하는 스킬입니다.",
+  "author": {
+    "name": "KANG-YEONWOOK",
+    "url": "https://github.com/KANG-YEONWOOK"
+  },
+  "homepage": "https://github.com/KANG-YEONWOOK/Skill-Techblog",
+  "repository": "https://github.com/KANG-YEONWOOK/Skill-Techblog",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "techblog",
+    "shortDescription": "자료를 근거로 쓰는 한국어 기술 블로그",
+    "longDescription": "논문 PDF, 문서, 웹 페이지, 붙여넣은 텍스트를 한국어 기술 블로그 글로 정리합니다. 합니다체와 해요체, 기존 글의 어투 변환, 사실 대조와 문체 검사를 지원합니다.",
+    "developerName": "KANG-YEONWOOK",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/KANG-YEONWOOK/Skill-Techblog",
+    "defaultPrompt": ["$techblog 이 자료를 한국어 기술 블로그 글로 정리해줘."]
+  }
+}

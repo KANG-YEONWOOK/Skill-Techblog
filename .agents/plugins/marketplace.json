@@ -1,0 +1,20 @@
+{
+  "name": "skill-techblog",
+  "interface": {
+    "displayName": "Skill Techblog"
+  },
+  "plugins": [
+    {
+      "name": "techblog",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

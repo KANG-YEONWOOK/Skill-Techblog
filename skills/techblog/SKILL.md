@@ -1,11 +1,10 @@
 ---
 name: techblog
-description: 전달받은 자료(논문 PDF, 문서 PDF, 마크다운, URL, 붙여넣은 텍스트)의 핵심 내용을 토스, 카카오, 당근 같은 한국 테크 기업의 기술 블로그 문체로 정리한 한국어 아티클을 쓴다. 근거 기반 rubric과 검사 스크립트로 AI 글에서 자주 보이는 문체 패턴(부정 대구, 강조 문장, 쉼표 과다, 요약 표지, 지어낸 경험)을 찾아 고치고, 문장마다 무엇에 대한 말인지 드러나게 쓴다. 글의 어투는 Default(합니다체)와 Casual(해요체) 중에서 고를 수 있고, 두 어투로 쓴 글의 내용은 같다. "/techblog", "기술 블로그 글로 정리해줘", "아티클로 써줘", "블로그 포스트로 요약해줘" 같은 요청에 쓴다.
+description: 전달받은 자료(논문 PDF, 문서 PDF, 마크다운, URL, 붙여넣은 텍스트)를 한국어 기술 블로그 글로 정리하거나 기존 글의 어투를 바꾼다. 토스, 카카오, 당근 기술 블로그 문체를 참고하고 사실 대조와 검사 스크립트로 AI 문체 패턴을 줄인다. Default(합니다체)와 Casual(해요체)을 지원하며 어투만 바꿀 때 내용은 보존한다. "$techblog", "/techblog", "기술 블로그 글로 정리해줘", "아티클로 써줘", "블로그 포스트로 요약해줘" 같은 요청에 쓴다.
 license: MIT
-compatibility: Claude Code. 검사 스크립트는 Python 3.8 이상이 있으면 실행하고, 없으면 rubric 수동 점검으로 대신한다.
 allowed-tools: Read Write Edit Glob Grep WebFetch Agent Bash(python "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python ${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/*)
 metadata:
-  version: "0.4.0"
+  version: "0.5.0"
   repository: https://github.com/KANG-YEONWOOK/Skill-Techblog
 ---
 
@@ -15,7 +14,11 @@ metadata:
 
 글은 초안과 후처리로 나눠 쓴다. 1~5단계에서는 모든 글에 같은 규칙으로 초안을 쓰고 점검한다. 6단계(후처리)에서는 초안을 이 글의 독자 입장에서 다시 읽고 이 글에 맞게 고친다.
 
-입력: $ARGUMENTS
+Claude Code와 Codex에서 사용한다. 먼저 [실행 환경 안내](references/runtime.md)를 읽고 현재 환경의 입력, 도구, 스킬 경로를 확인한다. 검사 스크립트는 Python 3.8 이상이며 외부 패키지가 필요 없다.
+
+Claude Code 호출 인자: $ARGUMENTS
+
+Codex에서는 `$techblog`와 함께 보낸 사용자 요청을 입력으로 삼는다. `$ARGUMENTS`가 치환되지 않았거나 자연어로 호출했다면 현재 사용자 요청에서 자료와 옵션을 읽는다.
 
 ## 인자 해석
 
@@ -33,19 +36,20 @@ metadata:
 
 ## 스크립트 실행
 
-- 검사 스크립트는 Bash 도구로 실행한다. Windows에서는 `python`, macOS와 Linux에서는 `python3`를 쓴다. 경로는 큰따옴표로 감싼다. 한 번에 명령 하나만 실행하고, `;`나 `&&`로 다른 명령(`cat` 등)을 이어 붙이지 않는다. 이 스킬이 허용하는 Bash 명령은 아래 검사 스크립트뿐이다. 참고 문서와 PDF는 Read 도구로 읽고, 파일 목록은 Glob 도구로 본다.
-  - 문체 검사: `python "${CLAUDE_SKILL_DIR}/scripts/lint_ko.py" "<글>" --tone default --facts "<이름>.facts.md"`
-  - 후처리: `python "${CLAUDE_SKILL_DIR}/scripts/revise_ko.py" start "<후처리 대상>"`, 같은 스크립트의 `repeats "<후처리 대상>"`, `check "<후처리 대상>"`
-  - 어투 검사: `python "${CLAUDE_SKILL_DIR}/scripts/tone_check.py" "<이름>.draft.md" "<이름>.md"`
-  - 작업 파일 삭제: `python "${CLAUDE_SKILL_DIR}/scripts/tone_check.py" --cleanup "<이름>.facts.md" "<이름>.draft.md" "<이름>.unrevised.md" "<이름>.repeats.md"`
-- Python이 없거나 Bash를 쓸 수 없으면 `references/rubric.md`의 Gate와 자동 측정 항목을 직접 세서 같은 기준으로 점검한다.
+- 현재 환경의 셸 실행 도구를 쓴다. Windows에서는 `python`, macOS와 Linux에서는 `python3`를 쓴다. 아래 `<스킬 절대 경로>`는 로드한 `SKILL.md`가 있는 디렉터리로 바꾼다. 현재 작업 폴더나 환경 변수의 존재로 추측하지 않는다.
+- 경로는 큰따옴표로 감싼다. 검사 명령은 한 번에 하나씩 실행한다. Claude Code의 Bash 사전 허용은 frontmatter의 검사 스크립트에 한정된다. Claude Code에서는 참고 문서를 Read로 열고 파일 목록은 Glob으로 확인한다. `cat`, `ls` 같은 명령을 Bash로 실행하거나 검사 명령에 이어 붙이지 않는다. Codex의 파일 읽기와 PDF 처리는 runtime.md를 따른다.
+  - 문체 검사: `python3 "<스킬 절대 경로>/scripts/lint_ko.py" "<글>" --tone default --facts "<이름>.facts.md"`
+  - 후처리: `python3 "<스킬 절대 경로>/scripts/revise_ko.py" start "<후처리 대상>"`, 같은 스크립트의 `repeats "<후처리 대상>"`, `check "<후처리 대상>"`
+  - 어투 검사: `python3 "<스킬 절대 경로>/scripts/tone_check.py" "<Default 글>" "<Casual 글>"`
+  - 작업 파일 삭제: `python3 "<스킬 절대 경로>/scripts/tone_check.py" --cleanup "<이름>.facts.md" "<이름>.draft.md" "<이름>.unrevised.md" "<이름>.repeats.md"`
+- Python이나 셸을 쓸 수 없으면 `references/rubric.md`로 직접 점검하고 자동 검사를 실행하지 못했다고 보고한다. 스크립트가 실행된 뒤 오류가 나면 경로와 오류를 확인한다. 실행 오류를 Python 부재로 취급하거나 검사를 통과했다고 보고하지 않는다.
 
 ## 작업 순서
 
 ### 1. 자료 읽기
 
-- PDF는 Read 도구로 읽는다. 한 번에 읽히지 않을 만큼 길면 `pages`로 나눠 마지막 쪽까지 읽는다. 표, 그림 설명, 부록의 수치도 읽는다.
-- URL은 WebFetch로 가져온다. HTML 페이지는 "요약하지 말고 본문을 그대로 돌려 달라"고 요청하고, 본문이 길면 절 단위로 나눠 요청한다. PDF URL을 WebFetch로 가져오면 로컬에 `.pdf` 파일이 저장되므로 그 파일을 Read로 읽는다. 논문 초록 페이지(arXiv의 `/abs/` 등)를 받았다면 본문이 있는 PDF나 HTML 링크를 찾아 그 문서를 읽는다.
+- PDF와 URL은 runtime.md의 현재 환경에 맞는 방법으로 본문 끝까지 읽는다. 표, 그림 설명, 부록의 수치도 읽는다. 검색 결과나 초록만으로 전체 자료를 읽었다고 판단하지 않는다.
+- 논문 초록 페이지(arXiv의 `/abs/` 등)를 받았다면 본문이 있는 PDF나 HTML 링크를 찾아 그 문서를 읽는다.
 - 자료가 여러 개면 모두 읽는다.
 
 ### 2. fact sheet 쓰기
@@ -125,7 +129,7 @@ Casual로 요청받아도 초안은 먼저 합니다체로 쓴다. Casual 글이
    - 걸린 표현을 같은 수사 동작의 다른 표현으로 바꾸지 않는다. 예: "단순히 X가 아니라 Y"를 "X를 넘어 Y"로 바꾸는 것은 고친 것이 아니다.
    - 수치, 고유명사, 인용은 바꾸지 않는다. 자료가 추정한 내용을 단정으로 바꾸지 않는다.
    - 기준치 안으로 들어오면 멈춘다. 사람 글에도 있는 표현까지 0으로 만들지 않는다.
-   - Edit 도구로 걸린 문장만 바꾼다.
+   - 현재 환경의 편집 도구로 걸린 문장만 바꾼다.
 3. 문체 검사를 다시 실행한다. 판정이 PASS가 될 때까지 최대 3회 반복한다. 고친 뒤 다른 항목의 수치가 늘었으면 그 수정을 다른 방법으로 고친다. `--all`을 붙이면 참고 지표(INFO)까지 볼 수 있다.
 4. 단독 읽기 점검을 한다.
    - 점검할 문장은 문체 검사 결과의 "단독 읽기 점검 후보" 목록에 있는 문장, 절과 문단의 첫 문장, 수치가 든 문장이다.
@@ -149,22 +153,22 @@ Casual로 요청받아도 초안은 먼저 합니다체로 쓴다. Casual 글이
 후처리는 초안을 쓴 context 밖에서 한다. 같은 초안 4건을 초안을 쓴 context와 새 context에서 각각 후처리해 judge에게 비교하게 했을 때, 4건 모두 두 순서에서 새 context의 글을 골랐다. 초안을 쓴 context는 설명 문장, 단서, 적용 절 문단을 지웠고 새 context는 빠진 비교 기준과 정의를 채웠다.
 
 1. 후처리 시작 명령(`revise_ko.py start`)으로 후처리 전 초안 사본과 반복 후보 파일을 만든다.
-2. Agent 도구로 general-purpose subagent 하나를 띄워 후처리를 맡긴다. prompt는 아래 문단을 그대로 쓰고 `<...>`만 실제 절대 경로나 URL로 바꾼다. 자료 내용, fact sheet 내용, 초안을 쓰며 내린 판단은 prompt에 넣지 않는다.
-   > `<후처리 대상>`은 techblog skill이 1~5단계(초안 쓰기와 점검)를 마친 합니다체 글이다. 이 글에 techblog skill의 6단계(후처리)만 한다. 먼저 `${CLAUDE_SKILL_DIR}/references/revision.md`를 읽고 그 절차를 따른다. fact sheet는 `<이름>.facts.md`, 자료는 `<자료 경로 또는 URL>`, 반복 후보 파일은 `<이름>.repeats.md`다. 반복 후보 파일은 글을 처음부터 끝까지 읽고 멈출 곳을 적은 뒤에 연다. 적은 곳만 Edit 도구로 고친다. 어투, 헤딩, 표, 코드 블록, 참고자료는 바꾸지 않는다. 후처리 대상 말고 고칠 수 있는 파일은 fact sheet뿐이고, 새로 계산한 값을 적을 때만 고친다. 자료가 PDF면 Read 도구의 pages로 필요한 쪽만 읽고, 다른 프로그램으로 PDF 텍스트를 뽑지 않는다. 끝나면 고친 곳마다 줄 번호와 이유를 한 줄씩 보고하고, 일반 규칙과 다르게 남긴 형태가 있으면 그 이유도 보고한다.
+2. runtime.md에 따라 초안 대화를 상속하지 않는 subagent 하나를 띄워 후처리를 맡긴다. prompt는 아래 문단을 쓰고 `<...>`를 실제 절대 경로나 URL로 바꾼다. 자료 내용, fact sheet 내용, 초안을 쓰며 내린 판단은 prompt에 넣지 않는다.
+   > `<후처리 대상>`은 techblog skill이 1~5단계(초안 쓰기와 점검)를 마친 합니다체 글이다. 이 글에 techblog skill의 6단계(후처리)만 한다. 먼저 `<스킬 절대 경로>/references/runtime.md`와 `<스킬 절대 경로>/references/revision.md`를 읽고 그 절차를 따른다. fact sheet는 `<이름>.facts.md`, 자료는 `<자료 경로 또는 URL>`, 반복 후보 파일은 `<이름>.repeats.md`다. 반복 후보 파일은 글을 처음부터 끝까지 읽고 멈출 곳을 적은 뒤에 연다. 적은 곳만 편집 도구로 고친다. 어투, 헤딩, 표, 코드 블록, 참고자료는 바꾸지 않는다. 후처리 대상 말고 고칠 수 있는 파일은 fact sheet뿐이고, 새로 계산한 값을 적을 때만 고친다. 자료가 PDF면 runtime.md에 따라 필요한 쪽의 표와 수치를 확인한다. 끝나면 고친 곳마다 줄 번호와 이유를 한 줄씩 보고하고, 일반 규칙과 다르게 남긴 형태가 있으면 그 이유도 보고한다.
 3. subagent가 끝나면 `revise_ko.py check`를 실행한다. 종료 코드가 1이면 걸린 항목을 revision.md의 "고친 뒤 확인"대로 직접 고친다. subagent가 보고한 남긴 형태와 이유는 8단계 보고에 쓴다.
-- Agent 도구를 쓸 수 없으면 revision.md를 읽고 2의 절차를 직접 한다. Bash를 쓸 수 없으면 사본과 후보 파일 없이 revision.md의 "스크립트를 쓸 수 없을 때"를 따른다.
+- 독립 subagent를 쓸 수 없으면 revision.md를 읽고 2의 절차를 직접 한다. 셸을 쓸 수 없으면 사본과 후보 파일 없이 revision.md의 "스크립트를 쓸 수 없을 때"를 따른다. 사용한 후처리 방식을 보고한다.
 
 ### 7. 어투 적용 (Casual일 때, `--retone`일 때)
 
 1. `references/tone.md`를 읽는다.
 2. 후처리를 마친 Default 초안의 문장마다 종결부(마지막 1~2 어절)만 바꿔 출력 파일에 쓴다. 어투를 바꿀 때 문장의 내용, 주어, 수치는 고치지 않는다. 문장을 나누거나 합치지 않는다. 헤딩, 코드, 표, 인용, 명사구 목록은 그대로 둔다.
 3. 어투 검사를 실행한다. 인자 순서는 항상 Default 글, Casual 글이다. FAIL이 나온 문장은 종결부만 다시 고친다.
-4. 출력 파일에 문체 검사를 `--tone casual`로 실행한다. 종결어미 항목(G4, T.*)이 걸리면 출력 파일에서 고친다. 그 밖의 항목이 걸리면 Default 초안(`<이름>.draft.md`)의 해당 문장을 고치고 그 문장을 다시 변환한다.
-- `--retone`이면 입력 파일이 Default 초안이다. Casual 글을 Default로 바꿀 때도 같은 대응표를 반대로 쓰고, 어투 검사의 인자 순서는 Default 글, Casual 글로 둔다.
+4. 출력 파일에 문체 검사를 목표 어투(`--tone casual` 또는 `--tone default`)로 실행한다. 종결어미 항목(G4, T.*)이 걸리면 출력 파일에서 고친다. 새로 쓰는 Casual 글에서 그 밖의 항목이 걸리면 Default 초안(`<이름>.draft.md`)의 해당 문장을 고치고 그 문장을 다시 변환한다.
+- `--retone`이면 입력 파일은 완성된 글이다. Casual을 Default로 바꿀 때는 대응표를 반대로 쓰고, 어투 검사의 인자 순서는 항상 Default 글, Casual 글로 둔다. 입력 파일을 수정하거나 작업 파일로 삭제하지 않는다. 원문의 어투 외 lint 문제는 보고만 하고 내용은 바꾸지 않는다. 이 모드에서는 fact sheet와 후처리 파일을 만들지 않는다.
 
 ### 8. 정리하고 보고하기
 
-- `--keep-work`가 없으면 작업 파일 삭제 명령을 실행한다.
+- `--keep-work`가 없으면 이번 실행에서 만든 작업 파일만 작업 파일 삭제 명령으로 지운다. 입력 자료와 `--retone` 입력은 작업 파일이 아니다.
 - 사용자에게 짧게 보고한다. 보고에는 저장 경로, 어투, 본문 글자 수, 초안과 최종 글의 문체 검사 판정(Gate, FAIL, WARN 수), 후처리에서 고친 문장 수, 남긴 WARN과 남긴 이유, 어투 검사 결과(Casual일 때), 사용한 자료를 쓴다. 글 본문을 대화에 다시 붙이지 않는다.
 - 최종 글의 조건은 Gate 위반 0, FAIL 0, 후처리로 나빠진 AI 문체 항목 0이다. 문장·문단 분포 항목(A8, A9, A16, A17)의 WARN은 후처리에서 의도한 형태면 남길 수 있어서, 최종 글의 WARN은 3개를 넘을 수 있다.
 
