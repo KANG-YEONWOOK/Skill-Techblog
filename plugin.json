@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "techblog",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "자료를 한국어 기술 블로그 글로 정리하고 사실과 문체를 점검하는 Claude Code 및 Codex 스킬입니다.",
   "author": {
     "name": "KANG-YEONWOOK",

@@ -54,14 +54,14 @@ Copy-Item -Recurse Skill-Techblog\skills\techblog "$HOME\.claude\skills\techblog
 
 ### Codex: plugin marketplace
 
-Codex CLI에서 다음 명령을 실행합니다. `codex plugin add`가 있는 CLI가 필요하며, 검증에 사용한 버전은 0.155.1입니다.
+Codex CLI에서 다음 명령을 실행합니다. `codex plugin add`가 있는 CLI가 필요합니다. 버전별 검증 환경과 결과는 [`dev/codex/REPORT.md`](dev/codex/REPORT.md)에 기록합니다.
 
 ```bash
 codex plugin marketplace add KANG-YEONWOOK/Skill-Techblog
 codex plugin add techblog@skill-techblog
 ```
 
-설치 후 새 세션에서 `$techblog`로 호출하거나 스킬 선택기에서 techblog를 선택합니다. 플러그인 화면에서도 `skill-techblog` 마켓플레이스의 techblog를 확인할 수 있습니다. 업데이트할 때는 다음 명령을 실행하고 새 세션을 엽니다.
+설치 후 새 세션에서 스킬 선택기의 techblog를 선택하거나 `$techblog:techblog`로 명시적으로 호출합니다. 플러그인 화면에서도 `skill-techblog` 마켓플레이스의 techblog를 확인할 수 있습니다. `$techblog`와 자연어 요청도 사용할 수 있지만, 설치 경로의 스킬을 확실히 지정하려면 선택기를 사용합니다. 업데이트할 때는 다음 명령을 실행하고 새 세션을 엽니다.
 
 ```bash
 codex plugin marketplace upgrade skill-techblog
@@ -108,6 +108,12 @@ Copy-Item -Recurse Skill-Techblog\skills\techblog "$HOME\.agents\skills\techblog
 - Claude Code는 PDF를 Read로 읽습니다. Codex에 PDF 읽기 기능이 없으면 Poppler의 `pdftotext`와 `pdftoppm`을 사용합니다. 읽기에 필요한 도구가 없으면 읽을 수 있는 원문을 요청합니다. 스킬이 도구를 자동 설치하지는 않습니다.
 - 후처리는 독립 subagent가 제공되면 해당 기능을 사용합니다. 사용할 수 없으면 같은 후처리 지침을 직접 수행하고 그 사실을 보고합니다.
 
+### Codex에서 스킬 본문이 잘렸다는 경고가 나올 때
+
+`Skill techblog:techblog exceeded the main prompt context limit and was truncated` 경고는 플러그인 스킬을 프롬프트에 넣을 때 본문이 잘렸다는 뜻입니다. Codex 0.155.1과 0.162.1의 이 제한은 frontmatter를 포함한 `SKILL.md` 전체의 UTF-8 **8,000바이트**입니다. 한국어 글자 수나 토큰 수로 세지 않습니다.
+
+0.5.0의 진입점은 24,394바이트였고, 0.5.1에서는 기존 1~8단계 지침을 참조 문서로 옮겨 진입점을 줄였습니다. 각 단계에서 필요한 문서를 읽으므로 글쓰기 규칙, 검사 기준, 어투 변환은 유지됩니다. 플러그인을 업데이트하고 새 세션에서 다시 선택하세요. 직접 설치했다면 `SKILL.md` 하나가 아니라 `skills/techblog` 폴더 전체를 교체해야 합니다. 상세 원인과 검증 범위는 [검증 기록](dev/codex/REPORT.md)에 있습니다.
+
 ## 사용법
 
 Claude Code:
@@ -127,6 +133,8 @@ $techblog casual https://arxiv.org/pdf/2309.06180 -o paged-attention.md
 $techblog default design-doc.md 독자는 백엔드 개발자, 분량은 5,000자 안팎
 $techblog casual --retone paged-attention.md
 ```
+
+위 예시는 직접 설치한 스킬 이름입니다. 플러그인을 명시적으로 호출할 때는 `$techblog` 대신 `$techblog:techblog`를 사용하거나 스킬 선택기로 지정합니다.
 
 위 호출은 각 제품의 대화 입력입니다. 셸에서 비대화형으로 호출할 때는 `$`가 확장되지 않도록 인용합니다.
 

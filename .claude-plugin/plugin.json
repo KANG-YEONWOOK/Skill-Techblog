@@ -1,6 +1,6 @@
 {
   "name": "techblog",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "논문 PDF, 문서, 웹 페이지, 붙여넣은 텍스트의 핵심 내용을 토스, 카카오, 당근 기술 블로그 문체의 한국어 아티클로 정리하는 skill이다. 근거 기반 rubric과 검사 스크립트로 AI 문체 패턴을 줄인다. 글의 어투는 Default(합니다체)와 Casual(해요체) 중에서 고를 수 있다.",
   "author": {
     "name": "KANG-YEONWOOK",

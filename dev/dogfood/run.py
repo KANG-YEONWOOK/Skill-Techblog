@@ -31,7 +31,7 @@ REVISE_PROMPT = """현재 폴더의 article.md는 techblog skill이 1~5단계(�
 - skill 폴더: {skill}
 - 자료: {src}
 - fact sheet: article.facts.md
-절차는 {skill}/SKILL.md의 "### 6. 후처리" 절과 {skill}/references/revision.md를 따른다. 스크립트는 python "{skill}/scripts/revise_ko.py" start "article.md"처럼 한 번에 명령 하나씩 Bash로 실행한다. 끝나면 고친 문장 수와 check 결과를 짧게 보고한다."""
+절차는 {skill}/references/finalization.md의 "### 6. 후처리" 절과 {skill}/references/revision.md를 따른다. 스크립트는 python "{skill}/scripts/revise_ko.py" start "article.md"처럼 한 번에 명령 하나씩 Bash로 실행한다. 끝나면 고친 문장 수와 check 결과를 짧게 보고한다."""
 
 
 def build_revise(case, run_dir, skill_dir=SKILL_DIR):

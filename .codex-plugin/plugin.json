@@ -1,6 +1,6 @@
 {
   "name": "techblog",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "자료를 한국어 기술 블로그 글로 정리하고 사실과 문체를 점검하는 스킬입니다.",
   "author": {
     "name": "KANG-YEONWOOK",
@@ -18,6 +18,6 @@
     "category": "Productivity",
     "capabilities": ["Read", "Write"],
     "websiteURL": "https://github.com/KANG-YEONWOOK/Skill-Techblog",
-    "defaultPrompt": ["$techblog 이 자료를 한국어 기술 블로그 글로 정리해줘."]
+    "defaultPrompt": ["$techblog:techblog 이 자료를 한국어 기술 블로그 글로 정리해줘."]
   }
 }

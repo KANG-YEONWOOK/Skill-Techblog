@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -12,11 +13,33 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PortableBundleTest(unittest.TestCase):
+    def test_entrypoint_fits_codex_plugin_prompt_with_headroom(self):
+        # Codex rust-v0.162.1 ext/skills/src/render.rs caps plugin prompts at
+        # 8,000 UTF-8 bytes, including frontmatter. Keep 2,000 bytes of headroom.
+        path = ROOT / "skills/techblog/SKILL.md"
+        content = path.read_text(encoding="utf-8")
+        self.assertLessEqual(len(path.read_bytes()), 6000)
+        self.assertLessEqual(len(content.replace("\n", "\r\n").encode("utf-8")), 6000)
+
+    def test_packaged_markdown_links_resolve_without_source_checkout(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            installed = Path(tmp) / "techblog"
+            shutil.copytree(ROOT / "skills/techblog", installed)
+            for document in installed.rglob("*.md"):
+                for target in re.findall(r"\[[^\]]*\]\(([^)]+)\)", document.read_text(encoding="utf-8")):
+                    if "://" in target or target.startswith("#"):
+                        continue
+                    destination = (document.parent / target.split("#", 1)[0]).resolve()
+                    self.assertIn(installed.resolve(), destination.parents, (document, target))
+                    self.assertTrue(destination.is_file(), (document, target))
+
     def test_shared_plugin_identity_and_local_source(self):
         manifests = [json.loads((ROOT / p).read_text(encoding="utf-8")) for p in
                      ("plugin.json", ".claude-plugin/plugin.json", ".codex-plugin/plugin.json")]
         self.assertEqual({m["name"] for m in manifests}, {"techblog"})
         self.assertEqual(len({m["version"] for m in manifests}), 1)
+        skill = (ROOT / "skills/techblog/SKILL.md").read_text(encoding="utf-8")
+        self.assertEqual(re.search(r'^  version: "([^"]+)"$', skill, re.M).group(1), manifests[0]["version"])
         marketplace = json.loads((ROOT / ".agents/plugins/marketplace.json").read_text(encoding="utf-8"))
         source = ROOT / marketplace["plugins"][0]["source"]["path"]
         self.assertTrue((source / ".codex-plugin/plugin.json").is_file())
@@ -39,7 +62,7 @@ class PortableBundleTest(unittest.TestCase):
 
             def run(script, *args):
                 return subprocess.run([sys.executable, str(installed / "scripts" / script)] + list(args),
-                                      cwd=str(work), env=env, capture_output=True, text=True)
+                                      cwd=str(work), env=env, capture_output=True, text=True, encoding="utf-8")
 
             result = run("lint_ko.py", str(default), "--tone", "default", "--json")
             self.assertIn(result.returncode, (0, 1), result.stderr)

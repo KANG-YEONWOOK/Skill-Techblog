@@ -21,6 +21,18 @@
 
 도구 이름을 흉내 내거나 없는 도구를 호출하지 않는다. macOS/Linux에서는 `python3`, Windows에서는 `python`을 사용한다. 사용할 수 있는 Python 3.8 이상 실행 파일이 따로 있으면 그 경로를 쓴다. 검사기는 외부 패키지가 필요 없다. 검사는 개별 명령으로 실행하고 경로를 인용한다. Claude의 `allowed-tools`는 Codex에 실행 권한을 부여하지 않으며 현재 환경의 권한 정책을 따른다.
 
+스킬 문서는 UTF-8이다. Windows PowerShell에서 읽을 때는 `Get-Content -Encoding utf8`로 인코딩을 지정한다.
+
+## 스크립트 실행
+
+- 현재 환경의 셸 실행 도구를 쓴다. Windows에서는 `python`, macOS와 Linux에서는 `python3`를 쓴다. 아래 `<스킬 절대 경로>`는 로드한 `SKILL.md`가 있는 디렉터리로 바꾼다. 현재 작업 폴더나 환경 변수의 존재로 추측하지 않는다.
+- 경로는 큰따옴표로 감싼다. 검사 명령은 한 번에 하나씩 실행한다. Claude Code의 Bash 사전 허용은 frontmatter의 검사 스크립트에 한정된다. Claude Code에서는 참고 문서를 Read로 열고 파일 목록은 Glob으로 확인한다. `cat`, `ls` 같은 명령을 Bash로 실행하거나 검사 명령에 이어 붙이지 않는다. Codex의 파일 읽기와 PDF 처리는 runtime.md를 따른다.
+  - 문체 검사: `python3 "<스킬 절대 경로>/scripts/lint_ko.py" "<글>" --tone default --facts "<이름>.facts.md"`
+  - 후처리: `python3 "<스킬 절대 경로>/scripts/revise_ko.py" start "<후처리 대상>"`, 같은 스크립트의 `repeats "<후처리 대상>"`, `check "<후처리 대상>"`
+  - 어투 검사: `python3 "<스킬 절대 경로>/scripts/tone_check.py" "<Default 글>" "<Casual 글>"`
+  - 작업 파일 삭제: `python3 "<스킬 절대 경로>/scripts/tone_check.py" --cleanup "<이름>.facts.md" "<이름>.draft.md" "<이름>.unrevised.md" "<이름>.repeats.md"`
+- Python이나 셸을 쓸 수 없으면 `references/rubric.md`로 직접 점검하고 자동 검사를 실행하지 못했다고 보고한다. 스크립트가 실행된 뒤 오류가 나면 경로와 오류를 확인한다. 실행 오류를 Python 부재로 취급하거나 검사를 통과했다고 보고하지 않는다.
+
 ## PDF와 URL
 
 ### Claude Code
@@ -39,5 +51,5 @@
 ## 후처리 context
 
 - 독립 subagent가 지원되면 초안 작성 대화를 상속하지 않게 실행한다. `fork_context`나 `fork_turns` 같은 설정이 있으면 상속을 끈다. 별도 모델은 지정하지 않는다.
-- subagent에는 SKILL.md 6단계의 prompt와 실제 파일 경로만 넘긴다. 붙여넣은 자료는 fact sheet의 별도 `원문` 절에 그대로 보관하고 그 절을 자료 위치로 지정한다. subagent도 원문을 다시 확인할 수 있어야 한다.
+- subagent에는 [finalization.md](finalization.md) 6단계의 prompt와 실제 파일 경로만 넘긴다. 붙여넣은 자료는 fact sheet의 별도 `원문` 절에 그대로 보관하고 그 절을 자료 위치로 지정한다. subagent도 원문을 다시 확인할 수 있어야 한다.
 - 독립 실행 도구가 없으면 현재 agent가 revision.md 순서를 따라 직접 후처리한다. 이 경우 독립 검토를 했다고 보고하지 않는다. 후처리를 위해 별도 CLI 설치나 인증을 시도하지 않는다.
