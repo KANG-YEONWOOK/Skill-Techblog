@@ -125,6 +125,13 @@
    "note": "S2와 같은 자료. baseline은 파일 경로로 전달한다"
   },
   {
+   "name": "H-noradrenergic-default",
+   "source": "{work}/sources/fncom-2021-687075.pdf",
+   "tone": "default",
+   "set": "naturalness",
+   "note": "신경과학 논문(Frontiers in Computational Neuroscience 2021, doi 10.3389/fncom.2021.687075, CC BY). 0.6.0 한국어 문장 점검 확인용. 사용자 검토 노트와 같은 분야의 영어 자료"
+  },
+  {
    "name": "N1-note-default",
    "source": "{work}/sources/note.md",
    "tone": "default",

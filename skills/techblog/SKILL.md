@@ -4,7 +4,7 @@ description: 전달받은 자료(논문 PDF, 문서 PDF, 마크다운, URL, 붙�
 license: MIT
 allowed-tools: Read Write Edit Glob Grep WebFetch Agent Bash(python "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python ${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/*)
 metadata:
-  version: "0.5.1"
+  version: "0.6.0"
   repository: https://github.com/KANG-YEONWOOK/Skill-Techblog
 ---
 
