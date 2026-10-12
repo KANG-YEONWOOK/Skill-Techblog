@@ -13,7 +13,7 @@ ARTICLE은 후처리할 합니다체 글이다. Default 글이면 출력 파일(
   Bash 권한이 없어도 후보를 Read로 볼 수 있게 하려는 파일이다. 사본이 이미 있으면 --force 없이는 덮어쓰지 않는다.
 - repeats: 다시 읽을 위치(반복 후보)를 출력한다. 판정은 하지 않는다. 후보마다 이 글의 독자에게 필요한
   반복인지는 글쓴이가 판단한다.
-- check: 초안 사본과 ARTICLE을 비교한다. 바뀐 문장 수, 초안에만 있는 수치와 새 수치, 헤딩·코드·표 변경,
+- check: 초안 사본과 ARTICLE을 비교한다. 바뀐 문장 수, 초안에만 있는 수치와 새 수치, 헤딩과 코드와 표의 변경,
   lint 상태가 나빠진 항목, 연결어미가 3개 이상인 새 문장을 출력한다.
 
 종료 코드: 0 정상, 1 check에서 Gate 위반, FAIL, AI 문체 항목 악화 중 하나가 있음, 2 사용법 또는 입력 오류
@@ -64,7 +64,7 @@ BASELINE_RE = re.compile(
     r"의\s+(?:최대\s+|약\s+|평균\s+)?[\d.,]+\s*배|"     # "Orca의 1.67배"
     r"(?<![가-힣])전(?:보다|에는|과|의|에)?(?=\s|$))")
 
-# check에서 상태 악화를 나누는 기준. 이 접두사로 시작하는 항목은 문장·문단 분포 항목이고,
+# check에서 상태 악화를 나누는 기준. 이 접두사로 시작하는 항목은 문장과 문단의 분포 항목이고,
 # 나머지(G, A1~A7, A10~A15, T)는 AI 문체 항목이다.
 DIST_PREFIX = ("A8.", "A9.", "A16.", "A17.")
 RANK = {"PASS": 0, "INFO": 0, "CHECK": 0, "WARN": 1, "FAIL": 2, "GATE": 3}
@@ -204,8 +204,8 @@ def find_repeats(text):
         if prev is not None and BASELINE_RE.search(prev["masked"]):
             continue
         cands.append({"id": "R6", "item": 2, "lines": [r["line"]], "section": r["heading"],
-                      "text": r["text"], "after": "표·목록 뒤" if after_block else "",
-                      "label": "비교 기준 없는 변화량" + ("(표·목록 바로 뒤)" if after_block else "")})
+                      "text": r["text"], "after": "표나 목록 뒤" if after_block else "",
+                      "label": "비교 기준 없는 변화량" + ("(표나 목록 바로 뒤)" if after_block else "")})
 
     # R1 수치가 든 같은 비교 기준
     occ = {}
@@ -404,7 +404,7 @@ def render_check(snap, path, res):
                  f"({res['changed_share'] * 100:.1f}%), 새로 쓴 문장 {res['written']}개")
     if res["changed_share"] > CHANGED_SHARE_RECHECK:
         lines.append(f"    바뀐 문장이 {int(CHANGED_SHARE_RECHECK * 100)}%를 넘었다. 고친 곳마다 revision.md의 판단 질문에 "
-                     "답하는지 다시 읽는다.")
+                     "답하는 수정인지, korean-review.md의 유형에 해당하는 수정인지 다시 읽는다.")
     lines.append(f"본문 글자 수: {st['chars'][0]:,}자 → {st['chars'][1]:,}자")
     lost = res["lost_numbers"]
     if lost:
@@ -422,7 +422,9 @@ def render_check(snap, path, res):
             lines.append(f"    {x['raw']} (L{x['line']}){tag}")
     else:
         lines.append("새 수치: 없음")
-    lines.append("구조: 헤딩 " + ("같음" if st["headings_same"] else "바뀜(헤딩과 절 구성은 바꾸지 않는다)")
+    lines.append("구조: 헤딩 " + ("같음" if st["headings_same"] else
+                                 "바뀜(후처리는 헤딩과 절 구성을 바꾸지 않는다. 한국어 문장 점검의 유형 J 수정이면 남기고, "
+                                 "글 안에서 그 헤딩으로 거는 링크를 함께 고친다)")
                  + ", 코드 블록 " + ("같음" if st["code_same"] else "바뀜(코드는 바꾸지 않는다)")
                  + f", 표 {st['tables'][0]}개 → {st['tables'][1]}개")
     lines.append(f"lint: 초안 G{lb['gate_fail']} F{lb['fail']} W{lb['warn']} → 후처리 G{la['gate_fail']} F{la['fail']} W{la['warn']}")
@@ -436,7 +438,7 @@ def render_check(snap, path, res):
         for r in ai_only:
             lines += _fmt_metric(r)
     if res["worse_dist"]:
-        lines.append("  나빠진 문장·문단 분포 항목(후처리에서 의도했으면 남기고 보고에 이유를 쓴다):")
+        lines.append("  나빠진 문장과 문단의 분포 항목(후처리에서 의도했으면 남기고 보고에 이유를 쓴다):")
         for r in res["worse_dist"]:
             lines += _fmt_metric(r)
     if not (res["gate_fail"] or res["worse_ai"] or res["worse_dist"]):
