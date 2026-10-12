@@ -29,7 +29,11 @@ import revise_ko as RV  # noqa: E402
 DEFAULT_WORK = os.path.join(os.environ.get("TEMP", "/tmp"), "techblog-work", "dogfood")
 KEY_METRICS = ("A1.np", "A2.comma_per_sentence", "A2.connective_comma_ratio", "A3.salience", "A4.para_end",
                "A5.style_words_per_1k", "A8.sent_len_mean", "A8.sent_len_cv", "A8.long_ratio", "A8.ending_run4",
-               "A9.bold_per_1k", "A9.list_ratio", "A10.triad_per_1k", "A13.demonstrative_start_per_1k")
+               "A9.bold_per_1k", "A9.list_ratio", "A10.triad_per_1k", "A13.demonstrative_start_per_1k",
+               # 0.6.0 한국어 점검 항목
+               "G6.emdash", "G6.punct_policy", "G10.num_particle", "A6.window_range", "A14.quoted_english_token",
+               "A5.archaic_words", "A6.calque_check", "A14.quoted_english_check", "A18.negation_scope",
+               "A19.term_mix")
 
 
 def parse_transcript(path, events=None):
@@ -153,6 +157,10 @@ def revise_summary(case_dir, tone, tools, events):
         i_rep = rep_reads[0]
     agent_calls = [i for i, t in enumerate(tools) if t["name"] in ("Agent", "Task")
                    and i_start is not None and i > i_start]
+    # 0.6.0: 6단계의 두 번째 subagent(한국어 문장 점검). prompt에 korean-review.md가 있는 호출을 센다.
+    korean_calls = [i for i in agent_calls if "korean-review.md" in json.dumps(tools[i]["input"], ensure_ascii=False)]
+    korean_reads = [i for i, t in enumerate(tools) if t["name"] == "Read"
+                    and str(t["input"].get("file_path", "")).replace("\\", "/").endswith("references/korean-review.md")]
     checks = [i for i, t in enumerate(tools) if t["name"] in ("Bash", "PowerShell")
               and "revise_ko.py" in t["input"].get("command", "") and " check " in t["input"].get("command", "") + " "]
     i_last_check = checks[-1] if checks else None
@@ -182,7 +190,8 @@ def revise_summary(case_dir, tone, tools, events):
             "long_new": len(res["long_new"]), "must_fix": res["must_fix"],
             "repeats_before": counts(snap), "repeats_after": counts(post),
             "ran": {"start": i_start is not None, "repeats": i_rep is not None, "check": i_check is not None,
-                    "subagent": len(agent_calls)},
+                    "subagent": len(agent_calls), "korean_subagent": len(korean_calls),
+                    "korean_review_read": bool(korean_reads), "checks": len(checks)},
             "read_before_repeats": read_before_repeats, "edits_after_start": edits_after,
             "usage_after_start": _usage_share(events, i_start, i_last_check) if i_start is not None else None,
             "compactions": sum(1 for ev in events if ev[0] == "compact")}

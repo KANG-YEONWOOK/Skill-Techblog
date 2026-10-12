@@ -9,6 +9,9 @@
   헤딩과 바로 앞 문장과 함께 보여 준다. judge는 문장마다 그 문장만으로 무엇에 대한 말인지 알 수 있는지(self_contained),
   바로 앞 문장을 읽어야 알 수 있는지(needs_prev), 앞 문장까지 읽어도 알 수 없는지(unclear)를 고른다.
   사람 글 대조군 6편(합니다체 3, 해요체 3)도 같은 방식으로 판정하고 결과를 work 폴더에 저장해 다시 쓴다.
+- korean(J5, 0.6.0): 글의 헤딩과 모든 문장을 하나씩 보여 주고, 문장마다 자연스러움(natural)과
+  어색함(awkward, 유형 A~K)을 고르게 한다. 1,000자당 어색한 문장 수를 같은 어투의 사람 글 대조군 3편과 비교한다.
+  사람 글 결과는 _korean_humans.json에 둔다.
 
 - within: 같은 실행의 초안 사본(article.unrevised.md)과 후처리를 마친 합니다체 글(Default는 article.md, Casual은
   article.draft.md)을 비교한다. 전체 pairwise, 바뀐 절만 모은 절 A/B, 문장을 맞춘 clarity, 두 글의 fidelity(걸린 주장을
@@ -16,7 +19,8 @@
 - cross: 이번 iteration과 다른 iteration의 같은 케이스에서 후처리를 마친 합니다체 글끼리 pairwise로 비교한다.
 
 사용법
-  python dev/dogfood/judge.py --iter iter-1 [--compare iter-0] [--skip style fidelity pairwise clarity]
+  python dev/dogfood/judge.py --iter iter-1 [--compare iter-0] [--skip style fidelity pairwise clarity korean]
+  python dev/dogfood/judge.py --iter iter-13 --skip style fidelity pairwise clarity --extra ex040=examples/paged-attention.default.md
   python dev/dogfood/judge.py --iter iter-8b --skip style fidelity pairwise --extra s1-930779c=examples/paged-attention.casual.md
   python dev/dogfood/judge.py --iter iter-11 --within [--skip sections style] [--only B-idiosyncrasies-default]
   python dev/dogfood/judge.py --iter iter-11 --cross iter-11r
@@ -124,6 +128,36 @@ CLARITY_PROMPT = """현재 폴더의 items.md에는 한국어 기술 블로그 �
 needs_prev나 unclear이면 question에 이 문장만 읽은 독자가 갖게 되는 질문을 한 문장으로 적습니다. 예: "무엇이 22배인가?", "무엇과 무엇의 차이인가?", "'이 방식'은 어떤 방식인가?" self_contained이면 question은 빈 문자열로 둡니다. 독자는 그 분야를 아는 개발자이므로 전문 용어를 모르는 것은 판정 이유가 아닙니다. 판정할 문장이 표나 목록 바로 뒤에 있으면 앞 문장 칸에 그렇게 적혀 있습니다."""
 
 CLARITY_CONTROLS = 3  # 어투마다 사람 글 대조군 수
+
+KOREAN_TYPES = ["", "A", "B", "C", "D", "E", "F", "G", "H", "J", "K"]
+KOREAN_SCHEMA = {
+    "type": "object",
+    "properties": {"items": {"type": "array", "items": {"type": "object", "properties": {
+        "id": {"type": "integer"},
+        "verdict": {"type": "string", "enum": ["natural", "awkward"]},
+        "type": {"type": "string", "enum": KOREAN_TYPES},
+        "reason": {"type": "string"}},
+        "required": ["id", "verdict", "type", "reason"]}}},
+    "required": ["items"]}
+
+KOREAN_PROMPT = """현재 폴더의 items.md에는 한국어 기술 블로그 글 한 편의 헤딩과 문장이 번호와 함께 있습니다. 번호마다 그 문장이 속한 절의 헤딩, 바로 앞 문장, 판정할 문장이 적혀 있습니다. 헤딩을 판정할 때는 헤딩 칸에 "(헤딩)"이라고 적혀 있습니다. Read 도구로 items.md를 끝까지 읽고 모든 번호에 답하세요.
+
+판정할 문장을 한국 개발자가 쓴 기술 블로그 문장으로 읽었을 때 자연스러운지 고르세요.
+- natural: 한 번 읽어서 뜻이 들어오고, 한국 개발자가 동료에게 그대로 말할 만한 문장이다.
+- awkward: 아래 유형 중 하나에 해당한다. type에 유형 글자를, reason에 어느 말이 왜 어색한지 한 문장으로 적습니다.
+  A 범위, 기간, 한도를 "창"으로 쓴 말(적분 창, 시간 창, 창이 열리는 시각)
+  B 영어 낱말을 따옴표째 문장 성분으로 끼운 말("likely"로 쓴 추정, "slow" 반응)
+  C 영어 동사나 관용구를 그대로 옮긴 말(변화가 남아 있다, 손으로 계산한다, 기능적으로 조용하다, 회로를 흔들다)
+  D 그 분야에서 쓰지 않는 번역어나 다른 뜻으로 먼저 읽히는 번역어(reporter를 "보고자"로, docstring을 "설명 문자열"로)
+  E 예스럽거나 딱딱한 말(옛 값, 수치적으로 거의 0, 제시된)
+  F 한 번 읽어서 뜻이 안 들어오거나 두 뜻으로 읽히는 문장(수식어가 걸리는 범위, 비교 대상, 부정의 범위, 명사를 쌓은 구, 주어와 서술어가 어긋남, 영어 어순)
+  G 번역투(~에 의해, ~를 가질 수 있다, ~하게 되다, 그것은, 중요한 역할을 하다)
+  H 숫자나 영어 낱말 뒤 조사가 읽는 소리와 맞지 않음(0.7717예요, 0.512이에요)
+  J 헤딩이나 질문 문장의 비유와 직역(무엇이 남을까, 흔들어 보면)
+  K 문장 부호 오류(가운뎃점, en dash, em dash, 쉼표로 바꾼 짝이 나열로 읽힘)
+독자는 그 분야를 아는 개발자입니다. 기술 용어를 영어로 쓴 것(latency, token bucket)은 판정 이유가 아닙니다. 바로 앞 문장을 읽어야 무엇에 대한 말인지 아는 것도 이 판정의 이유가 아닙니다(다른 판정에서 봅니다). natural이면 type과 reason은 빈 문자열로 둡니다."""
+
+KOREAN_CHUNK = 80  # judge 한 번에 보여 줄 문장 수. 모든 문장을 판정하므로 글 하나를 여러 번에 나눠 묻는다.
 
 
 def call_judge(prompt, schema, cwd, model, extra_tools=None, timeout=1800):
@@ -432,6 +466,102 @@ def run_clarity(iter_dir, work, model, extras=()):
     return out
 
 
+# ---------------------------------------------------------------- korean: 문장 단위 J5
+
+def korean_items(text):
+    """헤딩과 한글 4자 이상인 모든 문장을, 그 문장이 속한 절의 헤딩과 바로 앞 문장과 함께 뽑는다.
+    참고자료 절, 표, 코드 블록, 인용문은 뺀다."""
+    items, heading, prev, in_refs = [], "(헤딩 없음)", None, False
+    for b in L.parse_blocks(L.normalize_text(text)):
+        if b.type == "heading":
+            heading, _, _ = L.clean_inline(b.text)
+            in_refs = bool(L.REF_HEADING_RE.search(heading)) and b.level >= 2
+            if not in_refs and len(re.findall(r"[가-힣]", heading)) >= 2:
+                items.append({"heading": "(헤딩)", "prev": "(없음)", "sentence": heading})
+            prev = None
+            continue
+        if in_refs:
+            continue
+        if b.type in ("table", "code", "blockquote"):
+            prev = {"table": "(바로 앞은 표)", "code": "(바로 앞은 코드 블록)"}.get(b.type, "(바로 앞은 인용문)")
+            continue
+        if b.type not in ("paragraph", "list_item"):
+            continue
+        clean, _, codes = L.clean_inline(b.text)
+        for s in _restore_inline(L.split_sentences(clean), codes):
+            if not s or len(re.findall(r"[가-힣]", s)) < 4:
+                continue
+            items.append({"heading": heading, "prev": prev or "(절의 첫 문장)", "sentence": s})
+            prev = s
+    return items
+
+
+def judge_korean(path, jdir, model):
+    """글 한 편의 모든 헤딩과 문장을 KOREAN_CHUNK개씩 나눠 판정한다."""
+    os.makedirs(jdir, exist_ok=True)
+    text = L.read_text(path)
+    items = korean_items(text)
+    verdict, cost, errors = {}, 0.0, []
+    for start in range(0, len(items), KOREAN_CHUNK):
+        chunk = items[start:start + KOREAN_CHUNK]
+        cdir = os.path.join(jdir, f"part{start // KOREAN_CHUNK + 1}")
+        os.makedirs(cdir, exist_ok=True)
+        lines = []
+        for n, it in enumerate(chunk, 1):
+            lines += [f"## {n}", f"- 헤딩: {it['heading']}", f"- 바로 앞 문장: {it['prev']}",
+                      f"- 판정할 문장: {it['sentence']}", ""]
+        with open(os.path.join(cdir, "items.md"), "w", encoding="utf-8") as f:
+            f.write("\n".join(lines))
+        res = call_judge(KOREAN_PROMPT, KOREAN_SCHEMA, cdir, model)
+        for x in res.get("items", []):
+            if isinstance(x.get("id"), int) and 1 <= x["id"] <= len(chunk):
+                verdict[start + x["id"]] = x
+        cost += res.get("_cost") or res.get("cost") or 0
+        if res.get("error"):
+            errors.append(str(res["error"])[:200])
+    awkward = [dict(items[n - 1], type=v.get("type", ""), reason=v.get("reason", ""))
+               for n, v in sorted(verdict.items()) if v.get("verdict") == "awkward"]
+    by_type = {}
+    for a in awkward:
+        by_type[a["type"] or "?"] = by_type.get(a["type"] or "?", 0) + 1
+    chars = L.analyze(text)["stats"]["chars"] or 1
+    answered = len(verdict)
+    return {"checked": len(items), "answered": answered, "awkward": len(awkward),
+            "rate": round(len(awkward) / answered, 3) if answered else None,
+            "per_1k": round(len(awkward) * 1000 / chars, 2), "chars": chars, "by_type": by_type,
+            "awkward_items": awkward, "cost": round(cost, 3), "error": "; ".join(errors) or None}
+
+
+def run_korean(iter_dir, work, model, extras=()):
+    """케이스의 최종 글(article.md), --extra로 준 글, 어투마다 사람 글 3편을 판정한다. 어투는 lint로 정한다."""
+    out = {}
+    targets = []
+    if os.path.isdir(iter_dir):
+        for c in sorted(os.listdir(iter_dir)):
+            path = os.path.join(iter_dir, c, "article.md")
+            if os.path.isfile(path):
+                targets.append((c, path))
+    for spec in extras:
+        name, path = spec.split("=", 1)
+        targets.append((name, path if os.path.isabs(path) else os.path.join(ROOT, path)))
+    for name, path in targets:
+        tone = L.detect_tone(L.analyze(L.read_text(path)))
+        out[name] = dict(judge_korean(path, os.path.join(iter_dir, "_judge", f"korean-{name}"), model),
+                         human=False, file=path, tone=tone)
+    cache_path = os.path.join(work, "dogfood", "_korean_humans.json")
+    key = hashlib.sha1((KOREAN_PROMPT + model).encode("utf-8")).hexdigest()[:12]
+    cache = json.load(open(cache_path, encoding="utf-8")) if os.path.exists(cache_path) else {}
+    for hid, hpath in clarity_controls(work):
+        ck = f"{key}:{hid}"
+        if ck not in cache:
+            cache[ck] = judge_korean(hpath, os.path.join(work, "dogfood", "_korean_humans", hid), model)
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            with open(cache_path, "w", encoding="utf-8") as f:
+                json.dump(cache, f, ensure_ascii=False, indent=1)
+        out[hid] = dict(cache[ck], human=True, tone=L.detect_tone(L.analyze(L.read_text(hpath))))
+    return out
+
+
 # ---------------------------------------------------------------- within: 초안 사본 대 후처리를 마친 글
 
 SECTION_SCHEMA = {
@@ -730,7 +860,7 @@ def main():
     ap.add_argument("--model", default="sonnet")
     ap.add_argument("--skip", nargs="*", default=[])
     ap.add_argument("--only", nargs="*")
-    ap.add_argument("--extra", action="append", default=[], help="clarity만 판정할 추가 글: 이름=경로")
+    ap.add_argument("--extra", action="append", default=[], help="clarity와 korean만 판정할 추가 글: 이름=경로")
     ap.add_argument("--within", action="store_true", help="초안 사본과 후처리를 마친 글을 비교한다")
     ap.add_argument("--cross", help="다른 iteration의 같은 케이스와 후처리를 마친 글끼리 비교한다")
     args = ap.parse_args()
@@ -757,9 +887,12 @@ def main():
         report["pairwise"] = run_pairwise(iter_dir, os.path.join(args.work, "dogfood", args.compare), args.model)
     if "clarity" not in args.skip:
         report["clarity"] = run_clarity(iter_dir, args.work, args.model, args.extra)
+    if "korean" not in args.skip:
+        report["korean"] = run_korean(iter_dir, args.work, args.model, args.extra)
     # 같은 iteration에 judge를 동시에 돌려도 서로의 결과를 덮어쓰지 않게, 저장 직전에 파일을 다시 읽고
     # 이번에 실행한 단계만 바꾼다.
-    ran = [k for k in ("style", "fidelity", "pairwise", "clarity") if k in report and k not in args.skip]
+    os.makedirs(iter_dir, exist_ok=True)
+    ran = [k for k in ("style", "fidelity", "pairwise", "clarity", "korean") if k in report and k not in args.skip]
     latest = json.load(open(report_path, encoding="utf-8")) if os.path.exists(report_path) else {}
     latest.update({k: report[k] for k in ran})
     report = latest
@@ -791,6 +924,12 @@ def main():
               + (f" error={c['error'][:80]}" if c.get("error") else ""))
         for it in c["unclear_items"][:6]:
             print(f"    - ({it['verdict']}) {it['sentence'][:80]} | {it['question'][:60]}")
+    for name, k in report.get("korean", {}).items():
+        print(f"[korean] {'HUMAN ' if k['human'] else ''}{name} ({k.get('tone')}): 어색한 문장 {k['awkward']}/{k['answered']} "
+              f"(1,000자당 {k['per_1k']}, 본문 {k['chars']:,}자) 유형 {k['by_type']}"
+              + (f" error={k['error'][:80]}" if k.get("error") else ""))
+        for it in k["awkward_items"][:8]:
+            print(f"    - ({it['type']}) {it['sentence'][:80]} | {it['reason'][:70]}")
 
 
 if __name__ == "__main__":

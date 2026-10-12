@@ -76,6 +76,12 @@ class CodexEvidenceTest(unittest.TestCase):
         command = '/bin/zsh -lc \'python3 "/tmp/설치 폴더/scripts/revise_ko.py" check "article.md"\''
         self.assertEqual(smoke.checker_invocations(command), [{"script": "revise_ko.py", "action": "check"}])
 
+    def test_reference_reads_lists_documents_from_shell_reads(self):
+        commands = [{"command": "Get-Content -Encoding utf8 'C:\\설치 폴더\\references\\korean-review.md'"},
+                    {"command": 'sed -n "1,200p" "/tmp/skill/references/revision.md"'},
+                    {"command": 'python3 "/tmp/skill/scripts/lint_ko.py" article.md'}]
+        self.assertEqual(smoke.reference_reads(commands), ["korean-review.md", "revision.md"])
+
     def test_reading_checker_is_not_running_it(self):
         for command in ('rg -n "def" /tmp/scripts/lint_ko.py', 'cat "/tmp/scripts/revise_ko.py"'):
             self.assertEqual(smoke.checker_invocations(command), [])

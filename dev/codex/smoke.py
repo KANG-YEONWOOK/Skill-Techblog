@@ -184,6 +184,14 @@ def checker_invocations(command):
     return calls
 
 
+def reference_reads(commands):
+    """Reference documents named in executed commands (Codex reads files through the shell).
+
+    Informational only: a subagent's commands may not appear in the parent JSONL."""
+    return sorted({name for c in commands
+                   for name in re.findall(r"references[/\\]+([a-z][a-z\-]*\.md)", c.get("command", ""))})
+
+
 def inspect_output(project, case, commands, hashes):
     """Re-run the deterministic checkers; leave semantic source review to the reviewer."""
     scripts = ROOT / "skills/techblog/scripts"
@@ -220,6 +228,7 @@ def inspect_output(project, case, commands, hashes):
     result["work_files_ok"] = (not present if case == "cleanup" or case.startswith("retone-") else
                                all(s in present for s in WORK_SUFFIXES if s != ".draft.md" or tone == "casual"))
     result["checker_commands"] = [c for c in commands if checker_invocations(c["command"])]
+    result["reference_reads"] = reference_reads(commands)
     successful = [call for c in commands if c.get("exit_code") == 0
                   for call in checker_invocations(c["command"])]
     required = [("lint_ko.py", None)]
@@ -282,7 +291,8 @@ def main():
         mention = "[${}]({})".format(skill_name, skill.as_posix())
         prompt, originals = prepare_case(project, args.case, args.source, mention)
         if args.direct_revision:
-            prompt += "\n이번 실행에서는 subagent를 사용하지 말고 runtime.md의 직접 후처리 절차를 수행해줘."
+            prompt += ("\n이번 실행에서는 subagent를 사용하지 말고 runtime.md의 직접 수행 절차로 "
+                       "6단계의 후처리와 한국어 문장 점검을 해줘.")
         hashes = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in originals}
         (work / "prompt.txt").write_text(prompt, encoding="utf-8")
         cmd = [codex, "--no-daemon", "-a", "never", "--search", "exec", "--sandbox", "workspace-write",
