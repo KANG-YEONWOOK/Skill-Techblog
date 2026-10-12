@@ -532,14 +532,15 @@ def judge_korean(path, jdir, model):
             "awkward_items": awkward, "cost": round(cost, 3), "error": "; ".join(errors) or None}
 
 
-def run_korean(iter_dir, work, model, extras=()):
-    """케이스의 최종 글(article.md), --extra로 준 글, 어투마다 사람 글 3편을 판정한다. 어투는 lint로 정한다."""
+def run_korean(iter_dir, work, model, extras=(), only=None):
+    """케이스의 최종 글(article.md), --extra로 준 글, 어투마다 사람 글 3편을 판정한다. 어투는 lint로 정한다.
+    --only를 주면 그 케이스만 판정한다(--extra로 준 글은 항상 판정한다)."""
     out = {}
     targets = []
     if os.path.isdir(iter_dir):
         for c in sorted(os.listdir(iter_dir)):
             path = os.path.join(iter_dir, c, "article.md")
-            if os.path.isfile(path):
+            if os.path.isfile(path) and (not only or c in only):
                 targets.append((c, path))
     for spec in extras:
         name, path = spec.split("=", 1)
@@ -888,7 +889,7 @@ def main():
     if "clarity" not in args.skip:
         report["clarity"] = run_clarity(iter_dir, args.work, args.model, args.extra)
     if "korean" not in args.skip:
-        report["korean"] = run_korean(iter_dir, args.work, args.model, args.extra)
+        report["korean"] = run_korean(iter_dir, args.work, args.model, args.extra, args.only)
     # 같은 iteration에 judge를 동시에 돌려도 서로의 결과를 덮어쓰지 않게, 저장 직전에 파일을 다시 읽고
     # 이번에 실행한 단계만 바꾼다.
     os.makedirs(iter_dir, exist_ok=True)

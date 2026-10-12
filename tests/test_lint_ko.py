@@ -382,6 +382,15 @@ class ExampleRegressionTest(unittest.TestCase):
 
 
 class ToneTest(unittest.TestCase):
+    def test_reference_entries_are_not_tone_checked(self):
+        # 0.6.0 실행에서 참고자료의 "공개 URL 없음."이 어투 혼용 Gate로 걸려 서지 항목을 고쳤다.
+        text = ("공개 API는 고정 윈도우를 썼습니다. 지연은 1,850ms에서 420ms로 줄었습니다.\n\n"
+                "## 참고자료\n\n[1] 사내 엔지니어링 노트, Migrating the API rate limiter (2026). 공개 URL 없음.\n")
+        a = L.analyze(text)
+        self.assertEqual(L.tone_metrics(a, "default")["G4.off_tone"]["value"], 0)
+        body = text.replace("## 참고자료", "## 정리")
+        self.assertEqual(L.tone_metrics(L.analyze(body), "default")["G4.off_tone"]["value"], 1)
+
     def test_off_tone_default(self):
         a = L.analyze("첫 문장입니다. 둘째 문장이에요. 셋째 문장이다.")
         t = L.tone_metrics(a, "default")
@@ -415,6 +424,15 @@ class ApproxQuantityTest(unittest.TestCase):
         a = L.analyze(text, facts_text="노드: 수천 개(원문 thousands of nodes)")
         hits = [h["match"] for h in a["metrics"]["A15.unknown_numbers"]["hits"]]
         self.assertEqual(hits, ["수십만"])
+
+    def test_count_with_particle_man_is_not_approx(self):
+        # 0.6.0 실행에서 "요청 수만 줄였습니다"(개수 + 조사 "만")가 어림 수량어로 걸려 맞는 문장을 고쳤다.
+        text = ("토큰 버킷은 한 번에 보낼 수 있는 요청 수만 줄였습니다. 사용자 수만 늘리면 됩니다. "
+                "하루 수만 건의 요청이 들어옵니다. 수만 개의 연결을 엽니다. 코드 수만 줄을 옮겼습니다.")
+        a = L.analyze(text, facts_text="- 요청 600개")
+        hits = [h["match"] for h in a["metrics"]["A15.unknown_numbers"]["hits"]]
+        self.assertEqual(hits, ["수만", "수만", "수만"])
+        self.assertEqual([h["text"][:2] for h in a["metrics"]["A15.unknown_numbers"]["hits"]], ["하루", "수만", "코드"])
 
 
 class CliTest(unittest.TestCase):
