@@ -1,6 +1,6 @@
 # techblog 평가 결과
 
-이 문서는 techblog skill이 쓴 글을 같은 자료로 skill 없이 쓴 글, 사람이 쓴 기술 블로그 글과 비교한 결과를 정리한다. 0.2.0 버전의 글은 skill 없이 쓴 글과 비교했고, 0.3.0 버전의 글은 0.2.0 버전의 글과 비교했다. 0.4.0 버전은 같은 실행에서 후처리 전 초안과 후처리를 마친 글을 비교했다. 측정 방법과 iteration별 기록은 [`dev/dogfood/README.md`](dev/dogfood/README.md)와 [`dev/dogfood/REPORT.md`](dev/dogfood/REPORT.md)에 있다.
+이 문서는 techblog skill이 쓴 글을 같은 자료로 skill 없이 쓴 글, 사람이 쓴 기술 블로그 글과 비교한 결과를 정리한다. 0.2.0 버전의 글은 skill 없이 쓴 글과 비교했고, 0.3.0 버전의 글은 0.2.0 버전의 글과 비교했다. 0.4.0 버전은 같은 실행에서 후처리 전 초안과 후처리를 마친 글을 비교했다. 0.6.0 버전은 같은 자료로 0.5.1 버전이 쓴 글과 비교하고, 문장마다 한국어 표현을 판정했다. 측정 방법과 iteration별 기록은 [`dev/dogfood/README.md`](dev/dogfood/README.md)와 [`dev/dogfood/REPORT.md`](dev/dogfood/REPORT.md)에 있다.
 
 ## 평가 방법
 
@@ -103,7 +103,7 @@ judge가 skill 없는 글에서 지적한 것은 "핵심 요약"이나 "TL;DR" �
 
 | 케이스 | skill 있음 | skill 없음 | skill 없는 쪽이 실패한 grader |
 |---|---|---|---|
-| note-default | 0.889 | 0.667 | 문장 안 em dash·세미콜론, 지어낸 경험, 자료에 없는 수치 |
+| note-default | 0.889 | 0.667 | 문장 안 em dash와 세미콜론, 지어낸 경험, 자료에 없는 수치 |
 | note-casual | 1.000 | 0.778 | 문장 완결성(clarity), 지어낸 경험 |
 | retone-casual | 1.000, 1.000 | 1.000, 1.000 | 없음 |
 
@@ -158,6 +158,75 @@ subagent 후처리는 실행마다 3.9~6.2분(실행 시간의 25~50%)이 걸렸
 
 skill 있는 arm만 케이스마다 1회 실행했다. retone-casual은 1.000이고 후처리 없이 어투만 바꿨다. note-default는 최종 버전에서 1.000이었다. note-casual은 0.900이었고 no-experience grader가 judge 3표 중 2표로 FAIL이었다. 같은 grader 문구로 judge에게 다시 물으면 PASS였고, 경계 사례로 관찰한 주체(노트)가 없는 "token bucket으로 바꾼 뒤에도 배포가 있을 때마다 그 직후에는 이런 짧은 burst가 보여요"를 들었다. 이 문장은 초안에 있던 문장을 subagent가 고친 것이다. 두 eval 모두 trace에서 subagent 호출을 확인했다.
 
+## 자연스러운 한국어 (0.6.0)
+
+사용자는 이 skill로 쓴 신경과학 학습 노트 14편을 다시 읽고 3주차 노트에서만 414곳을 고쳤다. 14편 모두 lint PASS였고, 고친 뒤에도 lint 결과는 같았다. 고친 곳은 한 번 읽어서 뜻이 안 들어오는 문장 200곳, 영어 관용구와 동사의 직역 81곳, 업계에서 쓰지 않는 번역어 41곳, 그 밖의 번역투 40곳, 영어 낱말을 문장 성분으로 끼운 말 33곳, 예스럽거나 딱딱한 말 17곳, 범위를 "창"으로 쓴 말 2곳이다. 0.6.0은 이 유형을 세 곳에 반영했다.
+
+- 초안 규칙: style-guide.md의 "영어 자료를 한국어로 옮기기" 절과 drafting.md의 fact sheet 형식(원문의 한국어 뜻, 추정 표현, 근거를 적은 용어 표)
+- 검사 스크립트: 문장 부호와 숫자 뒤 조사(Gate), "창"과 따옴표 친 영어 낱말(FAIL), 예스러운 말(WARN), 한국어 점검 후보(CHECK)
+- 6단계: 후처리 다음에 다른 subagent가 korean-review.md의 유형 A~K로 글을 문장마다 읽고 고친다. 상위 agent는 보고 표를 한 줄씩 확인한다.
+
+### 측정 방법
+
+- 같은 자료를 0.5.1과 0.6.0으로 정리하게 했다. 자료는 사용자 검토 노트와 같은 분야의 영어 논문(Coronel-Oliveros 등 2021, Frontiers in Computational Neuroscience, CC BY)이고, Claude Code와 Codex에서 버전마다 1회씩 Default 글을 썼다.
+- PagedAttention 논문은 0.6.0으로 Casual 글을 1회 쓰고 `examples/`의 0.4.0 글과 비교했다. 0.5.0과 0.5.1은 지침 파일을 나눈 버전이라 글쓰기 규칙은 0.4.0과 같다.
+- 짧은 rate limiter 노트(evals/note-default와 같은 자료)는 0.6.0으로 Claude Code와 Codex에서 실행했다. Claude Code는 사용자 skill 폴더로 1회, user 설정을 빼고(`--setting-sources project,local`) plugin skill만 불러 2회 실행했다.
+- 모든 결과 글을 0.6.0 lint로 다시 검사하고, 문장 단위 J5 judge(Claude Sonnet)로 제목, 헤딩, 본문 문장을 하나씩 판정했다. 결과 글은 직접 읽어 유형 A~K가 남았는지 확인했다.
+
+### 문장 단위 J5 judge의 신뢰도
+
+judge가 사용자의 판단을 얼마나 따라가는지 보려고 사용자 검토 노트 2편의 수정 전 글을 판정하게 했다. 사용자가 고친 문장을 judge도 어색하다고 판정한 비율(recall)은 26.9%(26문장 중 7)와 22.5%(40문장 중 9)였다. judge가 어색하다고 판정한 문장 중 사용자도 고친 문장의 비율(precision)은 53.8%(13문장 중 7)와 69.2%(13문장 중 9)였다.
+
+같은 judge는 사람 글 대조군에서 1,000자당 1.16~3.07문장을 어색하다고 판정했다(카카오 합니다체 글 3편 1.30~2.71, 당근 해요체 글 3편 1.16~3.07). 근거는 주어와 서술어가 어긋난 문장, "중요한 역할을 하다" 같은 번역투, 제목의 em dash, 조사 오류("아키텍처을")였다. judge는 skill 글에서는 사용자가 고친 문장의 4분의 1 정도만 찾았고, 사람 글에서는 오탈자나 주어와 서술어가 어긋난 문장처럼 형태로 드러나는 문제를 주로 잡았다. 그래서 skill 글과 사람 글의 값 차이로 어느 쪽이 더 자연스러운지 판단할 수 없다. 이 값은 같은 자료로 쓴 두 글을 비교할 때만 쓴다.
+
+### 결과
+
+| 자료, 실행 환경, 어투 | 버전 | 시간 | 비용 | 0.6.0 lint로 다시 검사 | J5 어색한 문장(1,000자당) | 한국어 문장 점검이 고친 곳 |
+|---|---|---|---|---|---|---|
+| 신경과학 논문, Claude Code, Default | 0.5.1 | 16.9분 | $5.30 | FAIL: Gate 1(빼기 기호), "창" 1, "제시됐습니다" 2 | 0.44 (163문장 중 4) | 없음(0.5.1에는 이 점검이 없다) |
+| 신경과학 논문, Claude Code, Default | 0.6.0 | 28.1분 | $9.18 | PASS(0/0/0) | 0.31 (177문장 중 3) | 21곳(F 15, B 2, D 2, C 1, J 1) |
+| 신경과학 논문, Codex, Default | 0.5.1 | 9.2분 | - | Gate 1(en dash 4곳), WARN 1("제시됐습니다") | 1.20 (197문장 중 10) | 없음 |
+| 신경과학 논문, Codex, Default | 0.6.0 | 11.2분 | - | PASS(0/0/1) | 0.31 (160문장 중 2) | 7곳(F 5, C 1, J 1) |
+| PagedAttention 논문, Claude Code, Casual | 0.4.0 예시 글 | - | - | PASS | 0.33 (168문장 중 3) | 없음 |
+| PagedAttention 논문, Claude Code, Casual | 0.6.0 | 29.7분 | $9.79 | PASS(0/0/1) | 0.10~0.20 (223문장 중 1~2, 2회 판정) | 10곳(F 5, C 3, D 2) |
+| rate limiter 노트, Claude Code, Casual | 0.6.0 | 15.2분 | $4.68 | PASS(0/0/0) | 0 (65문장 중 0) | 8곳(F 6, C 1, J 1) |
+| rate limiter 노트, Claude Code plugin, Default | 0.6.0 | 14.6분 | $4.20 | PASS(0/0/0) | - | 6곳(F 4, C 1, J 1) |
+| rate limiter 노트, Codex, Casual | 0.6.0 | 5.0분 | - | PASS(0/0/0) | - | 3곳(A 1, F 2) |
+| rate limiter 노트, Codex, Default, 직접 수행 | 0.6.0 | 2.7분 | - | PASS(0/0/0) | - | 2곳(F 2) |
+
+- 0.5.1로 쓴 신경과학 글 두 편은 0.6.0 lint를 통과하지 못했다. Claude Code 글에는 "FCD 행렬은 100초 창을 2초씩 옮겨 만든", "가설이 제시됐습니다", "−ΔQ^w"가 있었고 Codex 글에는 "Jansen–Rit", "Euler–Maruyama"의 en dash가 있었다. 사용자가 노트에서 지적한 유형이 같은 분야의 다른 논문에서도 나왔다.
+- 같은 자료의 0.5.1 글과 0.6.0 글에서 J5 값은 Claude Code 0.44 → 0.31, Codex 1.20 → 0.31로 줄었다. 각각 1회 실행의 결과이고, judge가 찾는 문장은 사용자가 고칠 문장의 4분의 1 정도라는 점을 함께 읽어야 한다.
+- 0.6.0의 한국어 문장 점검은 글마다 2~21곳을 고쳤다. 가장 많은 유형은 F(한 번 읽어서 뜻이 안 들어오거나 둘로 읽히는 문장)였다. Claude Code 신경과학 글에서는 "영역"이 뇌 영역인지 파라미터 공간의 영역인지 갈리는 표 셀 2곳(유형 D)과 "spurious 상관"(유형 B)도 고쳤다. 상위 agent는 subagent가 바꾼 헤딩 1곳을 style-guide.md의 헤딩 규칙에 따라 되돌렸다.
+
+### 0.5.1 글에 있었고 0.6.0 글에서 사라진 표현
+
+| 유형 | 0.5.1 글 | 같은 내용을 쓴 0.6.0 글 |
+|---|---|---|
+| A. 범위를 "창"으로 씀 | FCD 행렬은 100초 창을 2초씩 옮겨 만든 FC 251개를 (Claude Code) | 길이 100초인 sliding window를 2초씩 옮기며 600초 BOLD 신호에서 FC 251개를 만들고 (Claude Code) |
+| B. 영어 낱말을 문장 성분으로 씀 | pyramidal neurons, excitatory interneurons, inhibitory interneurons라는 세 신경 집단 (Codex) | 피라미드 뉴런, 흥분성 interneuron, 억제성 interneuron 집단 (Codex) |
+| B. 영어 낱말을 문장 성분으로 씀 | high strength 우선 조절이 low strength 우선 조절보다 (Codex) | node strength가 높은 노드부터 조절하면 낮은 노드부터 조절할 때보다 (Codex) |
+| D. 쓰지 않는 번역어 | 장거리 EPSP의 역시간상수 ā를 0.5a로 정했습니다 (Claude Code) | 장거리 EPSP 시간 상수의 역수 ā는 a의 절반으로 뒀습니다 (Claude Code) |
+| E. 예스러운 말 | rich club 영역의 높은 연결성을 보상한다는 가설이 제시됐습니다 (Claude Code) | 저자들은 낮은 발현이 rich club의 높은 연결성에 대한 보상일 가능성을 적으면서 (Claude Code) |
+| I. 한 개념 두 표기 | "노드 강도(strength)"를 정의한 뒤 "노드 강도" 2문장, "strength" 4문장 (Claude Code) | fact sheet 용어 표의 "strength" 하나로 씀 (Claude Code) |
+| K. 금지 부호 | Jansen–Rit, Euler–Maruyama, Benjamini–Hochberg (Codex) | Jansen-Rit, Euler-Maruyama (Codex) |
+
+### 0.6.0 글에 남은 표현과 그 뒤에 고친 것
+
+- Codex 신경과학 글에는 "역시간 상수"(inverse time constant), "거리가 낮은 시점 쌍"(low distance), "진폭 변화가 평평해졌고"(amplitude fluctuations flattened)가 남았다. 이 세 표현을 korean-review.md의 유형 C와 D 사례에 넣고, 용어 표에 없는 한국어 기술 용어는 근거를 다시 확인하는 절차를 더했다. style-guide.md에는 형용사를 명사에 맞는 한국어 짝(거리는 가깝다와 멀다)으로 쓰는 규칙을 더했다.
+- Claude Code 신경과학 글에는 "색 지도"(color map, 유형 D)와 "EEG 비슷한 신호"가 남았다.
+- 0.6.0 Claude Code 결과 글 5편 중 4편의 적용 절 헤딩이 "~에 옮긴다면"이었다. style-guide.md와 drafting.md가 헤딩 예로 "한국어 서비스에 옮긴다면"을 주고 있었다. 결과를 적용한다는 뜻의 표준 동사는 "적용하다"라서 예를 "한국어 서비스에 적용한다면"으로 바꿨다.
+
+### 실행 중 찾은 문제
+
+- lint의 A15(fact sheet에 없는 수치)가 "요청 수만 줄였습니다"의 "수만"(개수 + 조사 "만")을 어림 수량어로 잡아, 맞는 문장을 고치게 했다. 앞에 명사가 있고 뒤에 단위가 없는 "수만"은 세지 않게 고쳤다.
+- lint의 G4(어투 혼용)가 참고자료 절의 "공개 URL 없음."을 명사형 종결로 잡았다. 0.5.1부터 있던 동작이다. 참고자료 절의 서지 항목은 어투 판정에서 뺐다.
+- 이 PC에는 pdftoppm이 없어 Claude Code의 Read `pages`가 실패한다. 한 실행의 한국어 문장 점검 subagent는 PDF를 다시 열지 않고 fact sheet로만 사실을 확인했다. runtime.md에 `pages`가 실패하면 파일 전체를 Read로 여는 순서를 적었고, 그 뒤 실행의 subagent는 이 순서로 원문을 대조했다.
+- plugin skill만 불러온 한 실행에서 상위 agent가 한국어 문장 점검 subagent를 background로 띄웠다. 그 subagent의 lint 실행은 권한 거부됐고, 상위 agent의 턴도 그 자리에서 끝났다. subagent가 끝난 뒤 이어진 턴에서는 skill의 `allowed-tools`가 적용되지 않아 `revise_ko.py check`와 최종 lint도 거부됐다. runtime.md와 finalization.md에 subagent가 끝날 때까지 기다리라고 적었고, 같은 조건으로 다시 실행한 결과 두 subagent 모두 결과를 기다리는 방식으로 실행되고 최종 검사까지 마쳤다.
+
+### 비용과 시간
+
+0.6.0은 6단계에서 subagent를 하나 더 띄운다. 같은 신경과학 논문에서 Claude Code 실행은 16.9분, $5.30에서 28.1분, $9.18이 됐고, 6단계에 든 시간은 5.5분에서 13.4분(실행 시간의 48%)이 됐다. Codex 실행은 553.5초에서 673.5초로 22% 늘었다. PagedAttention Casual 글은 29.7분, $9.79로, 0.4.0 iteration 12의 4건 평균(14.3분, $4.54)보다 길었다. 이 PC에는 pdftoppm이 없어서 상위 agent와 후처리 subagent가 PDF 16쪽 전체를 한 번에 읽었다. 이 조건도 비용에 섞여 있다. 비교는 모두 1회 실행이다.
+
 ## 한계
 
 - judge 모델은 Claude Sonnet이다. Claude가 쓴 글을 같은 계열의 모델이 판정했으므로, 사람 독자의 평가와 다를 수 있다.
@@ -165,3 +234,6 @@ skill 있는 arm만 케이스마다 1회 실행했다. retone-casual은 1.000이
 - 같은 설정을 두 번 실행해 run 사이의 편차를 잰 것은 몇 쌍뿐이다. 점수의 작은 차이(style 평균 0.1~0.2점)는 편차 범위 안일 수 있다.
 - 0.3.0과 0.2.0의 비교는 자료 4건을 버전마다 한 번씩 실행한 결과다. 같은 Discord 블로그 글을 여섯 번 정리하게 했을 때 본문 글자 수는 5,264~7,428자로 실행마다 달랐다.
 - 같은 Discord 블로그 글을 두 번 정리하게 했을 때 fidelity judge가 찾은 문제는 0건과 6건이었다. 6건 중 3건은 글의 실제 오류였다. 실제 오류는 자료에 없는 "수십만 명"이라는 수치, 글쓴이의 추론을 사실처럼 단정한 문장, 두 수치의 기준을 혼동한 문장이었다. 나머지 3건은 judge가 웹 페이지 요약본에서 인용문을 찾지 못한 경우였다.
+- 0.6.0과 0.5.1의 비교는 자료마다 버전별 1회 실행이다. 한국어 문장 점검은 모델이 문장을 읽고 판단하므로 실행마다 찾는 문장이 다르고, 0.6.0 글에도 "역시간 상수", "색 지도" 같은 표현이 남았다.
+- lint에 넣은 한국어 항목은 사용자 검토 노트에서 사용자가 고친 문장 447개 중 16곳에만 걸렸다([`dev/baseline/README.md`](dev/baseline/README.md)). 나머지는 6단계의 한국어 문장 점검에 맡긴다.
+- 문장 단위 J5 judge는 사용자가 고친 문장의 22.5~26.9%만 어색하다고 판정했다. J5 값이 낮다고 글에 고칠 문장이 없다는 뜻은 아니다.

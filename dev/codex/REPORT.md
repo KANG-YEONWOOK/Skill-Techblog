@@ -1,3 +1,42 @@
+# 0.6.0 한국어 문장 점검 검증 (2026-10-13)
+
+Windows 11에서 Codex CLI 0.162.1, Claude Code 2.1.296, Python 3.12.3으로 검증했다. Codex 실행에는 모델이나 추론 수준을 지정하지 않았고, 실행기는 `dev/codex/smoke.py`, sandbox는 Windows MXC다. 글의 품질 비교(Claude Code 결과 포함)는 [EVALUATION.md](../../EVALUATION.md)의 "자연스러운 한국어 (0.6.0)" 절에 있다. 이 절은 Codex에서 새 단계가 실행되는지를 기록한다.
+
+## 확인할 것
+
+0.6.0은 6단계에서 후처리 subagent 다음에 한국어 문장 점검 subagent를 하나 더 띄운다(`references/korean-review.md`). Codex에서 확인할 것은 세 가지다.
+
+- 두 점검이 초안 대화를 상속하지 않는 별도 agent로 실행되는지
+- subagent를 쓰지 않는 경로(`--direct-revision`)에서 상위 agent가 revision.md와 korean-review.md를 차례로 읽고 수행하는지
+- 진입점 `SKILL.md`가 주입 제한(8,000바이트) 안에 있는지. 0.6.0의 `SKILL.md`는 LF 5,689바이트, CRLF 5,738바이트이고 모든 케이스에서 잘림 경고가 없었다.
+
+`smoke.py`는 이제 `eval.json`에 `reference_reads`(명령 로그에 나온 참조 문서 이름)를 기록한다. 통과 조건에는 넣지 않았다.
+
+## 실행 결과
+
+| Codex 설치, 입력, 동작 | 버전 | 초 | 최종 G/F/W | 확인 |
+|---|---|---:|---|---|
+| 플러그인: 신경과학 논문 PDF → Default | 0.6.0 | 673.5 | 0/0/1 | 두 점검을 별도 agent로 실행. 한국어 점검 7곳 수정(C 1, F 5, J 1), 되돌린 수정 없음 |
+| 플러그인: 같은 PDF → Default | 0.5.1 | 553.5 | 0/0/0 | 비교용. 0.6.0 검사기로는 Gate 1(en dash 4곳), WARN 1("제시됐습니다") |
+| 플러그인: 붙여넣은 노트 → Casual | 0.6.0 | 296.5 | 0/0/0 | 두 점검을 별도 agent로 실행. 한국어 점검 3곳(A 1, F 2), 어투 검사 36문장 PASS |
+| 플러그인: 노트 → Default, 직접 후처리 | 0.6.0 | 162.5 | 0/0/0 | 협업 호출 0회. revision.md와 korean-review.md를 읽고 직접 수행, 한국어 점검 2곳(F 2) |
+| 직접: Default → Casual retone | 0.6.0 | 112.2 | 0/0/0 | 6단계를 건너뛰고 finalization.md, runtime.md, tone.md만 읽음. 161문장 어투 검사 PASS |
+
+신경과학 논문은 사용자 검토 노트와 같은 분야의 영어 자료다(Coronel-Oliveros 등 2021, Frontiers in Computational Neuroscience, CC BY). 같은 PDF를 0.5.1 플러그인으로도 실행했다. 0.6.0의 실행 시간은 0.5.1보다 120초(22%) 길었다.
+
+- 0.5.1 글에는 "pyramidal neurons, excitatory interneurons, inhibitory interneurons라는 세 신경 집단", "high strength 우선 조절이 low strength 우선 조절보다", "random 선택"처럼 영어 수식어와 복수형 명사를 문장 성분으로 쓴 곳이 있었다. 0.6.0 글은 같은 내용을 "피라미드 뉴런, 흥분성 interneuron, 억제성 interneuron 집단", "node strength가 높은 노드부터 조절하면"으로 썼다.
+- 0.6.0 글에도 "역시간 상수"(inverse time constant), "거리가 낮은 시점 쌍"(low distance), "진폭 변화가 평평해졌고"(amplitude fluctuations flattened)가 남았다. 이 세 표현은 korean-review.md의 유형 C와 D 사례에 넣었고, style-guide.md에 형용사를 명사에 맞는 한국어 짝으로 쓰는 규칙을 더했다.
+- Casual 노트의 한국어 점검은 "새 구간이 열리면"을 "새 구간이 시작되면"으로 고쳤다. window를 열다, 닫다로 옮긴 직역(유형 A)이다.
+
+## 관찰과 검증 범위
+
+- Codex exec의 JSONL에는 subagent 스레드의 명령이 나오지 않는다. korean-review.md를 subagent만 읽은 Casual 실행에서는 `reference_reads`에 이 문서가 없었다. 두 점검의 실행은 상위 agent의 `wait` 호출, 보고 표, 후처리 전 사본(`article.unrevised.md`)과 최종 글의 차이로 확인했다. 신경과학 PDF 실행에서는 상위 agent가 6단계를 시작하면서 finalization.md와 함께 korean-review.md를 읽어서 목록에 나왔다.
+- Codex의 retone은 Python 정규식 스크립트로 "~니다" 종결을 한꺼번에 바꿨다. 스크립트는 처리 규칙이 없는 어미를 만나면 `ValueError`로 멈추게 짜여 있었다. "커집니다"와 "쟀습니다"에서 두 번 멈췄고, agent가 규칙을 고친 세 번째 실행에서 변환을 마쳤다. 숫자와 영어 뒤 조사("800KB예요", "7.7이에요", "vLLM이에요", "normalized latency예요")는 모두 맞았고 G10과 tone_check도 통과했다.
+- PDF는 이 호스트에 Poppler가 없어 설치된 `pypdf`로 텍스트와 그림을 뽑았다. 0.5.1 검증과 같은 조건이다.
+- 이번 검증도 Windows 실행과 로컬 패키지 설치다. macOS와 Linux 실사용, Codex 앱의 버튼 조작은 다시 실행하지 않았다. 실행 로그와 생성 글은 수치와 문장을 이 문서와 EVALUATION.md에 옮긴 뒤 지웠다.
+
+---
+
 # 0.5.1 스킬 본문 잘림 수정 — 2026-10-11
 
 Windows에서 Codex CLI 0.162.1, Claude Code 2.1.296, Python 3.12.3으로 검증했다. CLI 실행에는 모델이나 추론 수준을 지정하지 않았다. 아래 문체 검사의 WARN은 스킬 로딩 경고와 다른 진단이다.

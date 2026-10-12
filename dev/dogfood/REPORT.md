@@ -613,3 +613,18 @@ iteration 12에서 멈춘다.
   - 관찰 문장의 주체: note-casual eval에서 관찰한 주체가 없는 문장이 지어낸 경험으로 판정됐다.
   - 후처리 시간이 실행마다 4~6분 늘었다.
   - judge는 Claude Sonnet이고 케이스마다 1회 실행이다. 바뀌지 않은 문장에서 clarity 판정이 뒤집힌 비율은 1.7~6.5%였다.
+
+## iteration 13: 한국어 문장 점검 (0.6.0)
+
+0.6.0은 6단계에서 후처리 subagent 다음에 한국어 문장 점검 subagent를 띄운다(`references/korean-review.md`). 사용자 검토 노트와 같은 분야의 신경과학 논문(H)을 새 케이스로 더하고 PagedAttention(S1)과 함께 실행했다. 비교용으로 H를 0.5.1 worktree의 plugin(`--plugin-dir`, `--setting-sources project,local`)으로도 한 번 실행했다(iter-13b, H0). 결과 표, 사라진 표현과 남은 표현, judge 신뢰도는 [EVALUATION.md](../../EVALUATION.md)의 "자연스러운 한국어 (0.6.0)" 절에 있다.
+
+| 케이스 | 버전 | 분 | 비용 | 0.6.0 lint | 6단계 바뀐 문장 | 한국어 점검 수정 | J5(1,000자당) |
+|---|---|---|---|---|---|---|---|
+| H0 신경과학 (Default) | 0.5.1 | 16.9 | $5.30 | FAIL(G6 1, A6.window_range 1, A5 2) | 9/164 | - | 0.44 |
+| H 신경과학 (Default) | 0.6.0 | 28.1 | $9.18 | PASS 0/0/0 | 25/168 | 21곳 | 0.31 |
+| S1 PagedAttention (Casual) | 0.6.0 | 29.7 | $9.79 | PASS 0/0/1 | 21/196 | 10곳 | 0.10~0.20 |
+
+- 두 0.6.0 케이스 모두 subagent 2회, korean-review.md 읽기, `revise_ko.py check` 3회가 기록됐다(`evaluate.py`의 `korean_subagent`, `korean_review_read`). 6단계는 실행 시간의 48%(13.4분, 14.2분)였다.
+- 상위 agent는 한국어 점검 보고를 확인하며 S1에서 고친 뒤에도 어색한 문장 하나를 다시 고쳤고, H에서 헤딩 수정 하나를 되돌렸다.
+- S1의 한국어 점검 subagent는 Read `pages`가 pdftoppm 부재로 실패하자 PDF를 열지 않고 fact sheet로만 사실을 확인했다. runtime.md에 `pages` 없이 파일 전체를 여는 순서를 적은 뒤 실행한 H의 subagent는 PDF를 열어 고친 문장의 근거를 대조했다.
+- 같은 iteration에서 rate limiter 노트도 세 번 실행했다. 사용자 skill 폴더로 1회, user 설정을 빼고 plugin skill만 불러 2회다. plugin skill 첫 실행에서는 상위 agent가 한국어 점검 subagent를 background로 띄워 최종 검사가 권한 거부됐다. runtime.md와 finalization.md에 subagent가 끝날 때까지 기다리라고 적은 뒤 다시 실행한 결과는 정상이었다.
