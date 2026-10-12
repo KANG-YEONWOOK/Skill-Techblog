@@ -135,7 +135,7 @@ def judge_article(a, thresholds, skip=()):
 def report(stats, thresholds, notes):
     arts = stats["articles"]
     lines = ["# 사람 글 baseline", "",
-             "토스·카카오·당근 기술 블로그 글을 `lint_ko.py`로 측정한 값이다. `calibrate.py`가 이 값으로 "
+             "토스, 카카오, 당근 기술 블로그 글을 `lint_ko.py`로 측정한 값이다. `calibrate.py`가 이 값으로 "
              "`skills/techblog/scripts/thresholds.json`을 만든다. 원문은 저장소에 두지 않고 URL 목록(`urls.json`)과 "
              "측정값(`stats.json`)만 둔다.", "",
              "## 그룹", "",
@@ -169,7 +169,7 @@ def report(stats, thresholds, notes):
     # Gate 위반 비율
     lines += ["", "## 사람 글의 Gate 위반 비율", "",
               "Gate는 사람 글에서 거의 나오지 않아야 한다. policy 표시가 있는 항목은 이 스킬의 출력에만 적용하는 규칙"
-              "(자료를 정리하는 글이라 경험담·이모지·자료 메타 언급을 쓰지 않음, 맞춤법 규정, 어투 통일)이라 사람 글 판정에서 뺀다.", "",
+              "(자료를 정리하는 글이라 경험담, 이모지, 자료 메타 언급을 쓰지 않음, 맞춤법 규정, 어투 통일)이라 사람 글 판정에서 뺀다.", "",
               "| Gate | 구분 | default | casual |", "|---|---|---|---|"]
     for mid, spec in thresholds["metrics"].items():
         if spec.get("kind") != "gate":

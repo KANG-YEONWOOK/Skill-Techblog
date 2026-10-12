@@ -9,7 +9,7 @@
   1. 블록 종류(헤딩, 문단, 목록, 코드, 표, 인용) 순서가 같다.
   2. 헤딩, 코드, 표, 인용, 명사구 목록 항목은 두 글에서 같다.
   3. 문단과 문장형 목록 항목은 문장 수가 같다.
-  4. 문장마다 수치·영문 토큰·인용·괄호 내용과 부정 표현 수가 같고, 앞에서부터 같은 어절이 이어지다가
+  4. 문장마다 수치, 영문 토큰, 인용, 괄호 내용과 부정 표현 수가 같고, 앞에서부터 같은 어절이 이어지다가
      마지막 2어절 이내에서만 달라진다. 달라진 첫 어절의 초성이 이어지지 않으면 WARN.
   5. Default 문장은 합니다체, Casual 문장은 해요체이고 금지 어미(~더라고요, ~네요, ~잖아요, ~는데요)가 없다.
 
@@ -99,7 +99,7 @@ def compare_sentence(d, c, d_line, c_line, si):
     issues = []
     dm, cm = L.mask_quotes(d), L.mask_quotes(c)
     if _protected(d) != _protected(c):
-        issues.append(_issue("TOKEN", "FAIL", d_line, c_line, si, d, c, "수치·영문·괄호·인용 토큰이 다르다"))
+        issues.append(_issue("TOKEN", "FAIL", d_line, c_line, si, d, c, "수치, 영문, 괄호, 인용 토큰이 다르다"))
     if len(NEG_RE.findall(dm)) != len(NEG_RE.findall(cm)):
         issues.append(_issue("POLARITY", "FAIL", d_line, c_line, si, d, c, "부정 표현 수가 다르다"))
     dw = L.PH_RE.sub(" ", d).split()

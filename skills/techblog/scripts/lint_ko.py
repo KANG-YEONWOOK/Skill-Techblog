@@ -292,6 +292,16 @@ def mask_quotes(s):
     return s
 
 
+PH_MATH = "⟦M⟧"
+# 한글이 없는 $...$와 $$...$$를 수식으로 본다. "$5에서 $10으로" 같은 통화 표기에는 한글이 들어 있어 가리지 않는다.
+MATH_RE = re.compile(r"\$\$[^$]+\$\$|\$[^$\n가-힣]+\$")
+
+
+def mask_math(s):
+    """수식을 ⟦M⟧로 가린다. 문장 부호 정책(G6)과 숫자 뒤 조사(G10) 검사에만 쓴다."""
+    return MATH_RE.sub(PH_MATH, s)
+
+
 def visible_chars(s):
     return len(re.sub(r"\s", "", PH_RE.sub("", s)))
 
@@ -321,7 +331,7 @@ def _split_flat(s):
 
 
 def split_sentences(text):
-    """마침표·물음표·느낌표 뒤 공백을 경계로 나눈다. 괄호·따옴표 안과 숫자(3.5)·약어(e.g.)는 나누지 않는다."""
+    """마침표, 물음표, 느낌표 뒤 공백을 경계로 나눈다. 괄호와 따옴표 안, 숫자(3.5), 약어(e.g.)에서는 나누지 않는다."""
     sents = []
     start = 0
     depth = 0
@@ -565,16 +575,43 @@ def number_set(text):
 # ---------------------------------------------------------------- 분석
 
 EMOJI_RE = re.compile("[\U0001F000-\U0001FAFF☀-⛿✀-➿⭐⭕‼⁉]")
-DASH_RE = re.compile(r"[가-힣][^—―–\n]{0,15}?(?:[—―]|\s–\s)[^—―–\n]{0,15}?[가-힣]")
-LABEL_DASH_RE = re.compile(r"^(?:[-*+]\s|\d+[.)]\s)?([^—―–]{1,20}?)\s[—―–]\s")
-LABEL_PARTICLE_RE = re.compile(r"(은|는|이|가|을|를|에|의|로|와|과|도|만|면|고|서)$")
-REF_HEADING_RE = re.compile(r"(참고|references?|출처|각주|reference|읽을\s*거리)", re.I)
+# 문장 부호 정책(G6). em dash 계열, 줄표 대신 띄어 쓴 하이픈, 가운뎃점 계열, en dash와 빼기 기호를 센다.
+EMDASH_CHAR_RE = re.compile("[—―]")
+SPACED_HYPHEN_RE = re.compile(r"[가-힣][)\]'\"”’]?\s+-{1,2}\s+\S|\S\s+-{1,2}\s+[가-힣]")
+POLICY_CHAR_RE = re.compile("[·•‧∙・･–‒−]")
+PAGE_RANGE_RE = re.compile(r"\d\s?[–‒—―−]\s?\d")
+# 참고자료 절의 헤딩. 헤딩 전체가 참고자료를 뜻하는 낱말일 때만 참고자료 절로 본다
+# ("데이터 출처와 전처리", "참고할 설정"은 본문 절이다).
+REF_STRONG = r"(?:참고|레퍼런스|references?|bibliography|출처|각주|(?:더\s*)?읽을\s*거리)"
+REF_HEADING_RE = re.compile(r"^\s*(?:\d+[.)]?\s*)?(?=.*" + REF_STRONG + r")"
+                            r"(?:(?:" + REF_STRONG + r"|자료|문헌|링크|links?|및|and|&|/|,)\s*)+:?\s*$", re.I)
 QUESTION_HEADING_RE = re.compile(r"(\?|을까|를까|할까|일까|될까|볼까|까요|나요|는가|인가)$")
+
+# 숫자 뒤 조사(G10). 마지막 숫자를 한국어로 읽은 소리의 받침에 맞춰 조사를 고른다.
+NUM_PARTICLE_RE = re.compile(
+    r"(?<![\w.,\-/@])(\d[\d,]*(?:\.\d+)?)(%p|%)?"
+    r"(?:(이에요|예요|이|가|을|를|은|는|과|와|으로|로)(?=[\s.,?!:;)\]」』”’\"']|$)|(였)(?=[가-힣]))")
+# 영문과 숫자로만 된 낱말 바로 뒤의 숫자는 영어로 읽는 이름이나 버전으로 보고 건너뛴다(Llama 3, Windows 11).
+LATIN_TOKEN_BEFORE_RE = re.compile(r"(?:^|\s)[A-Za-z][A-Za-z0-9.+\-]*\s$")
+DIGIT_FINAL = {"0": "ㅇ", "1": "ㄹ", "2": "", "3": "ㅁ", "4": "", "5": "", "6": "ㄱ", "7": "ㄹ", "8": "ㄹ", "9": ""}
+PARTICLE_ALT = {"이에요": "예요", "예요": "이에요", "이": "가", "가": "이", "을": "를", "를": "을", "은": "는",
+                "는": "은", "과": "와", "와": "과", "으로": "로", "로": "으로", "였": "이었"}
+
+# 병기한 용어(A19). "한국어(원어)"와 "원어(한국어)" 쌍을 모은다.
+TERM_KE_RE = re.compile(r"((?:[가-힣]{1,12} )?[가-힣]{2,12}) ?\(([A-Za-z][A-Za-z0-9 .'\-]{0,40}[A-Za-z0-9.]|[A-Za-z])\)")
+TERM_EK_RE = re.compile(r"(?<![A-Za-z0-9_\-])([A-Za-z][A-Za-z0-9.\-]*(?: [A-Za-z][A-Za-z0-9.\-]*){0,3})"
+                        r" ?\(([가-힣]+(?: [가-힣]+)?)\)")
+ACRONYM_RE = re.compile(r"^[A-Z][A-Z0-9]{1,6}s?$")
+IDENTIFIER_RE = re.compile(r"[a-z][A-Z]|\d|_")  # sessionID, Q10, max_tokens 같은 식별자는 용어 쌍으로 보지 않는다
+GLOSS_PARTICLE_RE = re.compile(r"(을|를|은|는|이|가|의|에|로|와|과|하는|되는|한|된|여|고|서|며|면|게|어|아)$")
+PHRASE_END_RE = re.compile(r"(에서도|에서|에는|에게|으로|까지|부터|처럼|하는|되는|하고|이고|[가-힣]{2}(?:은|는|을|를|이|가|의|에|와|과))$")
+PAREN_RE = re.compile(r"\([^()]*\)")
+KO_PARTICLES = r"(?:에서는|에서도|에서|에는|으로|처럼|보다|까지|부터|은|는|이|가|을|를|의|에|과|와|도|만|로)"
 
 
 class Sentence:
     __slots__ = ("text", "masked", "kind", "block", "para", "line", "first", "last",
-                 "word", "cls", "bucket", "question")
+                 "word", "cls", "bucket", "question", "in_refs")
 
 
 def _compile_patterns(spec):
@@ -585,6 +622,9 @@ def _compile_patterns(spec):
             "scope": p.get("scope", "sentence"),
             "max_len": p.get("max_len"),
             "hint": p.get("hint", ""),
+            "raw": bool(p.get("raw")),
+            "headings": bool(p.get("headings")),
+            "tables": bool(p.get("tables")),
             "regex": [re.compile(r) for r in p["regex"]],
         }
     return compiled
@@ -595,6 +635,166 @@ def _hit(sent, match=None):
     if match is not None:
         h["match"] = match
     return h
+
+
+def _unit_hit(line, text, target, m):
+    """문장이 아닌 단위(헤딩, 표 행, 블록)에서 찾은 위치. match에는 앞뒤 여덟 글자를 붙인다."""
+    a, b = max(0, m.start() - 8), min(len(target), m.end() + 8)
+    return {"line": line, "text": text[:160], "match": target[a:b].strip()}
+
+
+def punct_hits(blocks):
+    """문장 부호 정책(G6) 위반을 센다. 헤딩, 문단, 목록, 인용, 표 셀을 보고 코드, 인라인 코드, 수식, URL은 뺀다.
+    참고자료 절에서는 숫자 사이의 대시(쪽 범위)만 센다. 돌려주는 값: (em dash 계열, 가운뎃점과 en dash와 빼기 기호)."""
+    emdash, policy = [], []
+    in_refs = False
+    for b in blocks:
+        if b.type == "heading":
+            text = clean_inline(b.text)[0]
+            in_refs = bool(REF_HEADING_RE.search(text)) and b.level >= 2
+            units = [(b.line, text)]
+        elif b.type in ("paragraph", "list_item", "blockquote"):
+            units = [(b.line, clean_inline(b.text)[0])]
+        elif b.type == "table":
+            units = [(b.line + k, clean_inline(row)[0]) for k, row in enumerate(b.text.split("\n"))
+                     if not TABLE_DELIM_RE.match(row)]
+        else:
+            continue
+        for line, text in units:
+            target = mask_math(text)
+            if in_refs and b.type != "heading":
+                policy += [_unit_hit(line, text, target, m) for m in PAGE_RANGE_RE.finditer(target)]
+                continue
+            emdash += [_unit_hit(line, text, target, m) for m in EMDASH_CHAR_RE.finditer(target)]
+            emdash += [_unit_hit(line, text, target, m) for m in SPACED_HYPHEN_RE.finditer(target)]
+            policy += [_unit_hit(line, text, target, m) for m in POLICY_CHAR_RE.finditer(target)]
+    return emdash, policy
+
+
+def particle_mismatch(final, particle):
+    """final은 마지막 소리의 받침("" 이면 받침 없음). 조사가 그 받침과 맞지 않으면 True."""
+    if particle in ("이에요", "이", "을", "은", "과"):
+        return not final
+    if particle in ("예요", "가", "를", "는", "와", "였"):
+        return bool(final)
+    if particle == "으로":
+        return not final or final == "ㄹ"
+    if particle == "로":
+        return bool(final) and final != "ㄹ"
+    return False
+
+
+def num_particle_hits(units):
+    """units: (줄 번호, 원문, 따옴표를 가린 문장). 숫자와 %, %p 바로 뒤 조사가 읽는 소리와 맞지 않는 곳을 찾는다."""
+    hits = []
+    for line, text, masked in units:
+        target = mask_math(masked)
+        for m in NUM_PARTICLE_RE.finditer(target):
+            if LATIN_TOKEN_BEFORE_RE.search(target[:m.start()]):
+                continue
+            particle = m.group(3) or m.group(4)
+            final = "" if m.group(2) else DIGIT_FINAL[m.group(1)[-1]]
+            if particle_mismatch(final, particle):
+                fix = m.group(1) + (m.group(2) or "") + PARTICLE_ALT[particle]
+                hits.append({"line": line, "text": text[:160], "match": f"{m.group(0)} → {fix}"})
+    return hits
+
+
+def term_pairs(text):
+    """한 문장에서 병기 쌍을 찾는다. 돌려주는 값: (본문 표기, 괄호 안 표기, 괄호 안이 영어인지, 위치)."""
+    out = []
+    for m in TERM_KE_RE.finditer(text):
+        ko, en = m.group(1), m.group(2).strip()
+        words = ko.split(" ")
+        if len(words) == 2 and GLOSS_PARTICLE_RE.search(words[0]):
+            ko = words[1]  # "이 글의 망막(retina)"에서 앞 낱말은 용어가 아니다
+        if ACRONYM_RE.match(en) or IDENTIFIER_RE.search(en) or len(en.split()) > 3 or PHRASE_END_RE.search(ko):
+            continue  # 약어 정의("다중 버전 동시성 제어(MVCC)"), 식별자, 구절의 원문("시냅스 밖에서도(extrasynaptic)")
+        out.append((ko, en, True, m.span()))
+    for m in TERM_EK_RE.finditer(text):
+        en, ko = m.group(1).strip(), m.group(2).strip()
+        if ACRONYM_RE.match(en) or IDENTIFIER_RE.search(en) or any(GLOSS_PARTICLE_RE.search(w) for w in ko.split(" ")):
+            continue  # 약어, 식별자, 풀이("attention(주의를 기울이는)")는 표기 쌍이 아니다
+        out.append((en, ko, False, m.span()))
+    return out
+
+
+def _latin_term_re(term):
+    # 다른 영어 낱말과 붙은 합성어("KV cache"의 cache)는 따로 세지 않는다.
+    return re.compile(r"(?<![A-Za-z0-9_\-])(?<![A-Za-z0-9] )" + re.escape(term) + r"(?! ?[A-Za-z0-9_\-])", re.I)
+
+
+def _hangul_term_re(term):
+    # 조사가 붙거나 문장 부호가 뒤따르는 낱말만 센다. "흥분성 뉴런", "인접 행렬"처럼 다른 명사 앞에 붙은 말은
+    # 다른 개념의 합성어일 수 있어서 세지 않는다.
+    return re.compile(r"(?<![가-힣])" + re.escape(term) + r"(?:" + KO_PARTICLES + r"|(?![가-힣])(?!\s[가-힣]))")
+
+
+def term_mix_hits(units, max_hits=5):
+    """units: (줄 번호, 원문, 따옴표를 가린 문장). 병기한 쌍의 두 표기가 모두 병기한 곳 밖(괄호 밖)에 다시 나오면
+    한 개념을 두 표기로 쓴 후보로 보여 준다. 괄호 안은 원어, 약어 풀이, 단위 변환이라 세지 않는다."""
+    pairs = []
+    cleaned = []
+    for line, text, masked in units:
+        found = term_pairs(masked)
+        pairs += [(main, alt, alt_latin, line) for main, alt, alt_latin, _ in found]
+        cleaned.append((line, text, PAREN_RE.sub(" ", masked)))
+    hits, seen = [], set()
+    for main, alt, alt_latin, pair_line in pairs:
+        key = (main.lower(), alt.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        rx_alt = _latin_term_re(alt) if alt_latin else _hangul_term_re(alt)
+        rx_main = _hangul_term_re(main) if alt_latin else _latin_term_re(main)
+        alt_where = [(line, text) for line, text, c in cleaned if rx_alt.search(c)]
+        main_where = [line for line, _, c in cleaned if rx_main.search(c)]
+        if alt_where and main_where:
+            hits.append({"line": alt_where[0][0], "text": alt_where[0][1][:160],
+                         "match": f"{main}({alt}) L{pair_line}: 괄호 밖에서 «{main}» {len(main_where)}문장, "
+                                  f"«{alt}» {len(alt_where)}문장"})
+        if len(hits) >= max_hits:
+            break
+    return hits
+
+
+def avoid_terms(facts_text):
+    """fact sheet 용어 표에서 "쓰지 않을 표기" 열의 낱말을 모은다. 표가 없으면 빈 목록."""
+    terms = []
+    lines = facts_text.split("\n")
+    for i, ln in enumerate(lines):
+        if "|" not in ln or "쓰지 않을" not in ln:
+            continue
+        header = [c.strip() for c in ln.strip().strip("|").split("|")]
+        col = next(j for j, c in enumerate(header) if "쓰지 않을" in c)
+        for row in lines[i + 1:]:
+            if "|" not in row:
+                break
+            if TABLE_DELIM_RE.match(row):
+                continue
+            cells = [c.strip() for c in row.strip().strip("|").split("|")]
+            if col < len(cells):
+                for t in re.split(r"[,，;]", cells[col]):
+                    t = t.strip().strip("`\"'“”‘’ ")
+                    if t and t not in ("-", "없음", "—") and (len(t) >= 2 or re.fullmatch(r"[A-Za-z]+", t)):
+                        terms.append(t)
+    return terms
+
+
+def term_avoid_hits(units, terms, max_hits=10):
+    """fact sheet가 쓰지 않기로 한 표기가 괄호 밖에 나온 곳."""
+    hits = []
+    for term in terms:
+        latin = re.fullmatch(r"[A-Za-z0-9 .'\-]+", term) is not None
+        # 쓰지 않기로 한 한국어 표기는 합성어 안에 있어도 센다("보고자 유전자").
+        rx = _latin_term_re(term) if latin else re.compile(r"(?<![가-힣])" + re.escape(term))
+        for line, text, masked in units:
+            if rx.search(PAREN_RE.sub(" ", masked)):
+                hits.append({"line": line, "text": text[:160], "match": term})
+                break
+        if len(hits) >= max_hits:
+            break
+    return hits
 
 
 def analyze(text, patterns_spec=None, facts_text=None):
@@ -613,17 +813,28 @@ def analyze(text, patterns_spec=None, facts_text=None):
     prose_chars = 0
     list_chars = 0
     in_refs = False
-    dash_hits = []
     emoji_hits = []
     semicolon_hits = []
+    # 헤딩과 표 행: (줄 번호, 원문, 따옴표를 가린 텍스트). 패턴의 headings, tables 옵션과 한국어 점검 항목이 쓴다.
+    heading_units = []
+    table_units = []
 
     for bi, b in enumerate(blocks):
         if b.type == "heading":
             clean, bcount, _ = clean_inline(b.text)
             headings.append({"level": b.level, "text": clean, "line": b.line})
             in_refs = bool(REF_HEADING_RE.search(clean)) and b.level >= 2
+            heading_units.append((b.line, clean, mask_quotes(clean)))
             if EMOJI_RE.search(clean):
                 emoji_hits.append({"line": b.line, "text": clean[:160]})
+            continue
+        if b.type == "table" and not in_refs:
+            for k, row in enumerate(b.text.split("\n")):
+                if TABLE_DELIM_RE.match(row):
+                    continue
+                cells = [clean_inline(c)[0] for c in row.strip().strip("|").split("|")]
+                row_text = " | ".join(c for c in cells if c)
+                table_units.append((b.line + k, row_text, mask_quotes(row_text)))
             continue
         if b.type not in ("paragraph", "list_item"):
             continue
@@ -639,15 +850,8 @@ def analyze(text, patterns_spec=None, facts_text=None):
         prose_chars += chars
         if EMOJI_RE.search(clean):
             emoji_hits.append({"line": b.line, "text": clean[:160]})
-        if not in_refs:
-            for m in DASH_RE.finditer(mask_quotes(clean)):
-                lm = LABEL_DASH_RE.match(clean)
-                if lm and m.start() <= len(lm.group(0)) and not LABEL_PARTICLE_RE.search(lm.group(1).strip()):
-                    continue  # "1단계 — 설정" 같은 라벨 구분자
-                dash_hits.append({"line": b.line, "text": clean[:160], "match": m.group(0)})
-                break
-            if ";" in PH_RE.sub("", clean):
-                semicolon_hits.append({"line": b.line, "text": clean[:160]})
+        if not in_refs and ";" in PH_RE.sub("", clean):
+            semicolon_hits.append({"line": b.line, "text": clean[:160]})
         parts = split_sentences(clean)
         block_sents = []
         for si, st in enumerate(parts):
@@ -664,6 +868,7 @@ def analyze(text, patterns_spec=None, facts_text=None):
             s.word = last_word(st)
             s.cls = classify_ending(s.word, s.question)
             s.bucket = ending_bucket(st, s.word, s.cls)
+            s.in_refs = in_refs
             block_sents.append(s)
             sentences.append(s)
         if b.type == "paragraph":
@@ -677,23 +882,34 @@ def analyze(text, patterns_spec=None, facts_text=None):
         if extra:
             metrics[mid]["extra"] = extra
 
-    # 패턴 기반 metric
+    # 패턴 기반 metric. scope "all"은 명사구 목록 항목까지 포함한 모든 문장이다.
+    # raw 패턴은 따옴표를 가리기 전 문장에 적용한다. headings, tables 옵션이 있으면 헤딩과 표 행에도 적용한다.
     for pid, p in patterns.items():
         hits = []
         if p["scope"] == "para_last":
             pool = [ps[-1] for ps in para_sents if ps]
         elif p["scope"] == "paragraph":
             pool = [s for s in body if s.kind == "paragraph"]
+        elif p["scope"] == "all":
+            pool = [s for s in sentences if not s.in_refs]
         else:
             pool = body
         for s in pool:
             if p["max_len"] and len(s.text) > p["max_len"]:
                 continue
-            target = s.masked.lstrip()
+            target = (s.text if p["raw"] else s.masked).lstrip()
             for rx in p["regex"]:
                 m = rx.search(target)
                 if m:
                     hits.append(_hit(s, m.group(0)))
+                    break
+        units = (heading_units if p["headings"] else []) + (table_units if p["tables"] else [])
+        for line, raw_text, masked in units:
+            target = raw_text if p["raw"] else masked
+            for rx in p["regex"]:
+                m = rx.search(target)
+                if m:
+                    hits.append({"line": line, "text": raw_text[:160], "match": m.group(0)})
                     break
         metrics[pid] = {"value": len(hits), "hits": hits}
 
@@ -747,7 +963,19 @@ def analyze(text, patterns_spec=None, facts_text=None):
     # G6, G7
     put("G6.emoji", len(emoji_hits), emoji_hits)
     put("G6.semicolon", len(semicolon_hits), semicolon_hits)
-    put("G6.emdash", len(dash_hits), dash_hits)
+    emdash_hits, policy_hits = punct_hits(blocks)
+    put("G6.emdash", len(emdash_hits), emdash_hits)
+    put("G6.punct_policy", len(policy_hits), policy_hits)
+
+    # G10 숫자 뒤 조사, A19 병기한 용어. 제목과 헤딩, 참고자료 절 밖의 문장을 본다.
+    ko_units = heading_units + [(s.line, s.text, s.masked) for s in sentences if not s.in_refs]
+    num_hits = num_particle_hits(ko_units)
+    put("G10.num_particle", len(num_hits), num_hits)
+    mix_hits = term_mix_hits(ko_units)
+    put("A19.term_mix", len(mix_hits), mix_hits)
+    if facts_text is not None:
+        avoid_hits = term_avoid_hits(ko_units, avoid_terms(facts_text))
+        put("A19.term_avoid", len(avoid_hits), avoid_hits)
     g7 = []
     adverb_comma = []
     for s in body:
@@ -800,7 +1028,7 @@ def analyze(text, patterns_spec=None, facts_text=None):
     src_hits = metrics["A16.source_subject"]["hits"]
     put("A16.source_subject_share", round(len(src_hits) / n_body, 3), src_hits, count=len(src_hits))
 
-    # A4 문단 끝 요약·교훈 합계
+    # A4 문단 끝 요약 문장과 교훈 문장의 합계
     para_end = metrics["A4.summary_start"]["hits"] + metrics["A4.lesson_end"]["hits"]
     put("A4.para_end", len(para_end), para_end)
 
@@ -1036,6 +1264,8 @@ def evaluate(analysis, thresholds, tone, max_hits=5, patterns_spec=None):
         title = spec.get("title") or pmeta.get(base_id, {}).get("title", mid)
         hint = spec.get("hint") or pmeta.get(base_id, {}).get("hint", "")
         r = {"id": mid, "title": title, "value": m["value"], "status": status, "limit": lim}
+        if spec.get("group"):
+            r["group"] = spec["group"]
         if m.get("extra"):
             r["extra"] = m["extra"]
         if status not in ("PASS", "INFO") or max_hits < 0:
@@ -1074,7 +1304,8 @@ def render_text(path, tone, analysis, ev, show_all=False):
     st = analysis["stats"]
     sm = ev["summary"]
     lines = [
-        f"techblog lint | {os.path.basename(path)} | tone={tone} | {st['chars']:,}자 · {st['sentences']}문장 · {st['paragraphs']}문단 · 헤딩 {st['headings']}개",
+        f"techblog lint | {os.path.basename(path)} | tone={tone} | {st['chars']:,}자, {st['sentences']}문장, "
+        f"{st['paragraphs']}문단, 헤딩 {st['headings']}개",
         f"판정: {sm['verdict']} (Gate 위반 {sm['gate_fail']}, FAIL {sm['fail']}, WARN {sm['warn']})",
     ]
     checks = [r for r in ev["results"] if r["status"] == "CHECK"]
@@ -1087,16 +1318,26 @@ def render_text(path, tone, analysis, ev, show_all=False):
         for h in r.get("hits", []):
             m = f" «{h['match']}»" if h.get("match") else ""
             lines.append(f"    L{h['line']}{m}: {h['text']}")
-    if checks:
+    groups = (
+        ([r for r in checks if r.get("group") != "ko"], False,
+         "단독 읽기 점검 후보 (판정에 들어가지 않음): 이 문장과 바로 앞 문장만 읽고 무엇에 대한 말인지, "
+         "수치가 무엇을 잰 값인지 알 수 있으면 그대로 둔다."),
+        ([r for r in checks if r.get("group") == "ko"], True,
+         "한국어 점검 후보 (판정에 들어가지 않음): 걸린 말이 references/ai-patterns.md의 \"과교정하지 않기\"에 "
+         "있는 쓰임이면 그대로 두고, 아니면 한국 개발자가 쓰는 말로 고친다."),
+    )
+    for group, show_match, header in groups:
+        if not group:
+            continue
         lines.append("")
-        lines.append("단독 읽기 점검 후보 (판정에 들어가지 않음): 이 문장과 바로 앞 문장만 읽고 무엇에 대한 말인지, "
-                     "수치가 무엇을 잰 값인지 알 수 있으면 그대로 둔다.")
-        for r in checks:
+        lines.append(header)
+        for r in group:
             lines.append(f"[CHECK] {r['id']} {r['title']}: {r['value']}")
             if r.get("hint"):
                 lines.append(f"    고치는 방향: {r['hint']}")
             for h in r.get("hits", []):
-                lines.append(f"    L{h['line']}: {h['text']}")
+                m = f" «{h['match']}»" if show_match and h.get("match") else ""
+                lines.append(f"    L{h['line']}{m}: {h['text']}")
     return "\n".join(lines)
 
 

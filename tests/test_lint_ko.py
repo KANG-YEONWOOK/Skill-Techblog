@@ -127,9 +127,10 @@ class PatternTest(unittest.TestCase):
             if mid.startswith(("G2", "G3", "G6", "G7", "G8", "G9", "A4.summary_opener")):
                 self.assertEqual(m["value"], 0, (mid, m["hits"]))
 
-    def test_emdash_label_allowed(self):
-        a = L.analyze("- 1단계 — 설정을 바꿉니다.\n- 2단계 — 배포합니다.\n\n문단 안에서 — 이렇게 — 쓰면 걸립니다.\n")
-        self.assertEqual(a["metrics"]["G6.emdash"]["value"], 1)
+    def test_emdash_policy_includes_labels(self):
+        # 0.6.0부터 라벨 구분자의 em dash도 Gate다. 라벨은 콜론으로 쓴다.
+        a = L.analyze("- 1단계 — 설정을 바꿉니다.\n- 2단계: 배포합니다.\n\n문단 안에서 — 이렇게 — 쓰면 걸립니다.\n")
+        self.assertEqual(a["metrics"]["G6.emdash"]["value"], 3)
 
     def test_connective_comma(self):
         a = L.analyze("캐시를 붙였지만, 지연은 줄지 않았습니다. 데이터를 모으고 모델을 학습했습니다.")
@@ -158,7 +159,7 @@ class PatternTest(unittest.TestCase):
                 "기존 설정과 비교하면 최대 5배입니다.\n\n"
                 "OPT-13B로 잰 결과입니다.\n\n"
                 "차이는 배치 대기에서 나옵니다.\n\n"
-                "측정 대상(write-back 캐시만 해당, 12개 서비스)은 로그로 골랐습니다. 입력·출력 길이를 따로 쟀습니다.\n\n"
+                "측정 대상(write-back 캐시만 해당, 12개 서비스)은 로그로 골랐습니다. 입력/출력 길이를 따로 쟀습니다.\n\n"
                 "지연의 72%는 배치 대기 시간이었습니다. 요청 수만큼 스레드를 띄웠습니다.\n")
         m = L.analyze(text)["metrics"]
         self.assertEqual(m["A18.number_predicate"]["value"], 1)  # 45자를 넘는 첫 문장은 후보에서 빠진다
@@ -181,7 +182,7 @@ class PatternTest(unittest.TestCase):
         self.assertEqual(m["A16.source_subject_share"]["extra"]["count"], 3)
 
     def test_check_status_not_in_verdict(self):
-        text = "\n\n".join(["기존 설정과 비교하면 최대 5배입니다.", "입력·출력 길이를 따로 쟀습니다."] * 3)
+        text = "\n\n".join(["기존 설정과 비교하면 최대 5배입니다.", "입력/출력 길이를 따로 쟀습니다."] * 3)
         a = L.analyze(text)
         ev = L.evaluate(a, L.load_json(L.THRESHOLDS_PATH), "default")
         st = {r["id"]: r["status"] for r in ev["results"]}
@@ -205,6 +206,179 @@ class PatternTest(unittest.TestCase):
         self.assertFalse(L.is_triad("1,000건을 처리했습니다."))
         self.assertFalse(L.is_triad("정확도는 각각 20%, 25%, 25%입니다."))
         self.assertFalse(L.is_triad("논문은 이들을 ChatGPT, Claude, Grok으로 부릅니다."))
+
+
+class PunctPolicyTest(unittest.TestCase):
+    """문장 부호 정책(G6): 사용자 검토에서 가운뎃점, em dash, en dash, 빼기 기호를 쓰지 않기로 정했다."""
+
+    def m(self, text):
+        return L.analyze(text)["metrics"]
+
+    def test_policy_chars_in_body_heading_table(self):
+        text = ("# 결과 — 요약\n\nPD·LP·PY 뉴런은 Morris–Lecar 모델로 씁니다. 막전위는 −52 mV입니다.\n\n"
+                "| 지표 | 범위 |\n|---|---|\n| 적분 기간 | 12–24시간 |\n\n> 인용 — 문장입니다.\n")
+        m = self.m(text)
+        self.assertEqual(m["G6.emdash"]["value"], 2)  # 헤딩, 인용
+        self.assertEqual(m["G6.punct_policy"]["value"], 5)  # 가운뎃점 2, en dash 2, 빼기 기호 1
+
+    def test_spaced_hyphen_label_is_emdash(self):
+        m = self.m("1단계 - 설정을 바꿉니다. 값은 n - 1입니다. Morris-Lecar 모델을 씁니다.\n")
+        self.assertEqual(m["G6.emdash"]["value"], 1)
+        self.assertEqual(m["G6.punct_policy"]["value"], 0)
+
+    def test_code_math_url_are_excluded(self):
+        text = ("코드는 `a — b · c`로 씁니다. 식 $x−1$을 봅니다. 링크는 [자료](https://example.com/a–b)입니다.\n\n"
+                "```\nx = a — b\n```\n\n가격은 $5에서 $10으로 올랐습니다.\n")
+        m = self.m(text)
+        self.assertEqual(m["G6.emdash"]["value"], 0)
+        self.assertEqual(m["G6.punct_policy"]["value"], 0)
+
+    def test_references_only_page_ranges(self):
+        text = "본문입니다.\n\n## 참고자료\n\n- [1] Kim, Title — Subtitle (2025), pp. 1016–1054.\n"
+        m = self.m(text)
+        self.assertEqual(m["G6.emdash"]["value"], 0)
+        self.assertEqual(m["G6.punct_policy"]["value"], 1)
+
+    def test_reference_heading_must_be_whole_heading(self):
+        # "데이터 출처와 전처리"는 본문 절이다. 예전 정규식은 이 헤딩 뒤의 em dash를 세지 않았다.
+        for heading in ("참고자료", "참고 자료", "References", "출처", "더 읽을 거리", "참고 자료 및 링크"):
+            self.assertTrue(L.REF_HEADING_RE.search(heading), heading)
+        for heading in ("데이터 출처와 전처리", "참고할 설정", "출처를 밝히지 않은 수치"):
+            self.assertFalse(L.REF_HEADING_RE.search(heading), heading)
+        m = self.m("## 데이터 출처와 전처리\n\n수집은 — 이렇게 — 했습니다.\n")
+        self.assertEqual(m["G6.emdash"]["value"], 2)
+
+
+class NumParticleTest(unittest.TestCase):
+    """숫자 뒤 조사(G10). 사례는 사용자 검토에서 나온 interactive component 출력이다."""
+
+    def hits(self, text):
+        return [h["match"] for h in L.analyze(text)["metrics"]["G10.num_particle"]["hits"]]
+
+    def test_review_cases(self):
+        self.assertEqual(len(self.hits("최댓값은 0.7717예요.")), 1)
+        self.assertEqual(len(self.hits("diffusive에서 0.120예요.")), 1)
+        self.assertEqual(len(self.hits("현재 표본의 상관은 0.512이에요.")), 1)
+        self.assertEqual(self.hits("값은 0.7717였습니다."), ["0.7717였 → 0.7717이었"])
+        self.assertEqual(self.hits("7으로 나눕니다."), ["7으로 → 7로"])
+
+    def test_correct_or_skipped(self):
+        for text in ("값을 10으로 바꿨습니다.", "지연은 3초예요.", "2,000개가 있습니다.", "GPT-3은 컸습니다.",
+                     "Llama 3은 컸습니다.", "Windows 11은 무겁습니다.", "비율은 15%예요.", "1로 나눕니다.",
+                     "값은 3이었습니다.", "값은 0.5이었습니다.", "HTTP/3는 빠릅니다.", "포트 8080을 씁니다.",
+                     "식 $x=2$를 씁니다."):
+            self.assertEqual(self.hits(text), [], text)
+
+    def test_percent_and_heading(self):
+        self.assertEqual(len(self.hits("비율은 15%이에요.")), 1)
+        self.assertEqual(len(self.hits("# 1,400으로 줄인 방법\n\n본문입니다.\n")), 0)
+        self.assertEqual(len(self.hits("# 1,400로 줄인 방법\n\n본문입니다.\n")), 1)
+
+
+class KoreanPatternTest(unittest.TestCase):
+    """사용자 검토에서 고친 문장(신경과학 학습 노트)과 고치지 않기로 한 표현(과교정 예외)."""
+
+    def m(self, text, facts=None):
+        return L.analyze(text, facts_text=facts)["metrics"]
+
+    def test_window_range(self):
+        for text in ("추정한 적분 창 길이를 씁니다.", "STDP의 20 ms 시간 창을 봅니다.", "TANGO의 적분창은 깁니다.",
+                     "고정 창 방식의 rate limiter를 씁니다.", "20 ms 창 안에서 셉니다.", "적분 창으로 보면 깁니다."):
+            self.assertEqual(self.m(text)["A6.window_range"]["value"], 1, text)
+        for text in ("검색창에 입력합니다.", "시간 창고에 둡니다.", "분석 창구를 엽니다.", "브라우저 창이 열립니다.",
+                     "새 창을 열면 됩니다.", "fixed window를 씁니다.", "학습 창의성을 봅니다.", "비교 기준은 Reddit 창작 글입니다."):
+            self.assertEqual(self.m(text)["A6.window_range"]["value"], 0, text)
+
+    def test_window_range_in_heading_and_table(self):
+        m = self.m("# 적분 창 정리\n\n| 지표 | 값 |\n|---|---|\n| 시간 창 | 20 ms |\n\n본문입니다.\n")
+        self.assertEqual(m["A6.window_range"]["value"], 2)
+
+    def test_quoted_english_token(self):
+        for text in ('Inagaki 2012가 "likely"로 쓴 추정입니다.', '13개 뉴런은 "suggest"로 쓴 추정입니다.',
+                     '"over"로 적은 하한입니다.', "저자들은 이 효과를 'strong'으로 표현했습니다."):
+            self.assertEqual(self.m(text)["A14.quoted_english_token"]["value"], 1, text)
+        for text in ('원문은 "the three S\'s"입니다.', '저자들은 이를 "the three S\'s"라고 부릅니다.',
+                     '"slow" modulatory 반응입니다.', '상태가 "RUNNING"으로 바뀌면 다시 시도합니다.',
+                     '로그에 "timeout"으로 적힌 요청을 셉니다.', '원문은 "This is likely"라고 씁니다.'):
+            self.assertEqual(self.m(text)["A14.quoted_english_token"]["value"], 0, text)
+
+    def test_quoted_english_check(self):
+        m = self.m('뉴런이 "overconnected"로 보일 것입니다. 원문의 목록이 "etc."로 끝나므로 다 적지 않았습니다.')
+        self.assertEqual(m["A14.quoted_english_check"]["value"], 2)
+
+    def test_archaic_and_calque(self):
+        m = self.m("diffusive의 옛 진폭 값은 수치적으로 거의 0입니다. additive에는 큰 변화가 남아 있습니다. "
+                   "FC를 손으로 다시 계산할 때는 시간이 걸립니다.")
+        self.assertEqual(m["A5.archaic_words"]["value"], 1)
+        self.assertEqual(m["A6.calque_check"]["value"], 2)
+        m = self.m("notebook에 출력이 남아 있습니다. 문제가 남아 있습니다. 수치적으로 안정적인 softmax를 씁니다. 옛날 방식입니다.")
+        self.assertEqual(m["A5.archaic_words"]["value"], 0)
+        self.assertEqual(m["A6.calque_check"]["value"], 0)
+
+    def test_negation_scope(self):
+        for text in ("모든 영역이 한 값에 머물지 않았습니다.", "80개 영역이 모두 한 값에 머물지 않았습니다."):
+            self.assertEqual(self.m(text)["A18.negation_scope"]["value"], 1, text)
+        for text in ("선점한 시퀀스가 모두 끝날 때까지 새 요청을 받지 않습니다.",
+                     "블록을 전부 내보내거나 하나도 내보내지 않습니다.", "모든 테스트가 통과하지는 않았습니다.",
+                     "80개 영역이 모두 한 값에 머문 상태는 아니었습니다.",
+                     "인접 행렬은 모든 쌍에 칸을 두지만 모든 쌍이 이어졌다고 가정하지 않습니다.",
+                     "모든 셀을 다시 실행하지 않았다면 출력은 이전 결과일 수 있습니다."):
+            self.assertEqual(self.m(text)["A18.negation_scope"]["value"], 0, text)
+
+    def test_term_mix(self):
+        # 사용자 검토의 7편: 제목은 retina, 본문은 첫 등장의 retina(망막) 뒤로 망막을 썼다.
+        m = self.m("# retina와 회로\n\nretina(망막)는 빛을 받습니다. 망막의 회로는 작습니다.\n")
+        self.assertEqual(m["A19.term_mix"]["value"], 1)
+        m = self.m("호르몬(hormone)이 퍼집니다. 이 hormone은 혈액으로 갑니다. 호르몬이 다시 줄어듭니다.")
+        self.assertEqual(m["A19.term_mix"]["value"], 1)
+        for text in ("다중 버전 동시성 제어(MVCC)를 씁니다. MVCC는 버전을 남깁니다.",
+                     "망막(retina)은 빛을 받습니다. 망막의 회로는 작습니다.",
+                     "캐시(cache)를 씁니다. 캐시를 KV cache와 비교합니다.",
+                     "attention(주의를 기울이는) 연산을 씁니다. attention은 비쌉니다.",
+                     "excitability(흥분성)를 잽니다. excitability가 높습니다. 흥분성 뉴런은 따로 셉니다.",
+                     "시냅스 밖에서도(extrasynaptic) 퍼집니다. extrasynaptic 신호와 시냅스를 비교합니다."):
+            self.assertEqual(self.m(text)["A19.term_mix"]["value"], 0, text)
+
+    def test_term_avoid_from_fact_sheet(self):
+        facts = ("## 용어\n\n| 원어 | 글에 쓸 표기 | 근거 | 쓰지 않을 표기 |\n|---|---|---|---|\n"
+                 "| retina | 망막 | 의학 교과서 표기 | retina |\n| reporter gene | reporter | 원어로 씀 | 보고자 |\n")
+        self.assertEqual(L.avoid_terms(facts), ["retina", "보고자"])
+        m = self.m("망막(retina)은 빛을 받습니다. 보고자 유전자를 넣었습니다. retina 신호가 갑니다.", facts)
+        self.assertEqual(m["A19.term_avoid"]["value"], 2)
+        self.assertNotIn("A19.term_avoid", self.m("보고자 유전자를 넣었습니다."))
+
+    def test_korean_checks_render_in_own_group(self):
+        text = "모든 영역이 한 값에 머물지 않았습니다.\n\n기존 설정과 비교하면 최대 5배입니다.\n"
+        a = L.analyze(text)
+        ev = L.evaluate(a, L.load_json(L.THRESHOLDS_PATH), "default")
+        st = {r["id"]: r for r in ev["results"]}
+        self.assertEqual(st["A18.negation_scope"]["status"], "CHECK")
+        self.assertEqual(st["A18.negation_scope"]["group"], "ko")
+        out = L.render_text("x.md", "default", a, ev)
+        self.assertIn("단독 읽기 점검 후보", out)
+        self.assertIn("한국어 점검 후보", out)
+        self.assertLess(out.index("단독 읽기 점검 후보"), out.index("한국어 점검 후보"))
+
+    def test_window_and_quoted_english_fail_the_draft(self):
+        a = L.analyze('저자들은 "likely"로 쓴 적분 창을 씁니다.')
+        ev = L.evaluate(a, L.load_json(L.THRESHOLDS_PATH), "default")
+        st = {r["id"]: r["status"] for r in ev["results"]}
+        self.assertEqual(st["A6.window_range"], "FAIL")
+        self.assertEqual(st["A14.quoted_english_token"], "FAIL")
+
+
+class ExampleRegressionTest(unittest.TestCase):
+    """Codex smoke의 retone 케이스는 예시 글을 입력으로 쓰고, exit 0인 lint 실행이 있어야 통과한다."""
+
+    def test_examples_pass_new_checks(self):
+        thresholds = L.load_json(L.THRESHOLDS_PATH)
+        for name, tone in (("paged-attention.default.md", "default"), ("paged-attention.casual.md", "casual")):
+            a = L.analyze(L.read_text(os.path.join(ROOT, "examples", name)))
+            ev = L.evaluate(a, thresholds, tone)
+            self.assertEqual(ev["summary"]["verdict"], "PASS", name)
+            for mid in ("G6.emdash", "G6.punct_policy", "G10.num_particle", "A6.window_range",
+                        "A14.quoted_english_token", "A5.archaic_words"):
+                self.assertEqual(a["metrics"][mid]["value"], 0, (name, mid))
 
 
 class ToneTest(unittest.TestCase):
