@@ -4,6 +4,11 @@
 사용법
   python lint_ko.py ARTICLE.md [--tone default|casual|auto] [--facts FACTS.md]
                     [--thresholds PATH] [--json] [--all] [--max-hits N]
+  python lint_ko.py KO.md --short [--source EN.md] [--terms TERMS.json] [--tone ...]
+
+--short는 짧은 글 모드(SKILL.md의 short)다. thresholds.json의 short 프로필대로
+문장 단위 문체 검사만 보고, --source가 있으면 원문과 구조, 코드, URL, 숫자, 멘션,
+자리표시자가 같은지 대조한다(F 항목, 어기면 Gate).
 
 종료 코드: 0 통과, 1 기준 미달, 2 사용법 또는 입력 오류
 표준 라이브러리만 쓴다(Python 3.8 이상).
@@ -1186,8 +1191,10 @@ def detect_tone(analysis):
     return "casual" if c.get("HAEYO", 0) > c.get("HAPNIDA", 0) else "default"
 
 
-def tone_metrics(analysis, tone):
-    """G4 어투 혼용과 Casual 허용 변형 비율. 참고자료 절의 서지 항목("공개 URL 없음")은 문장이 아니라서 보지 않는다."""
+def tone_metrics(analysis, tone, imperative_ok=False, inga_ok=False):
+    """G4 어투 혼용과 Casual 허용 변형 비율. 참고자료 절의 서지 항목("공개 URL 없음")은 문장이 아니라서 보지 않는다.
+    imperative_ok(짧은 글 모드)면 Default 글의 요청문 "~해 주세요", "~하세요"도 어투에 맞는 것으로 본다.
+    inga_ok(짧은 글 모드)면 Default 글의 질문 "~인가요?"도 어투에 맞는 것으로 본다(references/short.md 4번)."""
     off = []
     banned = []
     for s in analysis["_sentences"]:
@@ -1199,6 +1206,11 @@ def tone_metrics(analysis, tone):
         ok = {"default": ("HAPNIDA", "Q_KKAYO"), "casual": ("HAEYO", "Q_KKAYO")}[tone]
         if s.cls == "NOMINAL" and s.kind != "paragraph":
             continue
+        if imperative_ok and tone == "default" and s.word.rstrip(".!").endswith("세요") \
+                and not s.text.rstrip().endswith("?"):
+            continue                                    # Slack 글의 요청문(짧은 글 모드)
+        if inga_ok and tone == "default" and s.text.rstrip().endswith("?") and s.word.rstrip("?").endswith("인가요"):
+            continue                                    # 짧은 글 모드의 질문 "~인가요?"
         if s.cls not in ok:
             off.append(_hit(s, f"{s.cls}:{s.word}"))
     n = sum(1 for s in analysis["_sentences"] if s.cls not in ("NOUN", "OTHER")) or 1
@@ -1241,8 +1253,9 @@ def judge(value, spec, chars):
         return ("GATE" if value > 0 else "PASS"), {"max": 0}
     if kind == "poisson":
         lam = spec["rate_per_1k"] * chars / 1000.0
-        p = poisson_ppf(spec.get("pass_q", 0.9), lam)
-        w = poisson_ppf(spec.get("warn_q", 0.975), lam)
+        floor = spec.get("_floor", 0)
+        p = max(floor, poisson_ppf(spec.get("pass_q", 0.9), lam))
+        w = max(floor, poisson_ppf(spec.get("warn_q", 0.975), lam))
         lim = {"pass_max": p, "warn_max": w, "basis": "poisson", "rate_per_1k": spec["rate_per_1k"]}
         return ("PASS" if value <= p else "WARN" if value <= w else "FAIL"), lim
     if kind == "upper":
@@ -1264,7 +1277,8 @@ def evaluate(analysis, thresholds, tone, max_hits=5, patterns_spec=None):
         patterns_spec = load_json(PATTERNS_PATH)
     pmeta = patterns_spec.get("patterns", {})
     metrics = dict(analysis["metrics"])
-    metrics.update(tone_metrics(analysis, tone))
+    metrics.update(tone_metrics(analysis, tone, imperative_ok=bool(thresholds.get("allow_imperative")),
+                                inga_ok=bool(thresholds.get("allow_inga_question"))))
     chars = analysis["stats"]["chars"]
     results = []
     for mid, spec in thresholds["metrics"].items():
@@ -1274,14 +1288,17 @@ def evaluate(analysis, thresholds, tone, max_hits=5, patterns_spec=None):
             continue
         if "by_tone" in spec:
             spec = dict(spec, **spec["by_tone"].get(tone, {}))
+        if thresholds.get("poisson_floor"):
+            spec = dict(spec, _floor=thresholds["poisson_floor"])     # 짧은 글: 한 번은 허용
         m = metrics[mid]
-        status, lim = judge(m["value"], spec, chars)
+        value = len(m["hits"]) if spec.get("count") else m["value"]
+        status, lim = judge(value, spec, chars)
         if spec.get("min_chars") and chars < spec["min_chars"] and status not in ("GATE",):
             status, lim = "INFO", {"note": f"본문 {spec['min_chars']}자 미만이라 판정하지 않음"}
         base_id = mid[:-len("_per_1k")] if mid.endswith("_per_1k") else mid
         title = spec.get("title") or pmeta.get(base_id, {}).get("title", mid)
         hint = spec.get("hint") or pmeta.get(base_id, {}).get("hint", "")
-        r = {"id": mid, "title": title, "value": m["value"], "status": status, "limit": lim}
+        r = {"id": mid, "title": title, "value": value, "status": status, "limit": lim}
         if spec.get("group"):
             r["group"] = spec["group"]
         if m.get("extra"):
@@ -1359,14 +1376,139 @@ def render_text(path, tone, analysis, ev, show_all=False):
     return "\n".join(lines)
 
 
-def run(path, tone="auto", facts=None, thresholds_path=None, as_json=False, show_all=False, max_hits=5):
+# ---------------------------------------------------------------- 짧은 글 모드
+
+def short_profile(thresholds, patterns_spec):
+    """thresholds.json의 short 프로필을 적용한 (기준치, 패턴) 사본을 돌려준다.
+    drop의 항목이 "."으로 끝나면 그 접두어로 시작하는 metric을 모두 뺀다."""
+    prof = thresholds.get("short") or {}
+    drops = prof.get("drop") or []
+
+    def dropped(mid):
+        return any(mid.startswith(d) if d.endswith(".") else mid == d for d in drops)
+    th = dict(thresholds)
+    th["metrics"] = {mid: spec for mid, spec in thresholds["metrics"].items() if not dropped(mid)}
+    # 1,000자당 비율은 짧은 글에서 판정하지 않으므로(min_chars) 정한 항목은 개수로 본다
+    for mid, (pass_max, warn_max) in (prof.get("count") or {}).items():
+        if mid in th["metrics"]:
+            spec = th["metrics"][mid]
+            title = re.sub(r"\(1,000자당\)", "", spec.get("title") or mid).strip()
+            th["metrics"][mid] = {"kind": "upper", "pass_max": pass_max, "warn_max": warn_max, "count": True,
+                                  "title": f"{title} (짧은 글: 개수)",
+                                  **({"hint": spec["hint"]} if spec.get("hint") else {})}
+    if "max_warn" in prof:
+        th["max_warn"] = prof["max_warn"]
+    th["allow_imperative"] = bool(prof.get("allow_imperative"))
+    th["allow_inga_question"] = bool(prof.get("allow_inga_question"))
+    th["poisson_floor"] = prof.get("poisson_floor", 0)
+    spec = json.loads(json.dumps(patterns_spec))
+    for pid, allowed in (prof.get("allow_patterns") or {}).items():
+        if pid in spec["patterns"]:
+            spec["patterns"][pid]["regex"] = [r for r in spec["patterns"][pid]["regex"] if r not in allowed]
+    return th, spec
+
+
+FENCED_BLOCK_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})[^\n]*\n(.*?)^ {0,3}\1[ \t]*$", re.M | re.S)
+INLINE_CODE_RE = re.compile(r"(`+)(?!`)(.+?)(?<!`)\1(?!`)")
+URL_RE = re.compile(r"https?://[^\s)>\]`\"'<]+")
+SLACK_TOKEN_RE = re.compile(r"<[@#!][^>\s]+>|\{[A-Za-z_]+(?::[^}\s]+)?\}")
+NUMBER_RE = re.compile(r"(?<![\w.])\d+(?:[.,]\d+)*")
+LIST_LINE_RE = re.compile(r"^[ \t]*(?:[-*+]|\d{1,3}[.)])[ \t]+\S")
+HEADING_LINE_RE = re.compile(r"^ {0,3}#{1,6}[ \t]+\S")
+
+
+def _outside_fences(text):
+    """코드 블록을 지운 본문과 코드 블록 내용 목록."""
+    blocks = [m.group(2) for m in FENCED_BLOCK_RE.finditer(text)]
+    return FENCED_BLOCK_RE.sub("\n", text), blocks
+
+
+def _structure(text):
+    body, blocks = _outside_fences(text)
+    spans = [m.group(2) for m in INLINE_CODE_RE.finditer(body)]
+    no_code = INLINE_CODE_RE.sub(" ", body)
+    urls = URL_RE.findall(no_code)
+    tokens = SLACK_TOKEN_RE.findall(no_code)
+    plain = SLACK_TOKEN_RE.sub(" ", URL_RE.sub(" ", no_code))
+    lines = body.split("\n")
+    return {"blocks": blocks, "spans": spans, "urls": urls, "tokens": tokens,
+            "numbers": NUMBER_RE.findall(plain),
+            "list_items": sum(1 for line in lines if LIST_LINE_RE.match(line)),
+            "headings": sum(1 for line in lines if HEADING_LINE_RE.match(line))}
+
+
+def _missing(src_items, out_items):
+    """원문에 있는데 결과에 없는(또는 모자란) 항목."""
+    left = list(out_items)
+    out = []
+    for item in src_items:
+        if item in left:
+            left.remove(item)
+        else:
+            out.append(item)
+    return out
+
+
+def _term_targets(terms):
+    """용어표: {"영어": "한국어"} 또는 [{"en": ..., "ko": ...}] 목록."""
+    if isinstance(terms, dict):
+        return [(str(k), str(v)) for k, v in terms.items()]
+    return [(str(t.get("en")), str(t.get("ko"))) for t in terms or [] if isinstance(t, dict)]
+
+
+def fidelity_metrics(source_text, text, terms=None):
+    """짧은 글 모드의 원문 대조(F 항목). 값은 어긋난 개수다."""
+    src, out = _structure(normalize_text(source_text)), _structure(text)
+
+    def hits(items):
+        return [{"line": 0, "text": str(i)[:160]} for i in items]
+    m = {}
+    altered = _missing(src["blocks"], out["blocks"])
+    m["F1.code_blocks"] = {"value": len(altered), "hits": hits(b.strip().split("\n")[0] for b in altered)}
+    spans = _missing(src["spans"], out["spans"])
+    m["F2.inline_code"] = {"value": len(spans), "hits": hits(spans)}
+    urls = _missing(src["urls"], out["urls"])
+    m["F3.urls"] = {"value": len(urls), "hits": hits(urls)}
+    tokens = _missing(src["tokens"], out["tokens"])
+    m["F4.slack_tokens"] = {"value": len(tokens), "hits": hits(tokens)}
+    numbers = _missing(sorted(set(src["numbers"])), sorted(set(out["numbers"])))
+    m["F5.numbers"] = {"value": len(numbers), "hits": hits(numbers)}
+    diff = abs(src["list_items"] - out["list_items"])
+    m["F6.list_items"] = {"value": diff, "hits": hits([f"원문 {src['list_items']}개, 결과 {out['list_items']}개"])
+                          if diff else []}
+    diff = abs(src["headings"] - out["headings"])
+    m["F7.headings"] = {"value": diff, "hits": hits([f"원문 {src['headings']}개, 결과 {out['headings']}개"])
+                        if diff else []}
+    wrong = []
+    if terms:
+        # 코드 블록과 인라인 코드는 원문 그대로 두는 것이라 용어를 찾지 않는다. 대문자가 있는 표기(버튼 이름
+        # "Keep")는 쓴 그대로 찾고, 모두 소문자인 표기("blocked")는 대소문자를 가리지 않는다.
+        prose = INLINE_CODE_RE.sub(" ", FENCED_BLOCK_RE.sub(" ", normalize_text(source_text)))
+        for en, ko in _term_targets(terms):
+            if not (en and ko):
+                continue
+            flags = 0 if en != en.lower() else re.I
+            if re.search(r"(?<![A-Za-z])" + re.escape(en) + r"(?![A-Za-z])", prose, flags) and ko not in text:
+                wrong.append(f"{en} → {ko}")
+    m["F8.terms"] = {"value": len(wrong), "hits": hits(wrong)}
+    return m
+
+
+def run(path, tone="auto", facts=None, thresholds_path=None, as_json=False, show_all=False, max_hits=5,
+        short=False, source=None, terms=None):
     text = read_text(path)
     facts_text = read_text(facts) if facts else None
-    analysis = analyze(text, facts_text=facts_text)
+    thresholds = load_json(thresholds_path or THRESHOLDS_PATH)
+    patterns_spec = load_json(PATTERNS_PATH)
+    if short:
+        thresholds, patterns_spec = short_profile(thresholds, patterns_spec)
+    analysis = analyze(text, patterns_spec=patterns_spec, facts_text=facts_text)
+    if short and source:
+        analysis["metrics"].update(fidelity_metrics(read_text(source), text,
+                                                    load_json(terms) if terms else None))
     if tone == "auto":
         tone = detect_tone(analysis)
-    thresholds = load_json(thresholds_path or THRESHOLDS_PATH)
-    ev = evaluate(analysis, thresholds, tone, max_hits=-1 if as_json else max_hits)
+    ev = evaluate(analysis, thresholds, tone, max_hits=-1 if as_json else max_hits, patterns_spec=patterns_spec)
     if as_json:
         out = {"schema": LINT_SCHEMA, "file": path, "tone": tone, "stats": analysis["stats"],
                "endings": analysis["endings"], "results": ev["results"], "summary": ev["summary"]}
@@ -1384,16 +1526,23 @@ def main(argv=None):
     ap.add_argument("--json", action="store_true", help="JSON으로 출력")
     ap.add_argument("--all", action="store_true", help="PASS 항목도 출력")
     ap.add_argument("--max-hits", type=int, default=5)
+    ap.add_argument("--short", action="store_true", help="짧은 글 모드(thresholds.json의 short 프로필)")
+    ap.add_argument("--source", help="짧은 글 모드: 영어 원문 경로(F 항목 대조)")
+    ap.add_argument("--terms", help="짧은 글 모드: 용어표 JSON 경로({\"영어\": \"한국어\"})")
     try:
         args = ap.parse_args(argv)
     except SystemExit as e:
         return 2 if e.code else 0
-    for p in [args.article] + ([args.facts] if args.facts else []):
+    if (args.source or args.terms) and not args.short:
+        print("--source와 --terms는 --short와 함께 씁니다", file=sys.stderr)
+        return 2
+    for p in [args.article] + [x for x in (args.facts, args.source, args.terms) if x]:
         if not os.path.isfile(p):
             print(f"파일이 없습니다: {p}", file=sys.stderr)
             return 2
     try:
-        out, verdict = run(args.article, args.tone, args.facts, args.thresholds, args.json, args.all, args.max_hits)
+        out, verdict = run(args.article, args.tone, args.facts, args.thresholds, args.json, args.all, args.max_hits,
+                           short=args.short, source=args.source, terms=args.terms)
     except (OSError, ValueError, KeyError) as e:
         print(f"lint 실행 오류: {e}", file=sys.stderr)
         return 2

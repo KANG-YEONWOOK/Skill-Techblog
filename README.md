@@ -152,6 +152,29 @@ codex exec '$techblog default design-doc.md -o article.md'
 | `--keep-work` | 작업 중에 만든 파일인 fact sheet(`<이름>.facts.md`), Default 초안(`<이름>.draft.md`, Casual일 때), 후처리 전 초안 사본(`<이름>.unrevised.md`), 반복 후보 목록(`<이름>.repeats.md`)을 지우지 않고 남깁니다. 후처리 전 초안 사본과 최종 글을 비교하면 후처리에서 바뀐 문장을 볼 수 있습니다. |
 | 추가 지시 | 독자, 분량, 강조할 부분 같은 요청을 문장으로 덧붙일 수 있습니다. |
 
+### 짧은 글 모드 (short)
+
+Slack 질문, 검토 요청, 답글, 보고, 진행 알림 문형처럼 도구가 영어로 쓴 짧은 글을 같은 구조, 순서, 분량, 사실 그대로 한국어로 옮깁니다. 아티클 골격(제목, 도입, 마치며, 참고자료)과 분석을 더하지 않고, 읽는 사람에게 직접 하는 말("원하시면", "답해 주세요")은 그대로 옮깁니다. fact sheet와 subagent 후처리 없이 한 글을 몇 분 안에 끝내는 것이 목표입니다.
+
+```
+/techblog short question.en.md -o question.ko.md
+/techblog short post-1.en.md post-2.en.md -o ko/ --terms terms.json
+```
+
+```text
+$techblog short question.en.md -o question.ko.md
+```
+
+| 인자 | 설명 |
+|---|---|
+| `short`, `--short` | 짧은 글 모드로 옮깁니다. |
+| 원문 | 영어 Markdown 파일입니다. 여러 개를 줄 수 있습니다. |
+| `-o <경로>` | 원문이 하나면 결과 파일, 여럿이면 결과 폴더입니다. 폴더에는 원문마다 `<이름>.ko.md`로 저장합니다. |
+| `--terms <JSON>` | `{"영어": "한국어"}` 용어표입니다. 버튼 이름, 단계 이름처럼 화면에 보이는 말을 맞출 때 씁니다. |
+| `casual` | 해요체로 씁니다. 생략하면 합니다체입니다. |
+
+결과는 `scripts/lint_ko.py --short --source <원문>`로 검사합니다. 문장 단위 문체 항목(번역투, 챗봇 흔적, 어투 혼용, 문장 부호)과 원문 대조 항목(F1~F8: 코드 블록, 인라인 코드, URL, 멘션과 `{link}` 같은 자리표시자, 숫자, 목록 항목 수, 헤딩 수, 용어표)을 보고, 아티클 분포로 잡은 기준(문장 길이, 목록 비중, 질문 비율)은 보지 않습니다. 자세한 규칙은 `skills/techblog/references/short.md`에 있습니다.
+
 ## 글을 쓰는 순서
 
 skill은 아래 순서로 글을 씁니다.
