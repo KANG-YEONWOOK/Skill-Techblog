@@ -1191,9 +1191,10 @@ def detect_tone(analysis):
     return "casual" if c.get("HAEYO", 0) > c.get("HAPNIDA", 0) else "default"
 
 
-def tone_metrics(analysis, tone, imperative_ok=False):
+def tone_metrics(analysis, tone, imperative_ok=False, inga_ok=False):
     """G4 어투 혼용과 Casual 허용 변형 비율. 참고자료 절의 서지 항목("공개 URL 없음")은 문장이 아니라서 보지 않는다.
-    imperative_ok(짧은 글 모드)면 Default 글의 요청문 "~해 주세요", "~하세요"도 어투에 맞는 것으로 본다."""
+    imperative_ok(짧은 글 모드)면 Default 글의 요청문 "~해 주세요", "~하세요"도 어투에 맞는 것으로 본다.
+    inga_ok(짧은 글 모드)면 Default 글의 질문 "~인가요?"도 어투에 맞는 것으로 본다(references/short.md 4번)."""
     off = []
     banned = []
     for s in analysis["_sentences"]:
@@ -1208,6 +1209,8 @@ def tone_metrics(analysis, tone, imperative_ok=False):
         if imperative_ok and tone == "default" and s.word.rstrip(".!").endswith("세요") \
                 and not s.text.rstrip().endswith("?"):
             continue                                    # Slack 글의 요청문(짧은 글 모드)
+        if inga_ok and tone == "default" and s.text.rstrip().endswith("?") and s.word.rstrip("?").endswith("인가요"):
+            continue                                    # 짧은 글 모드의 질문 "~인가요?"
         if s.cls not in ok:
             off.append(_hit(s, f"{s.cls}:{s.word}"))
     n = sum(1 for s in analysis["_sentences"] if s.cls not in ("NOUN", "OTHER")) or 1
@@ -1274,7 +1277,8 @@ def evaluate(analysis, thresholds, tone, max_hits=5, patterns_spec=None):
         patterns_spec = load_json(PATTERNS_PATH)
     pmeta = patterns_spec.get("patterns", {})
     metrics = dict(analysis["metrics"])
-    metrics.update(tone_metrics(analysis, tone, imperative_ok=bool(thresholds.get("allow_imperative"))))
+    metrics.update(tone_metrics(analysis, tone, imperative_ok=bool(thresholds.get("allow_imperative")),
+                                inga_ok=bool(thresholds.get("allow_inga_question"))))
     chars = analysis["stats"]["chars"]
     results = []
     for mid, spec in thresholds["metrics"].items():
@@ -1395,6 +1399,7 @@ def short_profile(thresholds, patterns_spec):
     if "max_warn" in prof:
         th["max_warn"] = prof["max_warn"]
     th["allow_imperative"] = bool(prof.get("allow_imperative"))
+    th["allow_inga_question"] = bool(prof.get("allow_inga_question"))
     th["poisson_floor"] = prof.get("poisson_floor", 0)
     spec = json.loads(json.dumps(patterns_spec))
     for pid, allowed in (prof.get("allow_patterns") or {}).items():
@@ -1476,10 +1481,14 @@ def fidelity_metrics(source_text, text, terms=None):
                         if diff else []}
     wrong = []
     if terms:
-        src_lower = source_text.lower()
+        # 코드 블록과 인라인 코드는 원문 그대로 두는 것이라 용어를 찾지 않는다. 대문자가 있는 표기(버튼 이름
+        # "Keep")는 쓴 그대로 찾고, 모두 소문자인 표기("blocked")는 대소문자를 가리지 않는다.
+        prose = INLINE_CODE_RE.sub(" ", FENCED_BLOCK_RE.sub(" ", normalize_text(source_text)))
         for en, ko in _term_targets(terms):
-            if en and ko and re.search(r"(?<![A-Za-z])" + re.escape(en.lower()) + r"(?![A-Za-z])", src_lower) \
-                    and ko not in text:
+            if not (en and ko):
+                continue
+            flags = 0 if en != en.lower() else re.I
+            if re.search(r"(?<![A-Za-z])" + re.escape(en) + r"(?![A-Za-z])", prose, flags) and ko not in text:
                 wrong.append(f"{en} → {ko}")
     m["F8.terms"] = {"value": len(wrong), "hits": hits(wrong)}
     return m

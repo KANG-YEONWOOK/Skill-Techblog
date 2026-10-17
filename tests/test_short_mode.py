@@ -111,6 +111,37 @@ class ShortModeTest(unittest.TestCase):
                               capture_output=True, text=True)
         self.assertEqual(done.returncode, 0, done.stdout)
 
+    def test_a_default_question_may_end_in_ingayo(self):
+        """references/short.md 4번: Default 글의 질문은 "~인가요?"도 쓴다."""
+        text = GOOD.replace("개발 서버는 어떤 포트를 쓸까요?", "개발 서버의 포트는 무엇인가요?")
+        report, verdict = self.lint(text)
+        self.assertNotIn("G4.off_tone", self.failed(report))
+        self.assertEqual(verdict, "PASS", self.failed(report))
+
+    def test_terms_are_not_looked_for_in_code_and_names_match_as_written(self):
+        """용어표: 인라인 코드와 코드 블록 안은 찾지 않고, 대문자가 있는 표기는 쓴 그대로 찾는다."""
+        source = "- `report.leaf_started`: {task}: started.\n- `reply.skip`: reply skip to keep it local.\n"
+        ko = "- `report.leaf_started`: {task}: 시작했습니다.\n- `reply.skip`: 로컬에 그대로 두려면 건너뛰기라고 답해 주세요.\n"
+        report, _ = self.lint(ko, ("Leaf", "말단"), ("Keep", "보관"), source=source)
+        self.assertNotIn("F8.terms", self.failed(report))
+        report, _ = self.lint(ko, ("started", "시작됨"), source=source)       # a lowercase term matches any case
+        self.assertIn("F8.terms", self.failed(report))
+
+    def test_a_long_list_keeps_the_sources_shape(self):
+        """긴 목록(UI 문구 표)은 원문의 구조라서 문장 길이·문단 모양(A8)과 목록 비중(A9)으로 걸지 않는다."""
+        items = [("first", "처음"), ("second", "두 번째"), ("third", "세 번째"), ("fourth", "네 번째"),
+                 ("fifth", "다섯 번째"), ("sixth", "여섯 번째"), ("seventh", "일곱 번째"), ("eighth", "여덟 번째")]
+        source = "".join(f"- `key.{en}{i}`: When the run starts, Barrel shows the {en} label in this channel and "
+                         f"keeps it in the record.\n" for i in range(5) for en, _ in items)
+        endings = ("기록에도 남깁니다", "기록에도 남아 있습니다", "기록에도 남겼습니다", "기록으로도 볼 수 있습니다",
+                   "기록의 첫 항목입니다")
+        ko = "".join(f"- `key.{en}{i}`: 실행이 시작되면 Barrel이 이 채널에 {k} 라벨을 바로 보여 주고 "
+                     f"{endings[(i + j) % 5]}.\n" for i in range(5) for j, (en, k) in enumerate(items))  # 1,500자 넘는 목록
+        report, verdict = self.lint(ko, source=source)
+        failed = self.failed(report)
+        self.assertFalse({m for m in failed if m.startswith(("A8.sent_len", "A8.long", "A8.single", "A9."))}, failed)
+        self.assertEqual(verdict, "PASS", failed)
+
 
 if __name__ == "__main__":
     unittest.main()
