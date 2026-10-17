@@ -1,10 +1,10 @@
 ---
 name: techblog
-description: 전달받은 자료(논문 PDF, 문서 PDF, 마크다운, URL, 붙여넣은 텍스트)를 한국어 기술 블로그 글로 정리하거나 기존 글의 어투를 바꾼다. 토스, 카카오, 당근 기술 블로그 문체를 참고하고 사실 대조와 검사 스크립트로 AI 문체 패턴을 줄인다. Default(합니다체)와 Casual(해요체)을 지원하며 어투만 바꿀 때 내용은 보존한다. "$techblog", "/techblog", "기술 블로그 글로 정리해줘", "아티클로 써줘", "블로그 포스트로 요약해줘" 같은 요청에 쓴다.
+description: 전달받은 자료(논문 PDF, 문서 PDF, 마크다운, URL, 붙여넣은 텍스트)를 한국어 기술 블로그 글로 정리하거나 기존 글의 어투를 바꾼다. 토스, 카카오, 당근 기술 블로그 문체를 참고하고 사실 대조와 검사 스크립트로 AI 문체 패턴을 줄인다. Default(합니다체)와 Casual(해요체)을 지원하며 어투만 바꿀 때 내용은 보존한다. short 모드는 짧은 영어 글(Slack 글)을 구조 그대로 옮긴다. "$techblog", "/techblog", "기술 블로그 글로 정리해줘", "아티클로 써줘", "블로그 포스트로 요약해줘" 같은 요청에 쓴다.
 license: MIT
 allowed-tools: Read Write Edit Glob Grep WebFetch Agent Bash(python "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python ${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/*)
 metadata:
-  version: "0.6.0"
+  version: "0.7.0"
   repository: https://github.com/KANG-YEONWOOK/Skill-Techblog
 ---
 
@@ -22,6 +22,7 @@ Codex에서는 `$techblog`와 함께 보낸 사용자 요청을 입력으로 삼
 
 ## 인자 해석
 
+- `short` 또는 `--short`가 있으면 [short.md](references/short.md)만 따른다. 아래 인자와 작업 순서는 쓰지 않는다.
 - 입력에 `casual`, `Casual`, `해요체`가 있으면 Casual 글을 쓴다. `default`, `Default`, `합니다체`가 있거나 어투를 지정하지 않았으면 Default 글을 쓴다.
 - `-o <경로>`는 글을 저장할 파일 경로다. 이 인자가 없으면 현재 작업 디렉터리에 글 주제를 나타내는 영문 kebab-case 이름(예: `cache-invalidation-latency.md`)으로 저장한다.
 - `--retone`이 있으면 입력 파일을 완성된 아티클로 보고 7단계(어투 적용)만 한다. 6단계(후처리)는 하지 않는다. `--retone` 없이 이미 쓴 글의 어투만 바꿔 달라고 요청해도 `--retone`으로 본다. 출력 경로가 없으면 `<입력 이름>.<casual|default>.md`에 저장한다.
