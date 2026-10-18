@@ -18,6 +18,7 @@
 | 파일 생성과 수정 | Write, Edit | 제공된 파일 편집 도구 또는 `apply_patch` |
 | Python 검사기 | Bash | 제공된 셸 실행 도구 |
 | URL 본문 | WebFetch | 웹을 열거나 가져오는 도구 또는 허용된 HTTP 다운로드 |
+| 일반 지식 확인(사전, 교과서, 백과사전) | WebSearch로 찾고 WebFetch로 본문 확인 | 웹 검색 도구와 웹을 여는 도구 |
 | 6단계의 세 독립 점검(독자 점검, 후처리, 한국어 문장 점검) | Agent의 general-purpose subagent | 사용 가능한 subagent 도구, 대화 상속 없이 실행 |
 
 도구 이름을 흉내 내거나 없는 도구를 호출하지 않는다. macOS/Linux에서는 `python3`, Windows에서는 `python`을 사용한다. 사용할 수 있는 Python 3.8 이상 실행 파일이 따로 있으면 그 경로를 쓴다. 검사기는 외부 패키지가 필요 없다. 검사는 개별 명령으로 실행하고 경로를 인용한다. Claude의 `allowed-tools`는 Codex에 실행 권한을 부여하지 않으며 현재 환경의 권한 정책을 따른다.

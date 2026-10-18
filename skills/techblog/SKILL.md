@@ -2,7 +2,7 @@
 name: techblog
 description: 전달받은 자료(논문 PDF, 문서 PDF, 마크다운, URL, 붙여넣은 텍스트)를 한국어 기술 블로그 글로 정리하거나 기존 글의 어투를 바꾼다. 토스, 카카오, 당근 기술 블로그 문체를 참고하고 사실 대조와 검사 스크립트로 AI 문체 패턴을 줄인다. Default(합니다체)와 Casual(해요체)을 지원하며 어투만 바꿀 때 내용은 보존한다. short 모드는 짧은 영어 글(Slack 글)을 구조 그대로 옮긴다. "$techblog", "/techblog", "기술 블로그 글로 정리해줘", "아티클로 써줘", "블로그 포스트로 요약해줘" 같은 요청에 쓴다.
 license: MIT
-allowed-tools: Read Write Edit Glob Grep WebFetch Agent Bash(python "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python ${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/*)
+allowed-tools: Read Write Edit Glob Grep WebFetch WebSearch Agent Bash(python "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python ${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 "${CLAUDE_SKILL_DIR}/scripts/*) Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/*)
 metadata:
   version: "0.8.0"
   repository: https://github.com/KANG-YEONWOOK/Skill-Techblog
