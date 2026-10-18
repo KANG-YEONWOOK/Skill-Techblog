@@ -52,7 +52,7 @@ A와 B의 자료는 AI 글쓰기를 다룬 연구라서, 두 케이스의 글에
 ## 평가 방법
 
 - `evaluate.py`는 결과를 규칙으로 점검한다. 점검 항목은 lint 판정, tone_check 결과, 스킬이 lint와 tone_check를 실제로 실행했는지, Casual 글을 쓰기 전에 Default 초안을 먼저 썼는지, 권한 거부 횟수, 비용, turn 수다.
-- style judge는 이번 iteration의 글과 사람이 쓴 블로그 글 2편(대조군)을 섞어서 채점하고, 어느 글을 누가 썼는지 judge에게 알리지 않는다. judge는 J2~J6, J8 점수와 "AI가 쓴 것처럼 읽히는 문장" 인용을 낸다. `judge.py`는 인용이 본문에 그대로 있는지 확인한 뒤 1,000자당 인용 수(J7)를 센다. style judge는 글마다 2번 실행한다.
+- style judge는 이번 iteration의 글과 사람이 쓴 블로그 글 2편(대조군)을 섞어서 채점하고, 어느 글을 누가 썼는지 judge에게 알리지 않는다. judge는 J2~J6, J8 점수와 "AI가 쓴 것처럼 읽히는 문장" 인용을 낸다. 0.8.0부터는 J10(용어와 중심 대상 설명)과 설명 없이 처음 나온 용어 목록도 낸다. J10은 이전 iteration과 style 평균을 비교할 수 있게 평균에 넣지 않는다. `judge.py`는 인용이 본문에 그대로 있는지 확인한 뒤 1,000자당 인용 수(J7)를 센다. style judge는 글마다 2번 실행한다.
 - fidelity judge는 글의 수치와 주장을 자료 원문과 대조해 supported, unsupported, contradicted로 나누고, 자료의 문제, 방법, 결과, 한계가 글에 다 있는지(J1)를 매긴다.
 - pairwise judge는 같은 자료로 쓴 두 글을 순서를 바꿔 두 번 비교한다. 두 번 모두 같은 글을 골랐을 때만 승패로 센다.
 - korean judge(J5, 0.6.0)는 최종 글(`article.md`)의 헤딩과 모든 문장을 80문장씩 나눠 하나씩 판정한다. judge는 문장마다 natural과 awkward(korean-review.md의 유형 A~M 가운데 문장 하나로 판정할 수 없는 I, M 제외)를 고르고, 1,000자당 awkward 문장 수를 같은 어투의 사람 글 대조군 3편과 비교한다. 사람 글 결과는 `%TEMP%\techblog-work\dogfood\_korean_humans.json`에 저장해 다시 쓴다. 사용자 검토 노트 2편으로 검증했을 때 judge가 고른 문장 중 사용자가 고친 문장은 54~69%, 사용자가 고친 문장 중 judge가 고른 문장은 23~27%였다(rubric.md의 J5). `evaluate.py`는 6단계에서 korean-review.md를 넘긴 subagent 호출 수(`ran.korean_subagent`)를 기록한다.

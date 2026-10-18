@@ -3,6 +3,7 @@
 
 - style: 이번 iteration의 글과 사람 블로그 글(대조군)을 섞어 누가 썼는지 알리지 않고 채점한다.
   J2~J6, J8 점수와 "AI가 쓴 것처럼 읽히는 문장" 인용을 받고, 인용이 원문에 그대로 있는지 확인해 J7을 센다.
+  J10(용어와 중심 대상 설명, 0.8.0)과 설명 없이 나온 용어 목록은 style 평균에 넣지 않으려고 scores 밖에 따로 받는다.
 - fidelity: 글의 수치·주장을 자료 원문과 대조한다(supported / unsupported / contradicted, coverage).
 - pairwise: 같은 자료로 쓴 두 글(이번 iteration과 비교 대상)을 순서를 바꿔 두 번 비교한다.
 - clarity(J9): 글 한 편씩 판정한다. 문단의 첫 문장, 수치가 든 문장, A18에 걸린 문장을 뽑아
@@ -54,11 +55,14 @@ STYLE_SCHEMA = {
             "scores": {"type": "object", "properties": {k: {"type": "integer", "minimum": 0, "maximum": 2}
                                                          for k in ("J2", "J3", "J4", "J5", "J6", "J8")},
                        "required": ["J2", "J3", "J4", "J5", "J6", "J8"]},
+            # J10(0.8.0)은 style 평균에 넣지 않으려고 scores 밖에 둔다.
+            "J10": {"type": "integer", "minimum": 0, "maximum": 2},
+            "unexplained": {"type": "array", "items": {"type": "string"}},
             "ai_like": {"type": "array", "items": {"type": "object", "properties": {
                 "quote": {"type": "string"}, "move": {"type": "string", "enum": MOVES},
                 "lost_if_deleted": {"type": "string"}}, "required": ["quote", "move", "lost_if_deleted"]}},
             "comment": {"type": "string"}},
-        "required": ["label", "scores", "ai_like", "comment"]}}},
+        "required": ["label", "scores", "J10", "unexplained", "ai_like", "comment"]}}},
     "required": ["texts"]}
 
 STYLE_PROMPT = """당신은 한국 테크 기업 기술 블로그의 편집자입니다. 현재 폴더의 {files} 파일을 Read 도구로 모두 끝까지 읽고 글마다 평가하세요. 이 중 일부는 사람이 썼고 일부는 AI가 썼을 수 있습니다. 글쓴이에 대한 정보는 주지 않습니다.
@@ -70,6 +74,10 @@ STYLE_PROMPT = """당신은 한국 테크 기업 기술 블로그의 편집자�
 - J5 한국어 자연스러움: 한국 개발자가 쓴 기술 블로그처럼 읽히는가. 번역투, 추상 명사 나열, 어색한 조사, 억지 번역어가 있는가. 2: 없다 / 1: 1~2곳 / 0: 3곳 이상
 - J6 어투 품질: 합니다체 글이면 공문체가 아닌가, 해요체 글이면 정중하고 반말·과한 구어·이모지가 없는가, 어투가 섞이지 않았는가. 2 / 1 / 0
 - J8 과교정: 문장이 지나치게 단조롭거나, 자연스러운 대조, 단서, 원어와 단위 보충, 긴 문장이 사라져 기계적으로 읽히는가. 같은 주어를 문장마다 되풀이해 늘어진 곳도 과교정이다. 2: 자연스럽다 / 1: 다소 단조롭다 / 0: 내용이나 흐름이 손상됐다
+
+J10은 scores 밖의 J10 칸에 따로 매기세요. 이 판정에서만 독자를 "개발자이지만 글이 다루는 분야는 모르는 사람"으로 봅니다.
+- J10 용어와 중심 대상 설명: 글의 중심 대상(제목과 도입이 다루는 대상)을 도입이나 첫 절에서 한곳에 정의했는가, 그런 독자가 모를 용어를 처음 나올 때 무엇인지 설명했는가. 이름을 한국어로 옮긴 말이나 약어의 풀네임만 쓴 것은 설명이 아니다. 2: 그렇다 / 1: 설명이 빠졌거나 이름만 옮긴 용어가 1~2개 / 0: 중심 대상의 정의가 없거나 여러 절에 흩어져 있거나, 설명이 빠진 용어가 3개 이상
+설명 없이 처음 나온 용어를 unexplained에 글에 쓰인 그대로 적으세요(최대 10개, 없으면 빈 목록).
 
 그리고 "AI가 쓴 것처럼 읽히는 문장"을 모두 찾아 ai_like에 원문 그대로 인용하세요. 인용은 글에 있는 문자열과 정확히 같아야 하고 한 문장 이내여야 합니다. 각 인용에 수사 동작(move)을 하나 고르고, 그 구절을 지우면 잃는 정보(lost_if_deleted, 없으면 "없음")를 적으세요.
 move: salience(중요하다고 말하기), contrast_reframe(X가 아니라 Y), summary_marker(결국·요컨대 등), lesson_ending(문단 끝 교훈), hedge_stack(추정 중첩), calque_metaphor(번역투 표현·상투 은유), triplet(근거 없는 셋 묶음), rhetorical_q(자문자답), translationese(번역투 문장), tone_slip(어투 이탈), generic_claim(근거 없는 일반론), other.
@@ -240,7 +248,8 @@ def run_style(iter_dir, work, model, runs=2):
                 valid = [q for q in t["ai_like"] if _norm(q["quote"]) and _norm(q["quote"]) in body]
                 rec = results.setdefault(name, {"human": human, "runs": []})
                 rec["runs"].append({"scores": t["scores"], "ai_like": valid, "invalid_quotes": len(t["ai_like"]) - len(valid),
-                                    "j7_per_1k": round(len(valid) * 1000 / chars, 2), "comment": t.get("comment", "")})
+                                    "j7_per_1k": round(len(valid) * 1000 / chars, 2), "comment": t.get("comment", ""),
+                                    "j10": t.get("J10"), "unexplained": t.get("unexplained", [])})
     return results
 
 
@@ -908,7 +917,11 @@ def main():
                 sc.setdefault(k, []).append(v)
         avg = {k: round(sum(v) / len(v), 2) for k, v in sc.items()}
         j7 = [r["j7_per_1k"] for r in rec["runs"]]
-        print(f"[style] {'HUMAN ' if rec['human'] else ''}{name}: {avg} J7/1k={j7}")
+        j10 = [r.get("j10") for r in rec["runs"]]
+        print(f"[style] {'HUMAN ' if rec['human'] else ''}{name}: {avg} J7/1k={j7} J10={j10}")
+        for r in rec["runs"]:
+            if r.get("unexplained"):
+                print(f"    - 설명 없는 용어: {', '.join(r['unexplained'][:10])}")
         for r in rec["runs"]:
             for q in r["ai_like"][:6]:
                 print(f"    - ({q['move']}) {q['quote'][:90]}")
