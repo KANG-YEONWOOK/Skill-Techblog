@@ -959,7 +959,11 @@ def term_first_hits(units, terms):
             for idx in sorted(first)]
 
 
-LATIN_RUN_RE = re.compile(r"(?<![A-Za-z0-9_\-'.])[A-Za-z][A-Za-z\-']*(?: [A-Za-z][A-Za-z\-']*)*(?![A-Za-z0-9_\-])")
+# 파일 이름("index.wasm")과 LaTeX 명령("\mathbb")의 조각은 영어 구간으로 세지 않는다.
+LATIN_RUN_RE = re.compile(r"(?<![A-Za-z0-9_\-'.\\])[A-Za-z][A-Za-z\-']*(?: [A-Za-z][A-Za-z\-']*)*"
+                          r"(?![A-Za-z0-9_\-]|\.[A-Za-z0-9])")
+# 수식 기호가 셋 넘게 있는 문장(달러 기호 없이 쓴 수식)에서는 영어 구간을 세지 않는다.
+MATH_SYMBOL_RE = re.compile(r"[=∼∣∑∏√≤≥∈⋅∥ϵθπρϕ^{}\\]")
 LATIN_STOP = frozenset(("et al", "vs", "etc", "e.g", "i.e", "cf"))
 LATIN_PHRASES_LOWER = frozenset(p.lower() for p in LATIN_PHRASES)
 
@@ -967,6 +971,8 @@ LATIN_PHRASES_LOWER = frozenset(p.lower() for p in LATIN_PHRASES)
 def latin_runs(masked, skip_names=()):
     """문장에서 영어 낱말이 이어진 구간(소문자로). 괄호 안, 저자(연도) 인용, 학명, 대문자 약어, 사람과 기관 이름처럼
     모든 낱말이 대문자로 시작하는 구간, 두 글자 이하는 뺀다. skip_names: 기울임꼴 학명과 참고자료 절의 이름."""
+    if len(MATH_SYMBOL_RE.findall(masked)) > 3:
+        return []
     text = PAREN_RE.sub(" ", masked)
     text = WORK_CITE_RE.sub(" ", text)
     text = SPECIES_ABBR_RE.sub(" ", text)
