@@ -386,6 +386,81 @@ class KoreanPatternTest(unittest.TestCase):
                      "K1 키가 있습니다. K1 뒤에 둡니다. K1을 지웁니다."):
             self.assertEqual(self.m(text)["A20.abbr_first"]["value"], 0, text)
 
+    TERM_HEADER = "| 원어 | 글에 쓸 표기 | 근거 | 쓰지 않을 표기 | 처음 나올 때 설명(근거) |\n|---|---|---|---|---|\n"
+
+    def test_term_table_split_and_combined_rows(self):
+        # 0.8.0 실행의 fact sheet는 "수평 세포 / 양극 세포 / amacrine 세포"를 한 행에 묶어서 lint가 세 용어를 찾지 못했다.
+        facts = (self.TERM_HEADER +
+                 "| horizontal / bipolar / amacrine cell | 수평 세포 / 양극 세포 / amacrine 세포 | 교과서 | - | 망막 뉴런 부류(자료 6쪽) |\n"
+                 "| spike | 스파이크 | 교과서 | - | 뉴런이 내는 짧은 전기 신호(자료 2쪽) |\n\n"
+                 "| 원문 | 원문 낱말 | 글에 쓸 표현 |\n|---|---|---|\n| likely / may | likely | 가능성이 높다 / 수 있다 |\n")
+        self.assertEqual(L.described_terms(facts), ["수평 세포", "양극 세포", "amacrine 세포", "스파이크"])
+        hits = L.combined_row_hits(facts)
+        self.assertEqual([(h["line"], h["match"]) for h in hits], [(0, "수평 세포 / 양극 세포 / amacrine 세포")])
+        a = L.analyze("양극 세포가 있습니다.\n", facts_text=facts)
+        ev = L.evaluate(a, L.load_json(L.THRESHOLDS_PATH), "default")
+        self.assertIn("fact sheet «수평 세포 / 양극 세포 / amacrine 세포»", L.render_text("x.md", "default", a, ev))
+
+    def test_term_first_lists_every_first_appearance(self):
+        # 0.8.0은 앞쪽 용어 몇 개만 보여 줘서 뒤 절의 용어(pyloric 리듬, amacrine 세포)가 점검 목록에 오르지 않았다.
+        names = ["가지돌기", "축삭", "신경절", "시냅스", "막전위", "수용체", "도파민", "활동전위", "억제성", "흥분성",
+                 "교세포", "척수"]
+        facts = self.TERM_HEADER + "".join(f"| x{i} | {n} | 교과서 | - | 설명 {i}(자료 1쪽) |\n" for i, n in enumerate(names))
+        a = L.analyze("\n\n".join(f"{n}이 있습니다." for n in names) + "\n", facts_text=facts)
+        self.assertEqual(a["metrics"]["A20.term_first"]["value"], 12)
+        ev = L.evaluate(a, L.load_json(L.THRESHOLDS_PATH), "default")
+        r = next(r for r in ev["results"] if r["id"] == "A20.term_first")
+        self.assertEqual((len(r["hits"]), len(r["more"])), (5, 7))
+        out = L.render_text("x.md", "default", a, ev)
+        self.assertIn("나머지 7곳", out)
+        self.assertIn("«척수»", out)
+        # 같은 문장에 처음 나온 용어는 한 줄로 묶는다. 다른 영어 낱말에 붙은 자리는 세지 않는다.
+        facts2 = (self.TERM_HEADER + "| a | amacrine 세포 | 교과서 | - | 망막 뉴런(자료 6쪽) |\n"
+                  "| b | 양극 세포 | 교과서 | - | 망막 뉴런(자료 6쪽) |\n")
+        m = self.m("starburst amacrine 세포가 있습니다. 양극 세포와 amacrine 세포가 있습니다.", facts2)
+        self.assertEqual([h["match"] for h in m["A20.term_first"]["hits"]], ["amacrine 세포, 양극 세포"])
+
+    def test_term_in_list(self):
+        listed = ("망막에는 광수용 세포, 수평 세포, 양극 세포, amacrine 세포, 망막 신경절 세포가 있습니다. "
+                  "광수용 세포는 빛을 받습니다.\n\n망막 신경절 세포는 신호를 뇌로 보냅니다.\n\n"
+                  "amacrine 세포는 넓게 퍼진 가지로 신호를 바꿉니다. starburst amacrine 세포는 움직임을 감지합니다.\n")
+        hits = self.m(listed)["A20.term_in_list"]["hits"]
+        self.assertEqual([h["match"].split(":")[0] for h in hits], ["amacrine"])
+        facts = self.TERM_HEADER + "| amacrine cell | amacrine 세포 | 원어로 씀 | - | 망막 뉴런(자료 6쪽) |\n"
+        hits = self.m(listed, facts)["A20.term_in_list"]["hits"]
+        self.assertEqual([h["match"].split(":")[0] for h in hits], ["amacrine 세포"])
+        self.assertIn("목록 L1, 혼자 L5", hits[0]["match"])
+        for text in (
+                # 나열 바로 다음 문장에서 설명한다
+                "망막에는 광수용 세포, 수평 세포, amacrine 세포, 망막 신경절 세포가 있습니다. "
+                "amacrine 세포는 신호를 조절합니다.\n\namacrine 세포는 넓게 퍼집니다.\n",
+                # 꾸미는 말이 붙은 항목
+                "이 실험은 접촉을 감지하는 기계감각 뉴런, 신호를 전달하는 interneuron, 운동 뉴런을 찾았습니다.\n\n"
+                "다른 실험도 있습니다.\n\ninterneuron은 신호를 모읍니다. interneuron이 끊기면 반응이 사라집니다.\n"):
+            self.assertEqual(self.m(text, facts)["A20.term_in_list"]["value"], 0, text)
+
+    def test_untabled(self):
+        facts = (self.TERM_HEADER +
+                 "| gap junction | gap junction | 원어로 씀 | 간극 연접 | 두 뉴런을 잇는 통로(자료 2쪽) |\n"
+                 "| burst / spike | burst / spike | 원어로 씀 | - | 몰아서 내는 신호(자료 3쪽) |\n")
+        text = ("Inagaki 등(2012)의 TANGO-mapping은 수용체를 봅니다. TANGO-mapping은 느립니다. "
+                "gap junction이 있습니다. gap junction이 닫힙니다. burst가 납니다. burst가 멈춥니다. "
+                "Bargmann과 Marder(2013)는 회로를 다룹니다. C. elegans(예쁜꼬마선충)는 작습니다. C. elegans는 흙에 삽니다. "
+                "`pip install`을 합니다. `pip install`을 다시 합니다. Nature Methods에 실렸습니다. Nature Methods는 학술지입니다. "
+                "interneuron PVC가 있습니다.\n\n"
+                "## 참고자료\n\n[1] Inagaki, H.K. et al., Visualizing neuromodulation in vivo: TANGO-mapping (2012). Nature Methods.\n")
+        self.assertEqual([h["match"] for h in self.m(text, facts)["A20.untabled"]["hits"]], ["tango-mapping"])
+        self.assertNotIn("A20.untabled", self.m(text))
+
+    def test_general_knowledge_numbers_do_not_count_for_a15(self):
+        # 용어 표의 일반 지식 설명(사전, 교과서)에는 수치를 쓰지 않는다. 그 칸의 수치는 자료의 수치로 치지 않는다.
+        facts = (self.TERM_HEADER +
+                 "| pylorus | 유문 | 표준국어대사전 | - | 위와 십이지장이 이어지는 부분, 길이 35mm(일반 지식: 표준국어대사전) |\n\n"
+                 "- STG에는 뉴런 27개가 있다(자료 2쪽).\n")
+        m = self.m("STG에는 뉴런 27개가 있습니다. 유문의 길이는 35mm입니다.", facts)
+        self.assertEqual(m["A15.unknown_numbers"]["value"], 1)
+        self.assertNotIn("27", [h["match"] for h in m["A15.unknown_numbers"]["hits"]])
+
     def test_term_checks_render_in_own_group(self):
         a = L.analyze("C. elegans라는 선충입니다.\n")
         ev = L.evaluate(a, L.load_json(L.THRESHOLDS_PATH), "default")

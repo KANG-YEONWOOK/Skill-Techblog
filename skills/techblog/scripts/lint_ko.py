@@ -854,54 +854,245 @@ def term_avoid_hits(units, terms, max_hits=10):
     return hits
 
 
+TERM_TABLE_HEADER = "글에 쓸 표기"
+TERM_SPLIT_RE = re.compile(r"\s+/\s+|\s*[,，;]\s*")
+
+
+def term_table_rows(facts_text):
+    """fact sheet 용어 표의 행. 헤더에 "글에 쓸 표기"가 있는 표만 본다(추정 표현 표의 "글에 쓸 표현"은 뺀다).
+    돌려주는 값: (fact sheet 줄 번호, 헤더 칸 목록, 행 칸 목록)의 목록."""
+    rows = []
+    lines = facts_text.split("\n")
+    i = 0
+    while i < len(lines):
+        if "|" in lines[i] and TERM_TABLE_HEADER in lines[i]:
+            header = [c.strip() for c in lines[i].strip().strip("|").split("|")]
+            j = i + 1
+            while j < len(lines) and "|" in lines[j]:
+                if not TABLE_DELIM_RE.match(lines[j]):
+                    rows.append((j + 1, header, [c.strip() for c in lines[j].strip().strip("|").split("|")]))
+                j += 1
+            i = j
+        else:
+            i += 1
+    return rows
+
+
+def _col(header, key):
+    return next((j for j, c in enumerate(header) if key in c), None)
+
+
+def _cell(cells, j):
+    return cells[j] if j is not None and j < len(cells) else ""
+
+
+def split_terms(cell):
+    """"글에 쓸 표기" 칸의 용어들. 괄호("C. elegans(예쁜꼬마선충)")를 걷어 내고, 한 행에 묶어 적은 용어
+    ("수평 세포 / 양극 세포 / amacrine 세포", "tonic spiking, burst")는 나눈다. 네 낱말이 넘는 조각은 뺀다."""
+    out = []
+    for part in TERM_SPLIT_RE.split(PAREN_RE.sub("", cell)):
+        part = part.strip().strip("`\"'“”‘’ ")
+        if part and part not in DESC_SKIP and len(part.split()) <= 4 and part not in out:
+            out.append(part)
+    return out
+
+
 def described_terms(facts_text):
     """fact sheet 용어 표에서 "처음 나올 때 설명" 열에 설명을 적은 용어의 "글에 쓸 표기"를 모은다.
-    설명 열이 없거나 "설명하지 않음"으로 적은 용어는 빼고, 표기 뒤 괄호("C. elegans(예쁜꼬마선충)")는 걷어 낸다."""
+    설명 열이 없거나 "설명하지 않음"으로 적은 용어는 뺀다."""
     terms = []
-    lines = facts_text.split("\n")
-    for i, ln in enumerate(lines):
-        if "|" not in ln or "설명" not in ln or "글에 쓸" not in ln:
+    for _, header, cells in term_table_rows(facts_text):
+        desc = _cell(cells, _col(header, "설명"))
+        if not desc or desc in DESC_SKIP or desc.startswith("설명하지 않"):
             continue
-        header = [c.strip() for c in ln.strip().strip("|").split("|")]
-        desc_col = next((j for j, c in enumerate(header) if "설명" in c), None)
-        term_col = next((j for j, c in enumerate(header) if "글에 쓸" in c), None)
-        if desc_col is None or term_col is None:
-            continue
-        for row in lines[i + 1:]:
-            if "|" not in row:
-                break
-            if TABLE_DELIM_RE.match(row):
-                continue
-            cells = [c.strip() for c in row.strip().strip("|").split("|")]
-            if max(desc_col, term_col) >= len(cells):
-                continue
-            desc = cells[desc_col]
-            if not desc or desc in DESC_SKIP or desc.startswith("설명하지 않"):
-                continue
-            term = PAREN_RE.sub("", cells[term_col]).strip().strip("`\"'“”‘’ ")
-            if term and term not in DESC_SKIP and term not in terms:
+        for term in split_terms(_cell(cells, _col(header, "글에 쓸"))):
+            if term not in terms:
                 terms.append(term)
     return terms
+
+
+def combined_row_hits(facts_text):
+    """용어 표에서 한 행에 용어 여러 개를 묶은 곳(A20.table_combined_row). 묶은 행은 용어마다 다른 특징을 쓸 수
+    없고, 묶은 칸 전체를 용어 하나로 찾으면 본문에서 찾지 못한다. hit의 줄 번호 0은 fact sheet를 뜻한다."""
+    hits = []
+    for n, header, cells in term_table_rows(facts_text):
+        cell = _cell(cells, _col(header, "글에 쓸"))
+        if len(split_terms(cell)) > 1:
+            hits.append({"line": 0, "text": f"fact sheet {n}줄: {cell}"[:160], "match": cell})
+    return hits
+
+
+def strip_general_knowledge(facts_text):
+    """용어 표에서 근거가 "일반 지식"인 설명 칸을 비운 fact sheet. 일반 지식 설명에는 수치를 쓰지 않으므로
+    그 칸의 수치는 A15가 자료의 수치로 치지 않는다."""
+    lines = facts_text.split("\n")
+    for n, header, cells in term_table_rows(facts_text):
+        j = _col(header, "설명")
+        if j is not None and j < len(cells) and "일반 지식" in cells[j]:
+            cells = list(cells)
+            cells[j] = ""
+            lines[n - 1] = "| " + " | ".join(cells) + " |"
+    return "\n".join(lines)
 
 
 def _term_re(term):
     if re.fullmatch(r"[A-Za-z0-9 .'\-]+", term):
         return _latin_term_re(term)
+    if re.match(r"[A-Za-z]", term):
+        # "starburst amacrine 세포"의 "amacrine 세포"처럼 다른 영어 낱말에 붙은 자리는 세지 않는다.
+        return re.compile(r"(?<![A-Za-z0-9_\-])(?<![A-Za-z0-9] )" + re.escape(term), re.I)
     return re.compile(r"(?<![가-힣])" + re.escape(term))
 
 
-def term_first_hits(units, terms, max_hits=10):
+def term_first_hits(units, terms):
     """units: (줄 번호, 원문, 따옴표를 가린 문장). fact sheet가 설명을 적은 용어가 본문에 처음 나온 문장.
-    설명이 있는지는 문장을 읽어야 알 수 있어서 괄호가 있어도 보여 준다."""
-    hits = []
+    설명이 있는지는 문장을 읽어야 알 수 있어서 괄호가 있어도 보여 준다. 같은 문장에 처음 나온 용어는 한 줄로 묶는다.
+    0.8.0은 앞쪽 10개만 보여 줘서(그나마 출력은 5개) 뒤 절의 용어가 점검 목록에 오르지 않았다."""
+    first = {}
     for term in terms:
         rx = _term_re(term)
-        for line, text, masked in units:
+        for idx, (_, _, masked) in enumerate(units):
             if rx.search(masked):
-                hits.append({"line": line, "text": text[:160], "match": term})
+                first.setdefault(idx, []).append(term)
                 break
+    return [{"line": units[idx][0], "text": units[idx][1][:160], "match": ", ".join(first[idx])}
+            for idx in sorted(first)]
+
+
+LATIN_RUN_RE = re.compile(r"(?<![A-Za-z0-9_\-'.])[A-Za-z][A-Za-z\-']*(?: [A-Za-z][A-Za-z\-']*)*(?![A-Za-z0-9_\-])")
+LATIN_STOP = frozenset(("et al", "vs", "etc", "e.g", "i.e", "cf"))
+LATIN_PHRASES_LOWER = frozenset(p.lower() for p in LATIN_PHRASES)
+
+
+def latin_runs(masked, skip_names=()):
+    """문장에서 영어 낱말이 이어진 구간(소문자로). 괄호 안, 저자(연도) 인용, 학명, 대문자 약어, 사람과 기관 이름처럼
+    모든 낱말이 대문자로 시작하는 구간, 두 글자 이하는 뺀다. skip_names: 기울임꼴 학명과 참고자료 절의 이름."""
+    text = PAREN_RE.sub(" ", masked)
+    text = WORK_CITE_RE.sub(" ", text)
+    text = SPECIES_ABBR_RE.sub(" ", text)
+    out = []
+    for m in LATIN_RUN_RE.finditer(text):
+        whole = m.group(0).strip(" -'")
+        if whole in skip_names:
+            continue
+        # 대문자 약어 낱말("interneuron PVC"의 PVC)에서 구간을 나눈다. 약어는 A20.abbr_first가 본다.
+        groups, cur = [], []
+        for w in whole.split():
+            if re.fullmatch(r"[A-Z][A-Z0-9]+", w):
+                groups.append(cur)
+                cur = []
+            else:
+                cur.append(w)
+        groups.append(cur)
+        for words in groups:
+            run = " ".join(words).strip(" -'")
+            if (len(run) <= 2 or run.lower() in LATIN_STOP or run.lower() in LATIN_PHRASES_LOWER
+                    or run in skip_names):
+                continue
+            if all(re.fullmatch(r"[A-Z][a-z]+", w) for w in words):
+                continue
+            if any(w in skip_names for w in words if w[:1].isupper()):
+                continue
+            out.append(run.lower())
+    return out
+
+
+def table_latin_vocab(facts_text):
+    """용어 표의 원어, 글에 쓸 표기, 쓰지 않을 표기 칸(괄호 안 포함)에 있는 영어 구간(소문자). A20.untabled가 본문의
+    영어 낱말이 용어 표에 있는지 볼 때 쓴다."""
+    vocab = set()
+    for _, header, cells in term_table_rows(facts_text):
+        for key in ("원어", "글에 쓸", "쓰지 않을"):
+            cell = _cell(cells, _col(header, key))
+            for part in TERM_SPLIT_RE.split(cell.replace("(", " / ").replace(")", " ")):
+                for m in LATIN_RUN_RE.finditer(part):
+                    run = m.group(0).strip(" -'").lower()
+                    if run:
+                        vocab.add(run)
+                        vocab.add(run[:-1] if run.endswith("s") else run + "s")
+    return vocab
+
+
+def untabled_hits(units, facts_text, skip_names=(), min_count=2):
+    """본문에 min_count번 이상 나오는 영어 낱말 가운데 fact sheet 용어 표에 없는 것(A20.untabled).
+    용어 표에 없는 말은 설명할지 정한 적이 없는 말이다."""
+    vocab = table_latin_vocab(facts_text)
+    count, first = {}, {}
+    for line, text, masked in units:
+        for run in latin_runs(masked, skip_names):
+            count[run] = count.get(run, 0) + 1
+            first.setdefault(run, (line, text))
+    hits = [{"line": first[r][0], "text": first[r][1][:160], "match": r}
+            for r in count if count[r] >= min_count and r not in vocab]
     hits.sort(key=lambda h: h["line"])
-    return hits[:max_hits]
+    return hits
+
+
+LIST_PRED_END_RE = re.compile(r"(?:다|요|고|며|서|면|지만|는데|니다|든지|거나)$")
+LIST_ADNOMINAL_RE = re.compile(r"(?:하는|되는|있는|없는|하던|되던|한|된|적인)$")
+
+
+def list_item_spans(masked):
+    """쉼표로 셋 넘게 나열한 항목의 위치(시작, 끝). 가운데 조각이 네 낱말 이하이고 서술어로 끝나지 않을 때 나열로
+    본다. 첫 조각은 끝의 네 낱말, 마지막 조각은 앞의 네 낱말만 항목으로 본다. "A, B와 C"처럼 쉼표가 하나인
+    나열은 보지 않는다."""
+    parts, pos = [], 0
+    for seg in masked.split(","):
+        parts.append((pos, pos + len(seg), [m.span() for m in re.finditer(r"\S+", seg)]))
+        pos += len(seg) + 1
+
+    def inner(k):
+        start, end, toks = parts[k]
+        return len(toks) <= 4 and not LIST_PRED_END_RE.search(masked[start:end].strip())
+    spans, i = [], 0
+    while i < len(parts):
+        j = i + 1
+        while j < len(parts) - 1 and inner(j):
+            j += 1
+        if j - i >= 2:
+            start, end, toks = parts[i]
+            spans.append((start + (toks[-4][0] if len(toks) >= 4 else 0), end))
+            spans += [parts[k][:2] for k in range(i + 1, j)]
+            start, end, toks = parts[j]
+            spans.append((start, start + toks[4][0] if len(toks) > 4 else end))
+            i = j
+        else:
+            i += 1
+    return spans
+
+
+def term_in_list_hits(units, terms):
+    """여럿을 나열한 문장에서 처음 나왔고, 바로 다음 문장에 다시 나오지 않으며(그 자리에서 설명하지 않음), 뒤에서
+    나열 밖에 혼자 다시 나오는 용어(A20.term_in_list). 0.8.0 실행 글은 망막 세포 다섯 부류를 나열한 문장 하나로
+    amacrine 세포를 소개하고, 그 뒤 세 문장에서 amacrine 세포를 혼자 주어로 썼다."""
+    hits = []
+    blank = [PAREN_RE.sub(lambda p: " " * len(p.group(0)), masked) for _, _, masked in units]
+    spans = [list_item_spans(b) for b in blank]
+    for term in terms:
+        rx = _term_re(term)
+        occ = []
+        for idx, b in enumerate(blank):
+            m = rx.search(b)
+            if m:
+                occ.append((idx, m.start()))
+        if len(occ) < 2:
+            continue
+        idx0, pos0 = occ[0]
+        if not any(a <= pos0 < e for a, e in spans[idx0]):
+            continue
+        if occ[1][0] == idx0 + 1:
+            continue
+        # 나열 안에서도 꾸미는 말이 붙은 항목("접촉을 감지하는 머리와 꼬리의 기계감각 뉴런")은 그 자리에서 설명한 것으로 본다.
+        before = blank[idx0][:pos0].rsplit(",", 1)[-1].split()[-4:]
+        if any(LIST_ADNOMINAL_RE.search(w) for w in before):
+            continue
+        alone = [units[i][0] for i, p in occ[1:] if not any(a <= p < e for a, e in spans[i])]
+        if alone:
+            more = ", ".join(f"L{n}" for n in alone[:4]) + (f" 외 {len(alone) - 4}곳" if len(alone) > 4 else "")
+            hits.append({"line": units[idx0][0], "text": units[idx0][1][:160],
+                         "match": f"{term}: 목록 L{units[idx0][0]}, 혼자 {more}"})
+    hits.sort(key=lambda h: h["line"])
+    return hits
 
 
 def species_first_hits(units, italic_names, max_hits=5):
@@ -985,10 +1176,11 @@ def sseuda_senses_hits(sentences, quote_rxs):
              "match": f"'사용하다' {len(use)}곳({lines(use)}), '자료의 말' {len(said)}곳({lines(said)})"}]
 
 
-def abbr_first_hits(units, exclude=(), min_count=3, max_hits=8):
+def abbr_first_hits(units, exclude=(), min_count=3, max_hits=None):
     """본문에 min_count번 이상 나오는 대문자 약어가 처음 나온 자리에 괄호가 없는 문장.
     "STG(stomatogastric ganglion)"처럼 바로 뒤에 괄호가 있거나 "stomatogastric ganglion(STG)"처럼
-    괄호 안에서 처음 나오면 세지 않는다. 흔한 약어(COMMON_ABBR)와 exclude(용어 표의 용어)도 세지 않는다."""
+    괄호 안에서 처음 나오면 세지 않는다. 흔한 약어(COMMON_ABBR)와 exclude(용어 표의 용어)도 세지 않는다.
+    0.9.0부터 개수를 자르지 않는다. 출력은 thresholds.json의 compact 설정대로 줄인다."""
     counts, first = {}, {}
     for line, text, masked in units:
         for m in ABBR_RE.finditer(masked):
@@ -1003,7 +1195,7 @@ def abbr_first_hits(units, exclude=(), min_count=3, max_hits=8):
     hits = [{"line": first[a][0], "text": first[a][1][:160], "match": a}
             for a in first if counts[a] >= min_count and a not in skip and not first[a][2]]
     hits.sort(key=lambda h: h["line"])
-    return hits[:max_hits]
+    return hits if max_hits is None else hits[:max_hits]
 
 
 def analyze(text, patterns_spec=None, facts_text=None):
@@ -1203,9 +1395,28 @@ def analyze(text, patterns_spec=None, facts_text=None):
     species = species_first_hits(body_units, italic_names)
     put("A20.species_first", len(species), species)
     described = described_terms(facts_text) if facts_text is not None else []
+    # 참고자료 절의 대문자로 시작하는 낱말(저자, 학술지 이름)과 기울임꼴 학명은 용어가 아니라 이름이다.
+    # "TANGO-mapping"처럼 논문 제목에 든 용어는 이름이 아니므로 첫 글자만 대문자인 낱말만 모은다.
+    skip_names = set(italic_names)
+    for s in sentences:
+        if s.in_refs:
+            skip_names.update(re.findall(r"(?<![A-Za-z\-])[A-Z][a-z]+(?![A-Za-z\-])", s.text))
     if facts_text is not None:
         firsts = term_first_hits(body_units, described)
-        put("A20.term_first", len(firsts), firsts)
+        put("A20.term_first", sum(len(h["match"].split(", ")) for h in firsts), firsts, sentences=len(firsts))
+        combined = combined_row_hits(facts_text)
+        put("A20.table_combined_row", len(combined), combined)
+        untabled = untabled_hits(body_units, facts_text, skip_names)
+        put("A20.untabled", len(untabled), untabled)
+    latin = {}
+    for _, _, masked in body_units:
+        for run in latin_runs(masked, skip_names):
+            latin[run] = latin.get(run, 0) + 1
+    # 용어 표의 용어("amacrine 세포")에 든 영어 구간("amacrine")은 따로 세지 않는다.
+    in_described = {m.group(0).lower() for d in described for m in LATIN_RUN_RE.finditer(d)}
+    listed = term_in_list_hits(body_units, described + [r for r, c in latin.items() if c >= 2
+                                                      and r not in in_described])
+    put("A20.term_in_list", len(listed), listed)
     abbrs = abbr_first_hits(body_units, exclude=described)
     put("A20.abbr_first", len(abbrs), abbrs)
 
@@ -1359,7 +1570,8 @@ def analyze(text, patterns_spec=None, facts_text=None):
 
     # A15 fact sheet에 없는 수치. "수십만", "수천" 같은 어림 수량어도 fact sheet에 같은 말이 있어야 한다.
     if facts_text is not None:
-        known = number_set(facts_text)
+        # 용어 표의 일반 지식 설명 칸(사전, 교과서에서 가져온 설명)의 수치는 자료의 수치로 치지 않는다.
+        known = number_set(strip_general_knowledge(facts_text))
         facts_norm = re.sub(r"\s+", "", facts_text)
         unknown = []
         for s in sentences:
@@ -1523,6 +1735,10 @@ def evaluate(analysis, thresholds, tone, max_hits=5, patterns_spec=None):
             r["extra"] = m["extra"]
         if status not in ("PASS", "INFO") or max_hits < 0:
             r["hits"] = m["hits"][:max_hits] if max_hits >= 0 else m["hits"]
+            # compact 항목(용어 설명 점검 후보)은 잘린 hit도 줄 번호와 걸린 말만 남긴다. 0.8.0은 앞의 5개만 보여 줘서
+            # 뒤 절의 용어가 5단계 점검 목록에 오르지 않았다.
+            if spec.get("compact") and 0 <= max_hits < len(m["hits"]):
+                r["more"] = [{"line": h["line"], "match": h.get("match", "")} for h in m["hits"][max_hits:]]
         if hint and status not in ("PASS", "INFO"):
             r["hint"] = hint
         results.append(r)
@@ -1594,7 +1810,15 @@ def render_text(path, tone, analysis, ev, show_all=False):
                 lines.append(f"    고치는 방향: {r['hint']}")
             for h in r.get("hits", []):
                 m = f" «{h['match']}»" if show_match and h.get("match") else ""
-                lines.append(f"    L{h['line']}{m}: {h['text']}")
+                where = f"L{h['line']}" if h["line"] else "fact sheet"
+                lines.append(f"    {where}{m}: {h['text']}")
+            more = r.get("more") or []
+            if more:
+                lines.append(f"    나머지 {len(more)}곳(줄 번호와 걸린 말):")
+                for k in range(0, len(more), 6):
+                    lines.append("      " + ", ".join(
+                        (f"L{h['line']}" if h["line"] else "fact sheet") + (f" «{h['match']}»" if h["match"] else "")
+                        for h in more[k:k + 6]))
     return "\n".join(lines)
 
 
