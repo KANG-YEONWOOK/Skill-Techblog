@@ -232,6 +232,13 @@ def inspect_output(project, case, commands, hashes):
     result["reference_reads"] = reference_reads(commands)
     successful = [call for c in commands if c.get("exit_code") == 0
                   for call in checker_invocations(c["command"])]
+    if case.startswith("retone-"):
+        # retone은 문장 끝만 바꾸고 내용은 고치지 않는다. 입력 글이 내용 항목(0.9.0의 A5.native_verbs 등)에 걸려
+        # lint가 1(판정 FAIL)로 끝나도 검사는 실행된 것이다. 어투는 아래 tone_items_ok와 tone_check로 본다.
+        successful += [call for c in commands if c.get("exit_code") == 1
+                       for call in checker_invocations(c["command"]) if call["script"] == "lint_ko.py"]
+        result["tone_items_ok"] = not any(r["status"] in ("FAIL", "GATE") for r in result["lint"]["results"]
+                                          if r["id"].startswith(("G4.", "T.")))
     required = [("lint_ko.py", None)]
     if case.startswith("retone-") or case == "casual":
         required.append(("tone_check.py", None))
@@ -325,7 +332,9 @@ def main():
         ok = ok and not evaluation.get("revision", {}).get("must_fix", False)
         if evaluation.get("tone"):
             ok = ok and not any(i["level"] == "FAIL" for i in evaluation["tone"]["issues"])
-        if not args.case.startswith("retone-"):
+        if args.case.startswith("retone-"):
+            ok = ok and evaluation.get("tone_items_ok", False)
+        else:
             summary = evaluation.get("lint", {}).get("summary", {})
             ok = ok and summary.get("gate_fail") == 0 and summary.get("fail") == 0
         return 0 if ok else 1

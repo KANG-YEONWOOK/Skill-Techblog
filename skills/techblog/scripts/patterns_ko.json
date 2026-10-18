@@ -7,7 +7,7 @@
     "headings가 true면 제목과 헤딩에도, tables가 true면 표의 행에도 적용한다.",
     "max_len이 있으면 그 글자 수 이하인 문장에만 적용한다(내용 없는 짧은 문장 판별용).",
     "G6.emdash, G6.punct_policy, G10.num_particle, A19.term_mix, A19.term_avoid, A20.term_first, A20.species_first, A20.abbr_first, A20.term_in_list, A20.untabled, A20.table_combined_row, A18.bare_author, A21.sseuda_senses는 정규식 하나로 판정할 수 없어서 lint_ko.py 안의 함수가 센다.",
-    "0.9.0 일반 표현 항목: A14.doeeojida(이중 피동, policy), G11.spelling(맞춤법, policy Gate), A14.causative, A5.pleonasm, A14.adverb_pair, A21.jeokda_as(한국어 점검 후보). 사람 글 측정은 dev/baseline/README.md의 \"동사 격식과 일반 표현 항목 (0.9.0)\"."
+    "0.9.0 일반 표현 항목: A14.doeeojida(이중 피동, policy), G11.spelling(맞춤법, policy Gate), A14.causative, A5.pleonasm, A14.adverb_pair, A21.jeokda_as(한국어 점검 후보). 사람 글 측정은 dev/baseline/README.md의 \"동사 격식과 일반 표현 항목 (0.9.0)\". 0.9.0 동사 항목: A5.native_verbs와 A7.see_judgment는 정규식 하나로 뜻을 가릴 수 없어서 lint_ko.py의 native_verb_hits, see_judgment_hits가 센다."
   ],
   "patterns": {
     "G2.experience": {
@@ -224,7 +224,7 @@
         "메커니즘",
         "기제"
       ],
-      "hint": "평이한 동사(이다, 있다, 쓰다, 보이다)와 자료의 구체 표현으로 바꾼다."
+      "hint": "무엇이 어떻게 됐는지 자료의 구체 표현으로 바꾼다(\"기능합니다\" 대신 그 대상이 하는 일, \"시사합니다\" 대신 자료가 추정한 내용)."
     },
     "A5.policy_verbs": {
       "title": "추상 정책 동사",
@@ -289,7 +289,7 @@
       "regex": [
         "(다고|라고)\\s*볼\\s*수\\s*있"
       ],
-      "hint": "근거를 조건으로 앞에 쓰고 결론을 쓴다(\"표의 측정값대로라면 지연의 72%는 배치 대기에서 생깁니다\"). 저자가 한 해석이면 \"저자들은 ~라고 봅니다\"로 옮긴다."
+      "hint": "근거를 조건으로 앞에 쓰고 결론을 쓴다(\"표의 측정값대로라면 지연의 72%는 배치 대기에서 생깁니다\"). 저자가 한 해석이면 연구 이름을 주어로, 그 일에 맞는 동사(추정합니다, 해석합니다, 주장합니다)로 옮긴다."
     },
     "A7.must_may": {
       "title": "의무와 가능성 중첩(\"~해야 할 수 있다\")",

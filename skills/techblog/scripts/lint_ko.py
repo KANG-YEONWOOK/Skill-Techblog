@@ -1182,6 +1182,142 @@ def sseuda_senses_hits(sentences, quote_rxs):
              "match": f"'사용하다' {len(use)}곳({lines(use)}), '자료의 말' {len(said)}곳({lines(said)})"}]
 
 
+# 정보 전달 글의 동사(A5.native_verbs, 0.9.0). 2022년 이전 합니다체 사람 글 57편은 같은 뜻에 한자어 동사를 더 많이 썼다
+# (사용하다 1,000자당 2.97번 대 쓰다 0.22번, 측정하다 0.04번 대 재다 0번, dev/baseline/README.md의 0.9.0 절).
+# 고유어를 한자어의 1/10 이하로 쓴 짝만 센다. 넣다(추가하다의 1/5), 바꾸다(변경하다의 1/2.6), 나오다(나타나다·발생하다의 1/4)는
+# 사람 글도 자주 써서 세지 않고, 한국어 점검(유형 R)이 문장의 뜻을 보고 고른다.
+# 뜻을 가릴 수 있는 틀만 센다. 글, 코드, 기록, 시간을 "쓰다"와 데이터를 메모리, 디스크, 블록에 "쓰다"는 세지 않는다.
+NV_WRITE_OBJ = ("글", "문서", "코드", "테스트", "메시지", "리뷰", "주석", "논문", "책", "편지", "답장", "일기", "보고서",
+                "기사", "블로그", "아티클", "포스트", "이름", "답", "소설", "노트", "README", "문장", "후기", "회고",
+                "칼럼", "원고", "글자", "숫자", "공식", "수식", "식", "로그", "파일", "레코드", "데이터", "기록", "시간",
+                "신경", "힘", "애", "돈", "비용", "예산", "마음", "모자", "안경", "마스크", "누명", "억지", "떼", "손",
+                "머리", "가면", "우산", "답안", "보고", "설명", "결론", "말", "매뉴얼", "가이드", "명세", "스펙", "PRD", "RFC",
+                "ADR", "기획서", "제안서", "프롬프트", "편", "log", "페이지", "위키", "티켓", "이슈", "일지", "근거", "케이스",
+                "나절", "하루", "며칠", "주일", "개월")
+# 목적어 없이 앞에 붙는 굳은 말("CPU Bound를 신경 쓰며", "인프라를 신경 쓰지 않고")
+NV_IDIOM = ("신경", "손", "애", "힘", "머리", "마음", "떼", "억지")
+# 수동 "쓰이다"의 주어가 이 낱말이면 '사용' 뜻이 아니다("시간의 상당수가 검토에 쓰입니다", "장애일지는 성실하게 쓰였고")
+NV_PASSIVE_SUBJ = ("시간", "비용", "돈", "예산", "노력", "글", "문서", "일지", "일기", "기사", "논문", "책", "편지", "보고서",
+                   "원고", "소설", "매뉴얼", "가이드", "답장", "후기", "회고", "칼럼")
+NV_SSEUDA = re.compile(r"(?:씁니다|써요|썼(?:습니다|어요|다|고|으며|는데|지만|던|을)?|쓴다|쓰고|쓰는|쓴|쓸|쓰면|쓰지|써서|"
+                       r"써야|써도|쓰게|쓰려|쓰며)")
+# 목적어 앞의 저장 위치("logical block에 새 KV cache를 쓰려 하면")는 '기록하다' 뜻이다.
+NV_STORE_AT = re.compile(r"(?:블록|block|메모리|memory|디스크|disk|버퍼|buffer|파일|캐시|cache|테이블|table|레지스터|register|"
+                         r"스토리지|storage|DB|슬롯|slot|페이지|page|셀|칸|필드|컬럼|로그)(?:\s+\d+)?에(?:\s|$)")
+NV_EXPR_TO = re.compile(r"(?:식|함수|형태|꼴|기호|표기|약어|이름|말|표현|문장|단어|한국어|영어|숫자|글|코드)(?:으로|로)$")
+NV_PATTERNS = (
+    ("재다", re.compile(r"(?<![가-힣])(?:잽니다|재요|쟀(?:습니다|어요|다|고|던|으며|는데|지만)?|잰다|재는|잰|잴|재면|재서|재야|재지|재려|"
+                       r"재며)(?![가-힣])")),
+    ("두다", re.compile(r"(?:(?<![\w.])\d[\d,.]*\s*(?:%|[A-Za-z]{1,3}|초|분|시간|개|배|번|바이트|자|줄|건|회)?|값|상수|"
+                       r"(?<![A-Za-z])(?:true|false|True|False|null|None))(?:으로|로)\s+(?:둡니다|둬요|두어요|뒀(?:습니다|어요|다|고)?|두었(?:습니다|어요|다|고)?|둔다|두고|두는|둔|두면|"
+                       r"둬서|두어서|둬야|두어야|두려|두며)(?![가-힣])|가정을\s+(?:둡니다|둬요|뒀|두었|둔다|두고|두는|둔|두면)(?![가-힣])")),
+    ("고치다", re.compile(r"(?<![가-힣])(?:고칩니다|고쳐요|고쳤(?:습니다|어요|다|고|으며|는데|지만|던)?|고친다|고치고|고치는|고친|"
+                         r"고칠|고치면|고치지|고쳐서|고쳐야|고치려|고치며)(?![가-힣])")),
+    ("돌리다", re.compile(r"(?:테스트|코드|모델|실험|시뮬레이션|배치|작업|잡|스크립트|프로그램|쿼리|학습|벤치마크|파이프라인|크론|"
+                         r"서버|노트북|셀|루프|빌드|job|cron|CI)(?:을|를)?\s+(?:\S+\s+){0,2}?돌(?:립니다|려요|렸(?:습니다|어요|다|고)?|"
+                         r"린다|리고|리는|린|릴|리면|리지|려서|려야|려도|리려|리며)(?![가-힣])")),
+    ("고르다", re.compile(r"(?<![가-힣])(?:고릅니다|골라요|골랐(?:습니다|어요|다|고|으며|는데|지만|던)?|고른다|고르고|고르는|"
+                         r"고른(?!\s+(?:성능|분포|품질|수준|결과|성적|발전|성장|비율|값))|"
+                         r"고를|고르면|골라서|골라야|고르려|고르며)(?![가-힣])")),
+)
+NV_SSEUDA_EXTRA = (
+    # "쓸 수 있다/없다"(쓰기 비율 같은 명사와 "~로 쓸 수"는 뺀다)
+    re.compile(r"(?<![가-힣])(?<!식으로\s)(?<!함수로\s)(?<!형태로\s)(?<!기호로\s)(?<!말로\s)(?<!표현으로\s)(?<!문장으로\s)"
+               r"(?<!한국어로\s)(?<!영어로\s)(?<!글로\s)(?<!숫자로\s)(?<!읽고\s)쓸\s+수\s+(?:있|없)"),
+    re.compile(r"(?<![가-힣])(?<!을\s)(?<!를\s)(?<!글\s)(?<!코드\s)(?<!문서\s)쓰는\s+(?:방법|방식|도구|경우|이유|곳|쪽)(?![가-힣])"),
+    # 수동 "쓰이다": "널리 쓰입니다", "~에 쓰이는". "Go로 쓰였습니다"(쓴 언어), "~라고 쓰여 있다"(적힌 글)는 뺀다.
+    re.compile(r"(?<![가-힣])(?<![A-Za-z]로\s)(?<![A-Za-z]으로\s)(?<!고\s)(?:쓰입니다|쓰여요|쓰였(?:습니다|어요|다|고|으며|는데|지만|던)?|"
+               r"쓰인다|쓰이는|쓰이고|쓰이며|쓰이면|쓰이지|쓰일)(?![가-힣])"),
+)
+
+
+def native_verb_hits(sentences):
+    """정보 전달 글에서 사람 글이 한자어 동사를 더 많이 쓰는 자리의 고유어 동사(A5.native_verbs). 문장마다 한 번 센다.
+    '사용' 뜻의 쓰다는 목적어 틀("이 방법을 씁니다"), "쓸 수 있다", "쓰는 방법", 수동 "쓰이다"로 가린다."""
+    hits = []
+    for s in sentences:
+        if s.in_refs:
+            continue
+        toks = s.masked.split()
+        found = []
+        for i, tok in enumerate(toks):
+            m = NV_SSEUDA.match(tok)
+            if not m or m.end() != len(tok.rstrip(".,?!")):
+                continue
+            counted = False
+            if i + 1 < len(toks) and toks[i + 1].startswith("읽"):
+                continue                                   # "쓰고 읽힐 수 있어야"(쓰기와 읽기)
+            for j in range(i - 1, max(-1, i - 4), -1):
+                if (re.search(r"(?:에|에서|에게|고|라고|다고)$", toks[j]) or NV_EXPR_TO.search(toks[j])
+                        or toks[j] in NV_IDIOM):
+                    break
+                if re.search(r"[을를]$", toks[j]):
+                    obj = toks[j][:-1]
+                    if (not any(obj.endswith(w) for w in NV_WRITE_OBJ)
+                            and not NV_STORE_AT.search(" ".join(toks[max(0, j - 3):j]))):
+                        found.append(tok)
+                        counted = True
+                    break
+            # 주어 뒤 관형형("Orca가 쓰는 스케줄링"). 꾸밈을 받는 말이 글, 코드처럼 쓰는 대상이면 세지 않는다("사람이 쓴 글").
+            if (not counted and tok in ("쓰는", "쓴", "쓸", "쓰던") and i > 0 and re.search(r"[이가]$", toks[i - 1])
+                    and i + 1 < len(toks) and not any(toks[i + 1].startswith(w) for w in NV_WRITE_OBJ)):
+                found.append(tok)
+        for k, rx in enumerate(NV_SSEUDA_EXTRA):
+            m = rx.search(s.masked)
+            if m:
+                before = s.masked[:m.start()].split()
+                # 바로 앞 낱말이 쓰는 대상이면 '사용' 뜻이 아니다("손을 쓸 수 없을", "신경 쓸 수 없는")
+                prev = (before or [""])[-1]
+                bare = prev[:-1] if prev.endswith(("을", "를")) else prev
+                if bare and (bare in NV_WRITE_OBJ or (bare != prev and any(bare.endswith(w) for w in NV_WRITE_OBJ))):
+                    continue
+                if k == len(NV_SSEUDA_EXTRA) - 1 and any(
+                        re.search(r"(?:은|는|이|가|의)$", t) and re.sub(r"(?:은|는|이|가|의)$", "", t).endswith(NV_PASSIVE_SUBJ)
+                        for t in before[-6:]):
+                    continue
+                found.append(m.group(0))
+        for name, rx in NV_PATTERNS:
+            m = rx.search(s.masked)
+            if m:
+                found.append(m.group(0).split()[-1])
+        if found:
+            hits.append(_hit(s, ", ".join(dict.fromkeys(found))))
+    return hits
+
+
+# 판단을 옮기는 "~라고 봅니다"(A7.see_judgment, 0.9.0). 사람 글은 1,000자당 0.01~0.03번, 0.8.0 실행 글은 0.45번 썼다.
+SEE_JUDGMENT_RES = (
+    re.compile(r"(?:다고|라고)\s*(?:봅니다|봐요|봤(?:습니다|어요|다|고|으며|는데|지만|던)?|본다|보았(?:습니다|어요|다|고)?|"
+               r"보고(?![가-힣])(?!\s+(?:했|하|합|한|할|된|됐|되|드))|보는\s|봐야|보며|보지)"),
+    re.compile(r"것으로\s+(?:봅니다|봐요|봤(?:습니다|어요|다|고|으며|는데|지만|던)?|본다|보았(?:습니다|어요|다|고)?|"
+               r"보고(?![가-힣])(?!\s+(?:했|하|합|한|할|된|됐|되|드)))"),
+    re.compile(r"(?:을|를)\s+(?:\S+\s+){0,3}?[^\s]*[가-힣](?:으로|로)(?<!그래프로)(?<!차트로)(?<!화면으로)(?<!그림으로)(?<!사진으로)"
+               r"(?<!영상으로)(?<!로그로)(?<!눈으로)(?<!예로)(?<!표로)(?<!현미경으로)(?<!대시보드로)(?<!코드로)(?<!숫자로)(?<!수치로)"
+               r"(?<!기준으로)\s+(?:봅니다|봐요|봤(?:습니다|어요|다|고)?|본다|보았(?:습니다|어요|다|고)?|"
+               r"보고(?![가-힣])(?!\s+(?:했|하|합|한|할|된|됐|되|드))|보는\s|봐야)"),
+)
+# "X를 Y로 봅니다"의 Y 자리에 오는 부사("영역을 주로 봅니다", "변경을 바로 봐야")
+SEE_ADVERB_RO = ("주로", "새로", "따로", "서로", "별로", "제대로", "그대로", "실제로", "대체로", "바로", "스스로", "이대로",
+                 "저절로", "절대로", "정말로", "때로", "함부로", "억지로", "멋대로", "마음대로", "임의로")
+
+
+def see_judgment_hits(sentences):
+    hits = []
+    for s in sentences:
+        if s.in_refs:
+            continue
+        m = next((m for rx in SEE_JUDGMENT_RES for m in rx.finditer(s.masked) if not _see_adverb(m.group(0))), None)
+        if m:
+            hits.append(_hit(s, m.group(0)))
+    return hits
+
+
+def _see_adverb(match):
+    # Y 자리가 부사이거나 "-적으로"("전체적으로 봤을 때")이면 판단을 옮기는 말이 아니다
+    ro = [t for t in match.split() if t.endswith("로")]
+    return bool(ro) and (ro[-1] in SEE_ADVERB_RO or ro[-1].endswith("적으로"))
+
+
 def abbr_first_hits(units, exclude=(), min_count=3, max_hits=None):
     """본문에 min_count번 이상 나오는 대문자 약어가 처음 나온 자리에 괄호가 없는 문장.
     "STG(stomatogastric ganglion)"처럼 바로 뒤에 괄호가 있거나 "stomatogastric ganglion(STG)"처럼
@@ -1434,6 +1570,12 @@ def analyze(text, patterns_spec=None, facts_text=None):
     quote_rxs = patterns["A14.report_write"]["regex"] + patterns["A14.report_write_check"]["regex"]
     senses = sseuda_senses_hits(sentences, quote_rxs)
     put("A21.sseuda_senses", len(senses), senses)
+
+    # A5.native_verbs, A7.see_judgment 정보 전달 글의 동사(0.9.0)
+    nv = native_verb_hits(sentences)
+    put("A5.native_verbs", len(nv), nv)
+    sj = see_judgment_hits(sentences)
+    put("A7.see_judgment", len(sj), sj)
     g7 = []
     adverb_comma = []
     for s in body:

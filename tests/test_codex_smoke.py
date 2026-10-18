@@ -96,6 +96,23 @@ class CodexEvidenceTest(unittest.TestCase):
             log.write_text("\n".join(json.dumps(e) for e in events), encoding="utf-8")
             self.assertEqual(smoke.command_events(log), [{"command": item["command"], "exit_code": 1}])
 
+    def test_retone_accepts_content_fail_but_not_tone_fail(self):
+        # 0.4.0 예시 글은 0.9.0의 A5.native_verbs에 걸린다. retone은 내용을 고치지 않으므로 lint 종료 코드 1을
+        # 실행한 것으로 보고, 어투 항목(G4, T.*)만 판정에 넣는다.
+        example = (ROOT / "examples/paged-attention.default.md").read_text(encoding="utf-8")
+        cmd = [{"command": 'python3 "/tmp/scripts/lint_ko.py" article.md --tone default', "exit_code": 1},
+               {"command": 'python3 "/tmp/scripts/tone_check.py" input.md article.md', "exit_code": 0}]
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            (project / "article.md").write_text(example, encoding="utf-8")
+            (project / "input.md").write_text(example, encoding="utf-8")
+            result = smoke.inspect_output(project, "retone-default", cmd, {})
+            self.assertTrue(result["checkers_ran"])
+            self.assertTrue(result["tone_items_ok"])
+            self.assertEqual(result["lint"]["summary"]["verdict"], "FAIL")
+            (project / "article.md").write_text(example.replace("입니다.", "이에요.", 3), encoding="utf-8")
+            self.assertFalse(smoke.inspect_output(project, "retone-default", cmd, {})["tone_items_ok"])
+
 
 if __name__ == "__main__":
     unittest.main()
