@@ -544,6 +544,44 @@ class KoreanPatternTest(unittest.TestCase):
         self.assertEqual({r["id"]: r["group"] for r in ev["results"] if r["id"] == "A21.sseuda_senses"},
                          {"A21.sseuda_senses": "ko"})
 
+    def test_general_expressions(self):
+        # 0.9.0: "쓰다"만이 아니라 글쓰기에서 일반적으로 점검하는 표현(사용자 2차 검토). 사람 글 측정은
+        # dev/baseline/README.md의 "동사 격식과 일반 표현 항목 (0.9.0)".
+        cases = {
+            "A14.doeeojida": (["개선되어졌습니다.", "Go로 쓰여진 코드가 있습니다.", "흔히 보여지는 오류입니다.",
+                               "두 그룹으로 나뉘어집니다.", "문이 열려집니다."],
+                              ["개선되었습니다.", "믿어지지 않는 결과입니다.", "만들어진 모델입니다.", "주어진 값입니다."]),
+            "A14.causative": (["두 서비스를 연결시켰습니다.", "값을 결과에 포함시킵니다."],
+                              ["두 서비스를 연결했습니다.", "처리량을 향상시켰습니다.", "모델을 학습시켰습니다."]),
+            "A5.pleonasm": (["약 10% 정도 줄었습니다.", "서버를 다시 재시작했습니다.", "과반수 이상이 찬성했습니다.",
+                             "미리 예측한 값입니다.", "약 100여 개의 서비스가 있습니다."],
+                            ["약 10% 줄었습니다.", "10% 정도 줄었습니다.", "재시작했습니다.", "가장 최근 버전입니다."]),
+            "A14.adverb_pair": (["결코 쉬운 일입니다.", "비록 느립니다.", "왜냐하면 캐시가 비어 있습니다.",
+                                 "만약 캐시가 비어 있습니다."],
+                                ["결코 우연이 아닙니다.", "결코 쉽지 않습니다.", "비록 느리지만 정확합니다.",
+                                 "왜냐하면 Next.js가 느리기 때문입니다.", "만약 캐시가 비어 있으면 다시 읽습니다.",
+                                 "만약 충돌이 나더라도 다시 시도합니다.", "만약의 경우를 대비합니다."]),
+            "G11.spelling": (["안 되요.", "됬습니다.", "몇일 걸렸습니다.", "몇 일 동안 걸렸습니다.", "금새 끝났습니다.",
+                              "가르키는 값입니다.", "역활을 합니다.", "알려드릴께요.", "일일히 확인합니다."],
+                             ["되도록 빨리 합니다.", "몇 일자리가 남았습니다.", "몇 일요일이 지났습니다.", "금세 끝났습니다.",
+                              "가리키는 값입니다.", "선생님께서 말합니다.", '로그에는 "되요"라고 찍힙니다.']),
+            "A21.jeokda_as": (["아래에서는 이 글을 Bargmann & Marder(2013)로 적어요.",
+                               "Bargmann & Marder(2013)는 STG의 뉴런을 약 27개로 적었습니다."],
+                              ["로그에는 timeout이라고 적혀 있습니다.", "뉴런 수가 적어요.", "결과를 표에 적었습니다.",
+                               '"over"로 적은 하한입니다.']),
+        }
+        for mid, (pos, neg) in cases.items():
+            for text in pos:
+                self.assertEqual(self.m(text)[mid]["value"], 1, (mid, text))
+            for text in neg:
+                self.assertEqual(self.m(text)[mid]["value"], 0, (mid, text))
+        th = L.load_json(L.THRESHOLDS_PATH)
+        st = {r["id"]: r for r in L.evaluate(L.analyze("안 되요. 흔히 보여지는 오류입니다. 두 서비스를 연결시켰습니다."),
+                                             th, "default")["results"]}
+        self.assertEqual((st["G11.spelling"]["status"], st["A14.doeeojida"]["status"]), ("GATE", "FAIL"))
+        self.assertEqual((st["A14.causative"]["status"], st["A14.causative"]["group"]), ("CHECK", "ko"))
+        self.assertTrue(th["metrics"]["G11.spelling"]["policy"] and th["metrics"]["A14.doeeojida"]["policy"])
+
     def test_korean_checks_render_in_own_group(self):
         text = "모든 영역이 한 값에 머물지 않았습니다.\n\n기존 설정과 비교하면 최대 5배입니다.\n"
         a = L.analyze(text)
@@ -574,7 +612,8 @@ class ExampleRegressionTest(unittest.TestCase):
             ev = L.evaluate(a, thresholds, tone)
             self.assertEqual(ev["summary"]["verdict"], "PASS", name)
             for mid in ("G6.emdash", "G6.punct_policy", "G10.num_particle", "A6.window_range",
-                        "A14.quoted_english_token", "A5.archaic_words", "A14.report_write"):
+                        "A14.quoted_english_token", "A5.archaic_words", "A14.report_write", "A14.doeeojida",
+                        "G11.spelling"):
                 self.assertEqual(a["metrics"][mid]["value"], 0, (name, mid))
 
 
