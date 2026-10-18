@@ -44,6 +44,7 @@ python dev/baseline/ko_stats.py --cache <사람 글 캐시> --pairs <수정 전�
 | S3-pagedattention-sonnet-casual | S1과 같은 자료 | Casual | held-out. `--model sonnet` |
 | C0, D0, E0, S20 | C, D, E, S2와 같은 자료 | | 스킬 없이 요청한 결과. held-out pairwise의 비교 대상 |
 | N1-note-default, N2-note-casual | `evals/note-*`의 엔지니어링 노트를 파일로 전달 | Default, Casual | 0.4.0 후처리 단계의 smoke test |
+| W3-connectome-function-casual | Bargmann & Marder (2013), From the connectome to brain function (Nature Methods) | Casual | 0.8.0 용어 설명, 출처 주어와 인용 동사, 한 낱말 한 뜻 확인. 사용자 검토 3주차 3편 노트의 주 자료 |
 
 E와 E0에는 `source_local`이 있다. judge는 URL을 다시 가져오지 않고, 한 번 받아 둔 본문 파일(`{work}/sources/discord.md`)로 판정한다. 같은 글의 두 버전을 같은 원문으로 판정하기 위해서다.
 

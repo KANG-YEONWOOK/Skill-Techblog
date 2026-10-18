@@ -628,3 +628,19 @@ iteration 12에서 멈춘다.
 - 상위 agent는 한국어 점검 보고를 확인하며 S1에서 고친 뒤에도 어색한 문장 하나를 다시 고쳤고, H에서 헤딩 수정 하나를 되돌렸다.
 - S1의 한국어 점검 subagent는 Read `pages`가 pdftoppm 부재로 실패하자 PDF를 열지 않고 fact sheet로만 사실을 확인했다. runtime.md에 `pages` 없이 파일 전체를 여는 순서를 적은 뒤 실행한 H의 subagent는 PDF를 열어 고친 문장의 근거를 대조했다.
 - 같은 iteration에서 rate limiter 노트도 세 번 실행했다. 사용자 skill 폴더로 1회, user 설정을 빼고 plugin skill만 불러 2회다. plugin skill 첫 실행에서는 상위 agent가 한국어 점검 subagent를 background로 띄워 최종 검사가 권한 거부됐다. runtime.md와 finalization.md에 subagent가 끝날 때까지 기다리라고 적은 뒤 다시 실행한 결과는 정상이었다.
+
+## iteration 14: 용어 설명, 출처 주어와 인용 동사, 한 낱말 한 뜻 (0.8.0)
+
+0.8.0은 사용자 검토(2026-10-18)에서 지적한 세 문제를 초안 규칙, fact sheet, 6단계 점검, lint에 반영했다. 세 문제는 중심 대상과 생소한 용어를 설명하지 않은 것, 출처를 밝히지 않은 "저자들은"과 직역한 인용 동사("~고 써요"), 한 글에서 여러 뜻으로 쓴 "쓰다"다. 3주차 3편 노트(STG와 C. elegans)의 주 자료인 Bargmann & Marder(2013)를 새 케이스(W3)로 더해 Claude Code 2.1.302, `--model opus --effort xhigh`로 1회 실행했다(commit 3c1e486). 결과와 비교는 [EVALUATION.md](../../EVALUATION.md)의 "용어 설명, 출처, 한 낱말 한 뜻 (0.8.0)" 절에 있다.
+
+| 케이스 | 버전 | 분 | 비용 | 0.8.0 lint | 6단계 바뀐 문장 | J5(1,000자당) | J10(2회) |
+|---|---|---|---|---|---|---|---|
+| W3 Bargmann & Marder (Casual) | 0.8.0 | 43.6 | $13.53 | PASS 0/0/1(A8.ending_run4) | 44/192 | 0.27 (221문장 중 3) | 0, 2 |
+| 3편 노트(같은 주 자료, StudyNote 절차) | 0.6~0.7 | - | - | FAIL(A14.report_write 12, A14.quote_go 6) | - | 0.90 (318문장 중 14, 유형 L 10) | - |
+
+- fact sheet에 "독자" 줄(개발자, 자료의 분야는 모를 수 있음), 중심 대상 표(커넥톰, C. elegans(예쁜꼬마선충), STG의 정의와 정의할 위치), 용어 표의 "처음 나올 때 설명" 열이 생겼다.
+- 첫 초안부터 A14.report_write와 A14.quote_go가 0이었다. 5단계를 마친 초안은 PASS 0/0/0이었다.
+- 6단계는 21.1분(실행 시간의 48.5%)이었고 subagent 2개(후처리, 한국어 문장 점검)와 `revise_ko.py check` 6회가 기록됐다.
+- 권한 거부 3회: 시작할 때의 PowerShell `Get-ChildItem` 1회, `revise_ko.py check`에 `; echo "exit=$?"`를 붙인 명령 2회. 뒤의 것은 runtime.md에 적었다(commit 4807b0d).
+- 최종 글에서 A18.bare_author가 앞 문장이 저자 이름을 산문으로 쓴 "두 저자가"를 잡았다. 이름 뒤에 조사가 붙은 말도 연구를 가리킨 것으로 보게 고쳤다(commit 4807b0d).
+- style judge의 J10은 같은 글에 0과 2를 줬다. 0을 준 판정은 본문이 그 자리에서 풀어 쓴 광유전학, TANGO-mapping, burst 뉴런도 설명이 없다고 꼽았다. 사람 글 대조군 3편은 1, 1, 0, 1이었다. korean judge의 사람 글 대조군은 해요체 3편 1.33~2.13, 합니다체 3편 1.85~3.16이었고, judge prompt에 유형 L을 더해 대조군을 다시 판정했다.

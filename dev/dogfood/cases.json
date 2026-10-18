@@ -144,6 +144,13 @@
    "tone": "casual",
    "set": "smoke",
    "note": "N1과 같은 자료의 Casual. 후처리 뒤 어투 변환과 tone_check 인자 확인용"
+  },
+  {
+   "name": "W3-connectome-function-casual",
+   "source": "{work}/sources/bargmann-marder-2013.pdf",
+   "tone": "casual",
+   "set": "terms",
+   "note": "Bargmann & Marder(2013), From the connectome to brain function, Nature Methods 10(6). 사용자 검토 3주차 3편(STG와 C. elegans) 노트의 주 자료. 0.8.0의 용어 설명, 출처 주어와 인용 동사, 한 낱말 한 뜻 규칙 확인용. 저작권 자료라 저장소에 넣지 않는다"
   }
  ]
 }
