@@ -6,7 +6,7 @@
     "패턴은 따옴표 안 텍스트와 인라인 코드를 가린 문장에 적용한다. raw가 true면 따옴표를 가리기 전 문장에 적용한다(인라인 코드는 가린다).",
     "headings가 true면 제목과 헤딩에도, tables가 true면 표의 행에도 적용한다.",
     "max_len이 있으면 그 글자 수 이하인 문장에만 적용한다(내용 없는 짧은 문장 판별용).",
-    "G6.emdash, G6.punct_policy, G10.num_particle, A19.term_mix, A19.term_avoid, A20.term_first, A20.species_first, A20.abbr_first, A18.bare_author는 정규식 하나로 판정할 수 없어서 lint_ko.py 안의 함수가 센다."
+    "G6.emdash, G6.punct_policy, G10.num_particle, A19.term_mix, A19.term_avoid, A20.term_first, A20.species_first, A20.abbr_first, A18.bare_author, A21.sseuda_senses는 정규식 하나로 판정할 수 없어서 lint_ko.py 안의 함수가 센다."
   ],
   "patterns": {
     "G2.experience": {

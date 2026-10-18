@@ -953,6 +953,33 @@ def bare_author_hits(blocks, sentences, max_hits=10):
     return hits[:max_hits]
 
 
+SSEUDA_RE = re.compile(r"(?<![가-힣])(?:씁니다|써요|썼|쓴다|쓰고|쓰는|쓴\s|쓸\s|쓰면|쓰지|써서|써야|써도|쓰게|쓰려|쓰며)")
+SSEUDA_USE_RE = re.compile(r"(?:을|를)\s+(?:\S+\s+){0,2}(?:씁니다|써요|썼|쓴다|쓰고|쓰는|쓴\s|쓸\s|쓰면|쓰지|써서|써야|써도|쓰게|쓰려|쓰며)"
+                           r"|(?<![가-힣])쓸\s+수\s|(?<![가-힣])쓰는\s+(?:방법|방식|곳|값|도구)")
+
+
+def sseuda_senses_hits(sentences, quote_rxs):
+    """한 글에서 "쓰다"를 '사용하다'와 '자료의 말을 옮기다'의 두 뜻으로 함께 쓴 곳. 자료의 말은 인용 동사 패턴
+    (quote_rxs)에 걸리거나 저자(연도)가 있는 문장의 "쓰다"이고, '사용하다'는 목적어("~를 썼어요")나 "쓸 수"가 붙은
+    "쓰다"다. 두 뜻이 모두 있으면 뜻마다 줄 번호를 한 줄로 보여 준다."""
+    use, said = [], []
+    for s in sentences:
+        if s.in_refs or not SSEUDA_RE.search(s.masked):
+            continue
+        if any(rx.search(s.masked) for rx in quote_rxs) or WORK_CITE_RE.search(s.text):
+            said.append(s)
+        elif SSEUDA_USE_RE.search(s.masked):
+            use.append(s)
+    if not use or not said:
+        return []
+
+    def lines(group):
+        out = ", ".join(f"L{s.line}" for s in group[:6])
+        return out + (f" 외 {len(group) - 6}곳" if len(group) > 6 else "")
+    return [{"line": said[0].line, "text": said[0].text[:160],
+             "match": f"'사용하다' {len(use)}곳({lines(use)}), '자료의 말' {len(said)}곳({lines(said)})"}]
+
+
 def abbr_first_hits(units, exclude=(), min_count=3, max_hits=8):
     """본문에 min_count번 이상 나오는 대문자 약어가 처음 나온 자리에 괄호가 없는 문장.
     "STG(stomatogastric ganglion)"처럼 바로 뒤에 괄호가 있거나 "stomatogastric ganglion(STG)"처럼
@@ -1180,6 +1207,11 @@ def analyze(text, patterns_spec=None, facts_text=None):
     # A18 출처를 밝히지 않은 주어
     authors = bare_author_hits(blocks, sentences)
     put("A18.bare_author", len(authors), authors)
+
+    # A21 한 글에서 두 뜻으로 쓴 "쓰다"
+    quote_rxs = patterns["A14.report_write"]["regex"] + patterns["A14.report_write_check"]["regex"]
+    senses = sseuda_senses_hits(sentences, quote_rxs)
+    put("A21.sseuda_senses", len(senses), senses)
     g7 = []
     adverb_comma = []
     for s in body:

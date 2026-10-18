@@ -438,6 +438,23 @@ class KoreanPatternTest(unittest.TestCase):
         m = self.m("Herting et al.(2012)은 DTI를 분석했어요. Sporns et al.(2005)도 있어요.\n\n## 결론\n\n저자들은 관계를 설명해요.\n")
         self.assertEqual(m["A18.bare_author"]["value"], 1)
 
+    def test_sseuda_senses(self):
+        # 사용자 검토: 한 노트가 "쓰다"를 '사용하다'와 '자료에 적다'로 함께 썼다.
+        text = ("Bargmann & Marder(2013)는 neuromodulator가 표적에 닿는 길을 세 가지로 써요.\n\n"
+                "이 방법을 C. elegans에 썼어요. 확률을 연결 세기로 써요.\n")
+        hits = self.m(text)["A21.sseuda_senses"]["hits"]
+        self.assertEqual(len(hits), 1)
+        self.assertIn("'사용하다' 2곳", hits[0]["match"])
+        self.assertIn("'자료의 말' 1곳", hits[0]["match"])
+        m = self.m('저자들은 "관련된다"라고 썼어요. 쓰기 비율이 높습니다.')
+        self.assertEqual(m["A21.sseuda_senses"]["value"], 0)
+        for text in ("이 방법을 C. elegans에 썼어요. 확률을 세기로 써요.",
+                     "Kim(2020)은 로그를 모았어요. 이 값을 기준으로 써요."):
+            self.assertEqual(self.m(text)["A21.sseuda_senses"]["value"], 0, text)
+        ev = L.evaluate(L.analyze(text), L.load_json(L.THRESHOLDS_PATH), "casual")
+        self.assertEqual({r["id"]: r["group"] for r in ev["results"] if r["id"] == "A21.sseuda_senses"},
+                         {"A21.sseuda_senses": "ko"})
+
     def test_korean_checks_render_in_own_group(self):
         text = "모든 영역이 한 값에 머물지 않았습니다.\n\n기존 설정과 비교하면 최대 5배입니다.\n"
         a = L.analyze(text)

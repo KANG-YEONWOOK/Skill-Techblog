@@ -695,6 +695,12 @@
       "kind": "check",
       "group": "ko"
     },
+    "A21.sseuda_senses": {
+      "kind": "check",
+      "group": "ko",
+      "title": "한 글에서 두 뜻으로 쓴 \"쓰다\"('사용하다'와 '자료의 말을 옮기다')",
+      "hint": "\"쓰다\"는 '사용하다' 뜻으로만 두고, 자료의 말을 옮긴 문장은 그 말이 하는 일에 맞는 동사(말합니다, 결론지었습니다, 나눠 설명합니다)로 쓴다. '기록하다', '나타내다' 뜻으로 쓴 곳도 그 뜻의 말(표시합니다, 나타냅니다)로 쓴다."
+    },
     "A18.negation_scope": {
       "kind": "check",
       "group": "ko"
@@ -800,7 +806,8 @@
       "A14.report_write",
       "A14.report_write_check",
       "A14.quote_go",
-      "A18.bare_author"
+      "A18.bare_author",
+      "A21."
     ],
     "count": {
       "A14.translationese_per_1k": [
