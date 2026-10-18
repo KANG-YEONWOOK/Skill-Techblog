@@ -97,9 +97,11 @@ class CodexEvidenceTest(unittest.TestCase):
             self.assertEqual(smoke.command_events(log), [{"command": item["command"], "exit_code": 1}])
 
     def test_retone_accepts_content_fail_but_not_tone_fail(self):
-        # 0.4.0 예시 글은 0.9.0의 A5.native_verbs에 걸린다. retone은 내용을 고치지 않으므로 lint 종료 코드 1을
-        # 실행한 것으로 보고, 어투 항목(G4, T.*)만 판정에 넣는다.
-        example = (ROOT / "examples/paged-attention.default.md").read_text(encoding="utf-8")
+        # retone은 내용을 고치지 않는다. 입력 글이 내용 항목(여기서는 덧붙인 "쟀습니다" 8문장이 A5.native_verbs FAIL)에
+        # 걸려 lint가 1로 끝나도 실행한 것으로 보고, 어투 항목(G4, T.*)만 판정에 넣는다.
+        title, body = (ROOT / "examples/paged-attention.default.md").read_text(encoding="utf-8").split("\n\n", 1)
+        # 참고자료 절 안의 문장은 lint가 세지 않으므로 제목 바로 뒤에 넣는다
+        example = title + "\n\n" + " ".join(f"처리량을 {i}번 쟀습니다." for i in range(1, 9)) + "\n\n" + body
         cmd = [{"command": 'python3 "/tmp/scripts/lint_ko.py" article.md --tone default', "exit_code": 1},
                {"command": 'python3 "/tmp/scripts/tone_check.py" input.md article.md', "exit_code": 0}]
         with tempfile.TemporaryDirectory() as tmp:

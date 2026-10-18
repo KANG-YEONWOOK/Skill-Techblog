@@ -650,17 +650,11 @@ class KoreanPatternTest(unittest.TestCase):
 
 
 class ExampleRegressionTest(unittest.TestCase):
-    """Codex smoke의 retone 케이스는 예시 글을 입력으로 쓰고, exit 0인 lint 실행이 있어야 통과한다.
-
-    0.4.0 예시 글은 0.9.0에서 더한 A5.native_verbs('사용' 뜻의 쓰다, 재다 등)와 A7.see_judgment("~라고 봅니다")
-    기준을 넘는다(1,000자당 2.40번과 0.44번, 사람 글 0.096번과 0.011번). 예시 글을 0.9.0 실행 결과로 바꿀 때까지
-    두 항목을 빼고 판정한다. 바꾼 뒤에는 이 제외를 지운다."""
-
-    PENDING = ("A5.native_verbs", "A7.see_judgment")
+    """예시 글은 README가 소개하는 skill 출력이고, Codex smoke의 retone 케이스와 이식성 시험의 입력이다.
+    지금 기준치 전체(0.9.0의 A5.native_verbs, A7.see_judgment 포함)로 PASS여야 한다."""
 
     def test_examples_pass_new_checks(self):
         thresholds = L.load_json(L.THRESHOLDS_PATH)
-        thresholds = dict(thresholds, metrics={k: v for k, v in thresholds["metrics"].items() if k not in self.PENDING})
         for name, tone in (("paged-attention.default.md", "default"), ("paged-attention.casual.md", "casual")):
             a = L.analyze(L.read_text(os.path.join(ROOT, "examples", name)))
             ev = L.evaluate(a, thresholds, tone)

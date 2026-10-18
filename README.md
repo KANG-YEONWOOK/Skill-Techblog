@@ -237,7 +237,7 @@ AI 문체 표현의 목록(`references/ai-patterns.md`)은 초안을 쓴 뒤에�
 
 ## 예시
 
-[`examples/`](examples/) 폴더에는 PagedAttention 논문(SOSP 2023, CC BY 4.0)을 이 skill로 정리한 Default 글과 Casual 글이 한 편씩 있습니다. 두 글은 한 번의 실행에서 나왔기 때문에 문장의 순서와 수치가 같고 문장 끝만 다릅니다.
+[`examples/`](examples/) 폴더에는 PagedAttention 논문(SOSP 2023, CC BY 4.0)을 0.9.0 버전 skill로 정리한 Default 글과 Casual 글이 한 편씩 있습니다. 두 글은 한 번의 실행에서 나왔기 때문에 문장의 순서와 수치가 같고 문장 끝만 다릅니다.
 
 ## 한계
 

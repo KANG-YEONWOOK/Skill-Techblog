@@ -186,6 +186,7 @@ lint 항목은 사용자가 고친 문장 447개 중 십여 개만 잡는다. �
 사용자는 2차 검토(2026-10-18)에서 정보 전달 글은 "쓰다"보다 "사용하다"처럼 격식이 조금 있는 말을 쓴다고 했고, "쓰다"만이 아니라 글쓰기에서 일반적으로 점검하는 표현에 대응하라고 했다. 이 절은 그 두 요구를 확인하려고 잰 값이다.
 
 - 측정: 2026-10-18에 `measure.py collect`로 사람 글을 다시 받았다. stats.json에 들어간 224편 중 218편을 썼다. 당근 글 6편(해요체 1편, 2025년 이후 해요체 4편, 2025년 이후 합니다체 1편)은 Medium 피드에서 빠져 받지 못했다. 3주차 노트 14편은 `--notes`로 frontmatter, import, 컴포넌트, 각주 정의, 참고 자료 절을 메모리에서 걷어 낸 본문을 쟀다.
+- 예시 글(0.4.0)은 0.9.0 실행 결과로 바꾸기 전의 `examples/paged-attention.default.md`다(`git show 3d6ffd7:examples/paged-attention.default.md`).
 - 명령: `python dev/baseline/ko_stats.py --cache <캐시> --verbs --notes "<StudyNote>/content/notes/week-03-*.mdx" --extra ex-default=examples/paged-attention.default.md --extra e2e080=<0.8.0 실행 글>`
 
 ### 같은 뜻의 고유어 동사와 한자어 동사
@@ -261,4 +262,4 @@ lint 항목은 사용자가 고친 문장 447개 중 십여 개만 잡는다. �
 - 기준 비율(`ko_stats.py --rates --no-holdout`): 2022년 이전 합니다체 40편(holdout 제외, 187,411자)에서 A5.native_verbs 18문장(1,000자당 0.096), A7.see_judgment 2문장(0.011)이다. 해요체 25편은 0.129와 0.037이다.
 - 분위수: A5.native_verbs는 0.95와 0.995에서 사람 글 87편(합니다체와 해요체 그룹) 중 FAIL이 2편(2.3%)이어서 0.975와 0.999로 올렸다. 이 값에서 FAIL 1편, WARN 2편이다. A7.see_judgment는 0.95와 0.995에서 FAIL 1편, WARN 2편이다. 9,000자 글의 상한은 A5.native_verbs가 PASS 3, WARN 5이고, A7.see_judgment는 PASS 1이고 2회부터 FAIL이다.
 - holdout 통과율(`ko_stats.py --verdicts`)은 두 항목을 넣기 전과 같은 86%(22편 중 19편)다. 넣다를 세던 처음 규칙에서는 holdout 1편(kakao-449)이 넣다 3곳("리포지토리에 넣고" 등)을 포함한 7곳으로 FAIL이 되어 82%였다.
-- 비교 글(1,000자당 A5.native_verbs / A7.see_judgment): 3주차 노트 14편 0.87 / 0.26, 예시 글(0.4.0) 2.40 / 0.44, 0.8.0 실행 글 0.72 / 0.45. 예시 글은 두 항목 모두 FAIL이라 0.9.0 실행 결과로 바꿀 때까지 `tests/test_lint_ko.py`의 예시 글 회귀 시험에서 두 항목을 뺀다.
+- 비교 글(1,000자당 A5.native_verbs / A7.see_judgment): 3주차 노트 14편 0.87 / 0.26, 예시 글(0.4.0) 2.40 / 0.44, 0.8.0 실행 글 0.72 / 0.45. 예시 글(0.4.0)은 두 항목 모두 FAIL이었다. 예시 글을 0.9.0 실행 결과로 바꾼 뒤에는 `tests/test_lint_ko.py`의 예시 글 회귀 시험이 두 항목까지 판정한다. 새 예시 글(Casual)은 A5.native_verbs 2곳, A7.see_judgment 0곳이다.
