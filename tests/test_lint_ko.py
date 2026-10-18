@@ -392,6 +392,52 @@ class KoreanPatternTest(unittest.TestCase):
         self.assertIn("용어 설명 점검 후보", out)
         self.assertNotIn("단독 읽기 점검 후보", out)
 
+    def test_report_write(self):
+        # 사용자 검토 2편 190줄: "저자들은 결론에서 "..."고 써요"를 "...라고 말해요"로 고쳤다.
+        for text in ('저자들은 결론에서 "성별 차이와 사춘기는 각각 관련된다"고 써요.',
+                     'Sporns et al.(2005)은 "기본 요소는 정의하기 어렵다"라고 썼습니다.',
+                     '저자들은 지연이 줄었다고 결론에서 써요.', '이 글은 그 값을 0이라고 적어요.',
+                     'Bargmann(2012)은 100종류 넘게 있다고 쓰고 다른 글은 200개라고 했어요.'):
+            self.assertEqual(self.m(text)["A14.report_write"]["value"], 1, text)
+        for text in ('논문에는 "..."라고 쓰여 있어요.', '로그에는 "timeout"이라고 적혀 있습니다.', '글을 씁니다.',
+                     '이 방법을 사람 뇌에 썼어요.', '뉴런 수가 적어요.', '이 값은 적어도 두 배입니다.',
+                     'Herting et al.(2012)의 저자들은 결론에서 "각각 관련된다"라고 말해요.'):
+            self.assertEqual(self.m(text)["A14.report_write"]["value"], 0, text)
+        # 따옴표 친 영어 낱말에 이미 걸린 문장은 다시 세지 않는다.
+        m = self.m('저자들은 "likely"라고 씁니다.')
+        self.assertEqual((m["A14.quoted_english_token"]["value"], m["A14.report_write"]["value"]), (1, 0))
+        m = self.m('저자들이 "~로 보인다(suggest)"고 쓴 추정입니다. 그 수보다 많다고 적은 하한입니다.')
+        self.assertEqual((m["A14.report_write"]["value"], m["A14.report_write_check"]["value"]), (0, 2))
+
+    def test_quote_go(self):
+        for text in ('저자들은 "각각 관련된다"고 말해요.', '“구조가 기능을 풀어 주지는 않는다”고 정리했어요.'):
+            self.assertEqual(self.m(text)["A14.quote_go"]["value"], 1, text)
+        for text in ('저자들은 "각각 관련된다"라고 말해요.', '값이 "0"이고 비어 있어요.', '지연이 줄었다고 합니다.',
+                     '상태가 "RUNNING"으로 바뀌면 다시 시도합니다.'):
+            self.assertEqual(self.m(text)["A14.quote_go"]["value"], 0, text)
+        ev = L.evaluate(L.analyze('저자들은 "관련된다"고 써요.'), L.load_json(L.THRESHOLDS_PATH), "casual")
+        st = {r["id"]: r["status"] for r in ev["results"]}
+        self.assertEqual((st["A14.report_write"], st["A14.quote_go"]), ("FAIL", "FAIL"))
+
+    def test_bare_author(self):
+        two = ("Herting et al.(2012)은 청소년 77명의 DTI를 분석했어요. 남자는 testosterone 수치가 FA를 예측했어요. "
+               "저자들은 결론에서 성호르몬이 관계의 일부를 설명한다고 봐요.\n\nSporns et al.(2005)은 첫 초안을 제안했어요.\n")
+        m = self.m(two)
+        self.assertEqual([h["match"] for h in m["A18.bare_author"]["hits"]], ["저자들은"])
+        for text in (
+                # 연구 이름이 같은 문장이나 바로 앞 문장에 있다
+                "Herting et al.(2012)은 DTI를 분석했어요. 저자들은 성호르몬이 관계를 설명한다고 봐요. "
+                "세 저자는 개인차도 쟀어요.\n\nSporns et al.(2005)은 첫 초안을 제안했어요.\n",
+                "Herting et al.(2012)의 저자들은 결론에서 관계를 말해요. Sporns et al.(2005)은 초안을 제안했어요.",
+                # 연구가 하나뿐인 글
+                "김 등(2025)은 로그를 모았습니다. 지연이 줄었습니다. 저자들은 배치 대기가 원인이라고 봅니다.",
+                # 이름이 붙은 연구팀
+                "Kim et al.(2020)이 먼저 썼습니다. 2014년에 Facebook의 AI 연구팀이 논문을 발표했습니다. Lee(2021)도 있습니다."):
+            self.assertEqual(self.m(text)["A18.bare_author"]["value"], 0, text)
+        # 헤딩을 지나면 바로 앞 문장으로 치지 않는다.
+        m = self.m("Herting et al.(2012)은 DTI를 분석했어요. Sporns et al.(2005)도 있어요.\n\n## 결론\n\n저자들은 관계를 설명해요.\n")
+        self.assertEqual(m["A18.bare_author"]["value"], 1)
+
     def test_korean_checks_render_in_own_group(self):
         text = "모든 영역이 한 값에 머물지 않았습니다.\n\n기존 설정과 비교하면 최대 5배입니다.\n"
         a = L.analyze(text)
@@ -422,7 +468,7 @@ class ExampleRegressionTest(unittest.TestCase):
             ev = L.evaluate(a, thresholds, tone)
             self.assertEqual(ev["summary"]["verdict"], "PASS", name)
             for mid in ("G6.emdash", "G6.punct_policy", "G10.num_particle", "A6.window_range",
-                        "A14.quoted_english_token", "A5.archaic_words"):
+                        "A14.quoted_english_token", "A5.archaic_words", "A14.report_write", "A14.quote_go"):
                 self.assertEqual(a["metrics"][mid]["value"], 0, (name, mid))
 
 

@@ -620,6 +620,11 @@
         "n": 66
       }
     },
+    "A18.bare_author": {
+      "kind": "check",
+      "title": "어느 연구인지 밝히지 않은 주어(\"저자들은\", \"세 저자는\", \"같은 논문은\")",
+      "hint": "본문이 연구를 둘 이상 인용하면 주장과 인용을 옮기는 문장에 연구 이름을 쓴다(\"Herting et al.(2012)의 저자들은\"). 같은 연구를 바로 앞 문장이 이름으로 가리키면 그대로 둔다."
+    },
     "A18.paren_clause": {
       "kind": "info",
       "human": {
@@ -654,6 +659,22 @@
       "policy": true,
       "note": "자료의 영어 낱말을 따옴표째 옮겨 문장 성분으로 쓴 말. 사람 글 224편에서 0편(dev/baseline/README.md의 \"한국어 점검 항목 (0.6.0)\")"
     },
+    "A14.report_write": {
+      "kind": "upper",
+      "pass_max": 0,
+      "warn_max": 0,
+      "fixed": true,
+      "policy": true,
+      "note": "사용자 검토(2026-10-18)에서 \"저자들은 결론에서 ...고 써요\"를 \"Herting et al.(2012)의 저자들은 결론에서 ...라고 말해요\"로 고쳤다. 사람 글 224편에서 0편, 3주차 노트 14편 중 11편(dev/baseline/README.md의 \"용어 설명, 출처, 다의어 항목 (0.8.0)\")"
+    },
+    "A14.quote_go": {
+      "kind": "upper",
+      "pass_max": 0,
+      "warn_max": 0,
+      "fixed": true,
+      "policy": true,
+      "note": "표준국어대사전: 직접 인용한 말 뒤에는 조사 \"라고\", 간접 인용한 말 뒤에는 \"고\". 사용자 검토(2026-10-18)에서 \"...\"고를 \"...\"라고로 고쳤다. 사람 글 224편 중 19편(대부분 2025년 이후 글), 3주차 노트 14편 모두"
+    },
     "A5.archaic_words": {
       "kind": "upper",
       "pass_max": 0,
@@ -667,6 +688,10 @@
       "group": "ko"
     },
     "A14.quoted_english_check": {
+      "kind": "check",
+      "group": "ko"
+    },
+    "A14.report_write_check": {
       "kind": "check",
       "group": "ko"
     },
@@ -771,7 +796,11 @@
       "A8.long_ratio",
       "A8.single_para_ratio",
       "A8.sentences_per_para",
-      "A9."
+      "A9.",
+      "A14.report_write",
+      "A14.report_write_check",
+      "A14.quote_go",
+      "A18.bare_author"
     ],
     "count": {
       "A14.translationese_per_1k": [

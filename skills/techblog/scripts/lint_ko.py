@@ -651,6 +651,15 @@ COMMON_ABBR = frozenset((
     "WHERE"))
 DESC_SKIP = ("-", "—", "없음")
 
+# 출처를 밝히지 않은 주어(A18.bare_author). 본문이 연구를 둘 이상 인용할 때만 본다.
+WORK_CITE_RE = re.compile(
+    r"([A-Z][A-Za-z'’\-]+)(?:\s+(?:et\s+al\.|등|외)|\s*(?:&|and)\s*[A-Z][A-Za-z'’\-]+)?\s*\(\s*((?:19|20)\d{2})[a-z]?\s*\)"
+    r"|([A-Z][A-Za-z'’\-]+)\s+et\s+al\."
+    r"|([가-힣]{1,4})\s*(?:등|외)\s*\(\s*((?:19|20)\d{2})[a-z]?\s*\)")
+# "연구진", "연구팀", "이 연구", "이 논문", "원문"은 문장 첫머리에 올 때만 본다("Facebook의 AI 연구팀이"는 이름이 있다).
+BARE_AUTHOR_RE = re.compile(r"(?:^|[\s(])((?:저자들?|세\s저자|두\s저자|네\s저자|같은\s연구|같은\s논문|같은\s글|두\s글)"
+                            r"(?:은|는|이|가|도))\s|^((?:연구진|연구팀|이\s연구|이\s논문|원문)(?:은|는|이|가|도))\s")
+
 
 class Sentence:
     __slots__ = ("text", "masked", "kind", "block", "para", "line", "first", "last",
@@ -907,6 +916,43 @@ def species_first_hits(units, italic_names, max_hits=5):
     return hits[:max_hits]
 
 
+def cited_works(sentences):
+    """본문에 저자(연도)나 "저자 et al."로 나온 연구의 수. 같은 저자의 다른 해 연구는 따로 센다."""
+    with_year, without_year = set(), set()
+    for s in sentences:
+        for m in WORK_CITE_RE.finditer(s.text):
+            if m.group(1):
+                with_year.add((m.group(1).lower(), m.group(2)))
+            elif m.group(3):
+                without_year.add(m.group(3).lower())
+            else:
+                with_year.add((m.group(4), m.group(5)))
+    return len(with_year) + len(without_year - {name for name, _ in with_year})
+
+
+def bare_author_hits(blocks, sentences, max_hits=10):
+    """본문이 연구를 둘 이상 인용하는데 "저자들은", "세 저자는", "같은 논문은"처럼 어느 연구인지 밝히지 않은 주어가 있고,
+    그 문장과 바로 앞 문장에 연구 이름이 없는 곳. 바로 앞 문장이 같은 방식으로 풀린 문장이면 이어진 것으로 본다.
+    헤딩, 표, 코드 블록을 지나면 바로 앞 문장으로 치지 않는다."""
+    body = [s for s in sentences if not s.in_refs]
+    if cited_works(body) < 2:
+        return []
+    hits, prev, prev_ok = [], None, False
+    for s in body:
+        if prev is not None and any(blocks[k].type not in ("paragraph", "list_item")
+                                    for k in range(prev.block + 1, s.block)):
+            prev, prev_ok = None, False
+        named = bool(WORK_CITE_RE.search(s.text))
+        m = BARE_AUTHOR_RE.search(s.masked.lstrip())
+        if m and not named:
+            if not prev_ok:
+                hits.append(_hit(s, m.group(1) or m.group(2)))
+        else:
+            prev_ok = named
+        prev = s
+    return hits[:max_hits]
+
+
 def abbr_first_hits(units, exclude=(), min_count=3, max_hits=8):
     """본문에 min_count번 이상 나오는 대문자 약어가 처음 나온 자리에 괄호가 없는 문장.
     "STG(stomatogastric ganglion)"처럼 바로 뒤에 괄호가 있거나 "stomatogastric ganglion(STG)"처럼
@@ -1044,6 +1090,12 @@ def analyze(text, patterns_spec=None, facts_text=None):
                     break
         metrics[pid] = {"value": len(hits), "hits": hits}
 
+    # A14: 따옴표 친 영어 낱말에 이미 걸린 문장("\"likely\"라고 적었어요")은 인용 동사 항목에서 다시 세지 않는다.
+    quoted = {(h["line"], h["text"]) for h in metrics["A14.quoted_english_token"]["hits"]}
+    for pid in ("A14.report_write", "A14.report_write_check"):
+        kept = [h for h in metrics[pid]["hits"] if (h["line"], h["text"]) not in quoted]
+        metrics[pid] = {"value": len(kept), "hits": kept}
+
     # A5: 자료가 쓰는 용어는 감점하지 않는다
     if facts_text:
         for pid in ("A5.style_words",):
@@ -1124,6 +1176,10 @@ def analyze(text, patterns_spec=None, facts_text=None):
         put("A20.term_first", len(firsts), firsts)
     abbrs = abbr_first_hits(body_units, exclude=described)
     put("A20.abbr_first", len(abbrs), abbrs)
+
+    # A18 출처를 밝히지 않은 주어
+    authors = bare_author_hits(blocks, sentences)
+    put("A18.bare_author", len(authors), authors)
     g7 = []
     adverb_comma = []
     for s in body:
@@ -1481,7 +1537,7 @@ def render_text(path, tone, analysis, ev, show_all=False):
     groups = (
         ([r for r in checks if r.get("group") not in ("ko", "term")], False,
          "단독 읽기 점검 후보 (판정에 들어가지 않음): 이 문장과 바로 앞 문장만 읽고 무엇에 대한 말인지, "
-         "수치가 무엇을 잰 값인지 알 수 있으면 그대로 둔다."),
+         "누구의 말인지, 수치가 무엇을 잰 값인지 알 수 있으면 그대로 둔다."),
         ([r for r in checks if r.get("group") == "ko"], True,
          "한국어 점검 후보 (판정에 들어가지 않음): 걸린 말이 references/ai-patterns.md의 \"과교정하지 않기\"에 "
          "있는 쓰임이면 그대로 두고, 아니면 한국 개발자가 쓰는 말로 고친다."),

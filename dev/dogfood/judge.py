@@ -10,7 +10,7 @@
   바로 앞 문장을 읽어야 알 수 있는지(needs_prev), 앞 문장까지 읽어도 알 수 없는지(unclear)를 고른다.
   사람 글 대조군 6편(합니다체 3, 해요체 3)도 같은 방식으로 판정하고 결과를 work 폴더에 저장해 다시 쓴다.
 - korean(J5, 0.6.0): 글의 헤딩과 모든 문장을 하나씩 보여 주고, 문장마다 자연스러움(natural)과
-  어색함(awkward, 유형 A~K)을 고르게 한다. 1,000자당 어색한 문장 수를 같은 어투의 사람 글 대조군 3편과 비교한다.
+  어색함(awkward, 유형 A~L, I 제외)을 고르게 한다. 1,000자당 어색한 문장 수를 같은 어투의 사람 글 대조군 3편과 비교한다.
   사람 글 결과는 _korean_humans.json에 둔다.
 
 - within: 같은 실행의 초안 사본(article.unrevised.md)과 후처리를 마친 합니다체 글(Default는 article.md, Casual은
@@ -129,7 +129,7 @@ needs_prev나 unclear이면 question에 이 문장만 읽은 독자가 갖게 �
 
 CLARITY_CONTROLS = 3  # 어투마다 사람 글 대조군 수
 
-KOREAN_TYPES = ["", "A", "B", "C", "D", "E", "F", "G", "H", "J", "K"]
+KOREAN_TYPES = ["", "A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L"]
 KOREAN_SCHEMA = {
     "type": "object",
     "properties": {"items": {"type": "array", "items": {"type": "object", "properties": {
@@ -155,6 +155,7 @@ KOREAN_PROMPT = """현재 폴더의 items.md에는 한국어 기술 블로그 �
   H 숫자나 영어 낱말 뒤 조사가 읽는 소리와 맞지 않음(0.7717예요, 0.512이에요)
   J 헤딩이나 질문 문장의 비유와 직역(무엇이 남을까, 흔들어 보면)
   K 문장 부호 오류(가운뎃점, en dash, em dash, 쉼표로 바꾼 짝이 나열로 읽힘)
+  L 자료의 말을 옮기는 동사의 직역이나 따옴표 뒤 조사 오류(저자들은 "..."고 써요, ~라고 적었어요, 따옴표 뒤의 "고")
 독자는 그 분야를 아는 개발자입니다. 기술 용어를 영어로 쓴 것(latency, token bucket)은 판정 이유가 아닙니다. 바로 앞 문장을 읽어야 무엇에 대한 말인지 아는 것도 이 판정의 이유가 아닙니다(다른 판정에서 봅니다). natural이면 type과 reason은 빈 문자열로 둡니다."""
 
 KOREAN_CHUNK = 80  # judge 한 번에 보여 줄 문장 수. 모든 문장을 판정하므로 글 하나를 여러 번에 나눠 묻는다.
