@@ -23,7 +23,7 @@
 
 도구 이름을 흉내 내거나 없는 도구를 호출하지 않는다. macOS/Linux에서는 `python3`, Windows에서는 `python`을 사용한다. 사용할 수 있는 Python 3.8 이상 실행 파일이 따로 있으면 그 경로를 쓴다. 검사기는 외부 패키지가 필요 없다. 검사는 개별 명령으로 실행하고 경로를 인용한다. Claude의 `allowed-tools`는 Codex에 실행 권한을 부여하지 않으며 현재 환경의 권한 정책을 따른다.
 
-스킬 문서는 UTF-8이다. Windows PowerShell에서 읽을 때는 `Get-Content -Encoding utf8`로 인코딩을 지정한다.
+스킬 문서는 UTF-8이다. Windows PowerShell에서 읽을 때는 `Get-Content -Encoding utf8`로 인코딩을 지정한다. Windows PowerShell 5.1은 파이프로 넘기는 텍스트를 ASCII로 바꾼다. 한글이 든 텍스트나 Python 코드를 here-string과 `| python -`으로 넘기면 한글이 `?`로 바뀐다(0.9.0 Codex 시험 실행에서 "합니다"가 "???"가 돼 정규식 오류가 났다). 한글이 든 코드는 UTF-8 파일로 저장해 실행하고, 글은 편집 도구로 고친다. Codex에서 파일 편집 도구로 긴 글을 쓸 수 없으면, 변환한 글 전체를 `Set-Content -Encoding utf8 -Path <파일> -Value @'...'@`로 쓴다. 명령 인자는 파이프를 거치지 않아 한글이 그대로 남는다.
 
 ## 스크립트 실행
 

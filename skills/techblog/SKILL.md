@@ -42,4 +42,4 @@ Codex에서는 `$techblog`와 함께 보낸 사용자 요청을 입력으로 삼
 
 ### 완성된 글의 어투만 변환
 
-`--retone` 또는 같은 뜻의 요청이면 [finalization.md](references/finalization.md)의 7~8단계와 [tone.md](references/tone.md)를 따른다. 1~6단계는 수행하지 않는다. 입력은 수정하거나 삭제하지 않고 fact sheet와 후처리 파일을 만들지 않는다. 원문의 어투 외 lint 문제는 보고만 한다.
+`--retone` 또는 같은 뜻의 요청이면 [finalization.md](references/finalization.md)의 7~8단계와 [tone.md](references/tone.md)를 따른다. 1~6단계는 수행하지 않는다. 입력은 수정하거나 삭제하지 않고 fact sheet와 후처리 파일을 만들지 않는다. 원문의 어투 외 lint 문제는 보고만 한다. 종결부는 문장마다 바꾸고 정규식이나 스크립트로 일괄 치환하지 않는다.
