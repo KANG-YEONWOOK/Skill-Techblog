@@ -25,7 +25,12 @@ python dev/dogfood/judge.py --iter iter-11 --cross iter-11r                # 같
 python dev/baseline/repeats_stats.py --cache <사람 글 캐시>                # 사람 글의 반복 후보 수 분포
 python dev/dogfood/judge.py --iter iter-13 --skip style fidelity pairwise clarity   # 문장 단위 J5(korean)만
 python dev/baseline/ko_stats.py --cache <사람 글 캐시> --pairs <수정 전후 쌍 폴더>    # 한국어 점검 항목의 오탐과 recall
+python dev/dogfood/judge.py --iter iter-090 --skip style fidelity pairwise clarity korean --human-cache <사람 글 캐시>   # 용어 설명 J10(terms)만
 ```
+
+`run.py`는 프롬프트에 `--defaults`를 붙이고 `claude -p`에 `--disallowedTools AskUserQuestion`을 준다. headless 실행에는 설정 질문에 답할 사람이 없어서, 독자와 분량은 기본값을 쓰고 어투는 케이스에 적은 값을 쓴다. `"settings": "ask"` 케이스만 `--defaults`와 어투 인자를 빼고 실행해, 질문할 수 없을 때 기본값으로 쓰고 보고에 값과 출처를 적는지 본다.
+
+judge가 사람 글 대조군을 읽는 캐시 폴더는 기본값이 `%TEMP%\techblog-work\baseline\cache`다. `measure.py collect --cache`로 다른 곳에 모았으면 `--human-cache`로 그 폴더를 준다.
 
 ## 케이스 (`cases.json`)
 
@@ -44,7 +49,8 @@ python dev/baseline/ko_stats.py --cache <사람 글 캐시> --pairs <수정 전�
 | S3-pagedattention-sonnet-casual | S1과 같은 자료 | Casual | held-out. `--model sonnet` |
 | C0, D0, E0, S20 | C, D, E, S2와 같은 자료 | | 스킬 없이 요청한 결과. held-out pairwise의 비교 대상 |
 | N1-note-default, N2-note-casual | `evals/note-*`의 엔지니어링 노트를 파일로 전달 | Default, Casual | 0.4.0 후처리 단계의 smoke test |
-| W3-connectome-function-casual | Bargmann & Marder (2013), From the connectome to brain function (Nature Methods) | Casual | 0.8.0 용어 설명, 출처 주어와 인용 동사, 한 낱말 한 뜻 확인. 사용자 검토 3주차 3편 노트의 주 자료 |
+| W3-connectome-function-casual | Bargmann & Marder (2013), From the connectome to brain function (Nature Methods) | Casual | 0.8.0 용어 설명, 출처 주어와 인용 동사, 한 낱말 한 뜻 확인. 사용자 검토 3주차 3편 노트의 주 자료. 저작권 자료라 저장소에 넣지 않는다 |
+| N3-note-nosettings | `evals/note-default`의 엔지니어링 노트(`{work}/sources/note.md`) | 묻지 않음 | 0.9.0 설정 질문의 대체 경로. 어투 인자와 `--defaults` 없이 실행하고 AskUserQuestion을 막는다. 기본값(Default, 사전 지식이 없는 독자, 자료에 맞춘 분량)으로 쓰고 보고에 값과 출처를 적어야 한다 |
 
 E와 E0에는 `source_local`이 있다. judge는 URL을 다시 가져오지 않고, 한 번 받아 둔 본문 파일(`{work}/sources/discord.md`)로 판정한다. 같은 글의 두 버전을 같은 원문으로 판정하기 위해서다.
 
@@ -53,11 +59,12 @@ A와 B의 자료는 AI 글쓰기를 다룬 연구라서, 두 케이스의 글에
 ## 평가 방법
 
 - `evaluate.py`는 결과를 규칙으로 점검한다. 점검 항목은 lint 판정, tone_check 결과, 스킬이 lint와 tone_check를 실제로 실행했는지, Casual 글을 쓰기 전에 Default 초안을 먼저 썼는지, 권한 거부 횟수, 비용, turn 수다.
-- style judge는 이번 iteration의 글과 사람이 쓴 블로그 글 2편(대조군)을 섞어서 채점하고, 어느 글을 누가 썼는지 judge에게 알리지 않는다. judge는 J2~J6, J8 점수와 "AI가 쓴 것처럼 읽히는 문장" 인용을 낸다. 0.8.0부터는 J10(용어와 중심 대상 설명)과 설명 없이 처음 나온 용어 목록도 낸다. J10은 이전 iteration과 style 평균을 비교할 수 있게 평균에 넣지 않는다. `judge.py`는 인용이 본문에 그대로 있는지 확인한 뒤 1,000자당 인용 수(J7)를 센다. style judge는 글마다 2번 실행한다.
-- fidelity judge는 글의 수치와 주장을 자료 원문과 대조해 supported, unsupported, contradicted로 나누고, 자료의 문제, 방법, 결과, 한계가 글에 다 있는지(J1)를 매긴다.
-- pairwise judge는 같은 자료로 쓴 두 글을 순서를 바꿔 두 번 비교한다. 두 번 모두 같은 글을 골랐을 때만 승패로 센다.
-- korean judge(J5, 0.6.0)는 최종 글(`article.md`)의 헤딩과 모든 문장을 80문장씩 나눠 하나씩 판정한다. judge는 문장마다 natural과 awkward(korean-review.md의 유형 A~M 가운데 문장 하나로 판정할 수 없는 I, M 제외)를 고르고, 1,000자당 awkward 문장 수를 같은 어투의 사람 글 대조군 3편과 비교한다. 사람 글 결과는 `%TEMP%\techblog-work\dogfood\_korean_humans.json`에 저장해 다시 쓴다. 사용자 검토 노트 2편으로 검증했을 때 judge가 고른 문장 중 사용자가 고친 문장은 54~69%, 사용자가 고친 문장 중 judge가 고른 문장은 23~27%였다(rubric.md의 J5). `evaluate.py`는 6단계에서 korean-review.md를 넘긴 subagent 호출 수(`ran.korean_subagent`)를 기록한다.
-- clarity judge(J9)는 글 한 편에서 문단의 첫 문장, 수치가 든 문장, lint의 A18에 걸린 문장을 뽑아 하나씩 판정한다. judge에게는 문장마다 그 문장이 속한 절의 헤딩과 바로 앞 문장을 함께 보여 준다. judge는 그 문장만으로 무엇에 대한 말인지 알 수 있는지(self_contained), 바로 앞 문장을 읽어야 알 수 있는지(needs_prev), 앞 문장까지 읽어도 알 수 없는지(unclear)를 고른다. 사람 글 대조군 6편(합니다체 3편, 해요체 3편)도 같은 방식으로 판정하고, 그 결과는 `%TEMP%\techblog-work\dogfood\_clarity_humans.json`에 저장해 다음 실행에서 다시 쓴다.
+- style judge는 이번 iteration의 글과 사람이 쓴 블로그 글 2편(대조군)을 섞어서 채점하고, 어느 글을 누가 썼는지 judge에게 알리지 않는다. judge는 J2~J6, J8 점수와 "AI가 쓴 것처럼 읽히는 문장" 인용을 낸다. 0.8.0에는 J10(용어와 중심 대상 설명)도 style judge가 글 전체를 보고 점수 하나로 매겼는데, 같은 글에 0점과 2점을 줘서 0.9.0부터 terms judge로 옮겼다. J5의 자연스러움은 "사람이 쓴 한국어 정보 글(기술 블로그)처럼 읽히는가"로 묻는다. `judge.py`는 인용이 본문에 그대로 있는지 확인한 뒤 1,000자당 인용 수(J7)를 센다. style judge는 글마다 2번 실행한다.
+- fidelity judge는 글의 수치와 주장을 자료 원문과 대조해 supported, unsupported, contradicted로 나누고(0.9.0부터 용어 설명에 쓴 일반 지식은 general_knowledge로 따로 나누고 사실인지를 note에 적는다), 자료의 문제, 방법, 결과, 한계가 글에 다 있는지(J1)를 매긴다.
+- pairwise judge는 같은 자료로 쓴 두 글을 순서를 바꿔 두 번 비교한다. 두 번 모두 같은 글을 골랐을 때만 승패로 센다. 0.9.0부터는 독자를 "자료 분야의 지식이 충분하지 않거나 없을 수 있는 사람"으로 알려 주고, 이해하기 쉬운지를 볼 때 처음 나오는 말을 설명했는지도 보게 한다.
+- korean judge(J5, 0.6.0)는 최종 글(`article.md`)의 헤딩과 모든 문장을 80문장씩 나눠 하나씩 판정한다. judge는 문장마다 natural("사람이 쓴 한국어 정보 글에 그대로 실릴 만한 문장")과 awkward(korean-review.md의 유형 A~R 가운데 문장 하나로 판정할 수 없는 I, M 제외)를 고르고, 1,000자당 awkward 문장 수를 같은 어투의 사람 글 대조군 3편과 비교한다. 사람 글 결과는 `%TEMP%\techblog-work\dogfood\_korean_humans.json`에 저장해 다시 쓴다. 사용자 검토 노트 2편으로 검증했을 때 judge가 고른 문장 중 사용자가 고친 문장은 54~69%, 사용자가 고친 문장 중 judge가 고른 문장은 23~27%였다(rubric.md의 J5). `evaluate.py`는 6단계에서 korean-review.md를 넘긴 subagent 호출 수(`ran.korean_subagent`)를 기록한다.
+- terms judge(J10, 0.9.0)는 글만 읽고 독자(자료 분야의 지식이 충분하지 않거나 없을 수 있는 사람)가 모를 수 있는 말을 모두 적는다. 말마다 처음 나온 문장, 글의 설명 인용, 빠진 요소(무엇인지, 하는 일, 이름의 뜻, 설명에 쓴 말, 목록에서만 소개)를 받는다. `judge.py`는 처음 나온 문장이 본문에 없는 말을 빼고, 빠진 요소가 있는 말의 수와 중심 대상 정의로 J10(rubric.md의 0~2점)을 계산한다. 글마다 두 번 실행하고, 두 실행이 빠졌다고 적은 말의 겹침(Jaccard)과 두 실행이 모두 적은 말로 계산한 J10(`j10_both`)을 함께 낸다. 사람 글 대조군 6편도 같은 방식으로 판정해 `%TEMP%\techblog-work\dogfood\_terms_humans.json`에 둔다. 사람 글 대조군은 개발자를 독자로 쓴 글이라 분야 용어를 풀지 않는 경우가 많다. 그래서 이 값은 목표가 아니라 참고값이다.
+- clarity judge(J9)는 글 한 편에서 문단의 첫 문장, 수치가 든 문장, lint의 A18에 걸린 문장을 뽑아 하나씩 판정한다. judge에게는 문장마다 그 문장이 속한 절의 헤딩과 바로 앞 문장을 함께 보여 준다. judge는 그 문장만으로 무엇에 대한 말인지 알 수 있는지(self_contained), 바로 앞 문장을 읽어야 알 수 있는지(needs_prev), 앞 문장까지 읽어도 알 수 없는지(unclear)를 고른다. 용어를 모르는 것은 J9의 판정 이유가 아니다(용어는 J10이 본다). 사람 글 대조군 6편(합니다체 3편, 해요체 3편)도 같은 방식으로 판정하고, 그 결과는 `%TEMP%\techblog-work\dogfood\_clarity_humans.json`에 저장해 다음 실행에서 다시 쓴다.
 - 후처리 비교(`--within`, 0.4.0): 같은 실행에서 나온 초안 사본(`article.unrevised.md`)과 후처리를 마친 합니다체 글(Default는 `article.md`, Casual은 `article.draft.md`)을 비교한다. 두 글은 같은 초안에서 나와서 차이는 후처리에서만 생긴다.
   - 전체 pairwise: 위 pairwise와 같은 문구로 순서를 바꿔 두 번 비교한다.
   - 절 A/B: 후처리로 내용이 바뀐 H2 절만 모아 절마다 두 버전을 고르게 한다. 순서를 바꿔 두 번 묻고, 무승부를 뺀 표 중 후처리 글 표의 비율을 센다. 거의 같은 두 글을 통째로 비교하면 순서에 따라 판정이 갈리기 쉬워서 넣었다.

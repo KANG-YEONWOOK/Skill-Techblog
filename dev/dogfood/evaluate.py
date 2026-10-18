@@ -34,7 +34,11 @@ KEY_METRICS = ("A1.np", "A2.comma_per_sentence", "A2.connective_comma_ratio", "A
                "G6.emdash", "G6.punct_policy", "G10.num_particle", "A6.window_range", "A14.quoted_english_token",
                "A5.archaic_words", "A6.calque_check", "A14.quoted_english_check", "A18.negation_scope",
                "A19.term_mix", "A20.species_first", "A20.abbr_first", "A14.report_write", "A14.report_write_check",
-               "A18.bare_author", "A21.sseuda_senses")
+               "A18.bare_author", "A21.sseuda_senses",
+               # 0.9.0 용어 설명, 일반 표현, 동사 항목
+               "A20.term_first", "A20.term_in_list", "A20.untabled", "A20.table_combined_row", "A14.doeeojida",
+               "G11.spelling", "A14.causative", "A5.pleonasm", "A14.adverb_pair", "A21.jeokda_as", "A5.native_verbs",
+               "A7.see_judgment")
 
 
 def parse_transcript(path, events=None):

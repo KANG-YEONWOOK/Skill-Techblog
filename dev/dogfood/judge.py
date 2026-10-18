@@ -3,7 +3,8 @@
 
 - style: 이번 iteration의 글과 사람 블로그 글(대조군)을 섞어 누가 썼는지 알리지 않고 채점한다.
   J2~J6, J8 점수와 "AI가 쓴 것처럼 읽히는 문장" 인용을 받고, 인용이 원문에 그대로 있는지 확인해 J7을 센다.
-  J10(용어와 중심 대상 설명, 0.8.0)과 설명 없이 나온 용어 목록은 style 평균에 넣지 않으려고 scores 밖에 따로 받는다.
+  0.8.0에는 J10(용어와 중심 대상 설명)도 style judge가 글 전체를 보고 점수 하나로 매겼다. 같은 글에 0점과 2점을 줘서
+  0.9.0부터 terms 단계로 옮겼다.
 - fidelity: 글의 수치·주장을 자료 원문과 대조한다(supported / unsupported / contradicted, coverage).
 - pairwise: 같은 자료로 쓴 두 글(이번 iteration과 비교 대상)을 순서를 바꿔 두 번 비교한다.
 - clarity(J9): 글 한 편씩 판정한다. 문단의 첫 문장, 수치가 든 문장, A18에 걸린 문장을 뽑아
@@ -11,8 +12,13 @@
   바로 앞 문장을 읽어야 알 수 있는지(needs_prev), 앞 문장까지 읽어도 알 수 없는지(unclear)를 고른다.
   사람 글 대조군 6편(합니다체 3, 해요체 3)도 같은 방식으로 판정하고 결과를 work 폴더에 저장해 다시 쓴다.
 - korean(J5, 0.6.0): 글의 헤딩과 모든 문장을 하나씩 보여 주고, 문장마다 자연스러움(natural)과
-  어색함(awkward, 유형 A~M 가운데 문장 하나로 판정할 수 없는 I, M 제외)을 고르게 한다. 1,000자당 어색한 문장 수를 같은 어투의 사람 글 대조군 3편과 비교한다.
+  어색함(awkward, 유형 A~R 가운데 문장 하나로 판정할 수 없는 I, M 제외)을 고르게 한다. 1,000자당 어색한 문장 수를 같은 어투의 사람 글 대조군 3편과 비교한다.
   사람 글 결과는 _korean_humans.json에 둔다.
+- terms(J10, 0.9.0): judge가 글만 읽고 독자(자료 분야의 지식이 충분하지 않거나 없을 수 있는 사람)가 모를 수 있는 말을
+  모두 적는다. 말마다 처음 나온 문장, 글의 설명 인용, 빠진 요소(무엇인지, 하는 일, 이름의 뜻, 설명에 쓴 말, 목록에서만
+  소개)를 받는다. 처음 나온 문장이 본문에 없는 말은 뺀다. J10은 코드가 빠진 요소가 있는 말의 수와 중심 대상 정의로 계산한다.
+  글마다 2번 실행하고, 두 실행이 빠졌다고 적은 말의 겹침(Jaccard)과 두 실행이 모두 적은 말로 계산한 J10(j10_both)을 낸다.
+  사람 글 대조군 6편도 같은 방식으로 판정해 _terms_humans.json에 둔다.
 
 - within: 같은 실행의 초안 사본(article.unrevised.md)과 후처리를 마친 합니다체 글(Default는 article.md, Casual은
   article.draft.md)을 비교한다. 전체 pairwise, 바뀐 절만 모은 절 A/B, 문장을 맞춘 clarity, 두 글의 fidelity(걸린 주장을
@@ -25,6 +31,8 @@
   python dev/dogfood/judge.py --iter iter-8b --skip style fidelity pairwise --extra s1-930779c=examples/paged-attention.casual.md
   python dev/dogfood/judge.py --iter iter-11 --within [--skip sections style] [--only B-idiosyncrasies-default]
   python dev/dogfood/judge.py --iter iter-11 --cross iter-11r
+  python dev/dogfood/judge.py --iter iter-090 --skip style fidelity pairwise clarity korean --extra e080=<0.8.0 글>
+  python dev/dogfood/judge.py --iter iter-090 --human-cache %TEMP%/techblog-0.9.0/human   # 사람 글 캐시 위치
 """
 
 import argparse
@@ -40,6 +48,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_WORK = os.path.join(os.environ.get("TEMP", "/tmp"), "techblog-work")
+HUMAN_CACHE = None  # --human-cache. 없으면 {work}/baseline/cache
 sys.path.insert(0, os.path.join(ROOT, "skills", "techblog", "scripts"))
 import lint_ko as L  # noqa: E402
 
@@ -55,14 +64,11 @@ STYLE_SCHEMA = {
             "scores": {"type": "object", "properties": {k: {"type": "integer", "minimum": 0, "maximum": 2}
                                                          for k in ("J2", "J3", "J4", "J5", "J6", "J8")},
                        "required": ["J2", "J3", "J4", "J5", "J6", "J8"]},
-            # J10(0.8.0)은 style 평균에 넣지 않으려고 scores 밖에 둔다.
-            "J10": {"type": "integer", "minimum": 0, "maximum": 2},
-            "unexplained": {"type": "array", "items": {"type": "string"}},
             "ai_like": {"type": "array", "items": {"type": "object", "properties": {
                 "quote": {"type": "string"}, "move": {"type": "string", "enum": MOVES},
                 "lost_if_deleted": {"type": "string"}}, "required": ["quote", "move", "lost_if_deleted"]}},
             "comment": {"type": "string"}},
-        "required": ["label", "scores", "J10", "unexplained", "ai_like", "comment"]}}},
+        "required": ["label", "scores", "ai_like", "comment"]}}},
     "required": ["texts"]}
 
 STYLE_PROMPT = """당신은 한국 테크 기업 기술 블로그의 편집자입니다. 현재 폴더의 {files} 파일을 Read 도구로 모두 끝까지 읽고 글마다 평가하세요. 이 중 일부는 사람이 썼고 일부는 AI가 썼을 수 있습니다. 글쓴이에 대한 정보는 주지 않습니다.
@@ -71,13 +77,10 @@ STYLE_PROMPT = """당신은 한국 테크 기업 기술 블로그의 편집자�
 - J2 구체성: 주장마다 수치, 이름, 동작 원리가 붙어 있는가. 2: 평가어만 있는 문장이 없다 / 1: 1~2개 / 0: 3개 이상
 - J3 deletion test: 지워도 정보(사실, 수치, 동작 원리, 할 일)가 줄지 않는 문장(강조, 의의 부여, 예고, 교훈)이 있는가. 2: 없다 / 1: 1~2개 / 0: 3개 이상
 - J4 구조: 제목이 내용을 특정하는가, 글의 핵심 주제가 제목과 도입에 드러나고 각 절이 그 주제를 설명하는가, 도입이 독자 상황이나 다루는 문제에서 시작하는가, 마무리가 구체 사실이나 열린 질문으로 끝나는가. 2: 모두 그렇다 / 1: 하나가 어긋난다 / 0: 둘 이상
-- J5 한국어 자연스러움: 한국 개발자가 쓴 기술 블로그처럼 읽히는가. 번역투, 추상 명사 나열, 어색한 조사, 억지 번역어가 있는가. 2: 없다 / 1: 1~2곳 / 0: 3곳 이상
+- J5 한국어 자연스러움: 사람이 쓴 한국어 정보 글(기술 블로그)처럼 읽히는가. 번역투, 추상 명사 나열, 어색한 조사, 억지 번역어가 있는가. 2: 없다 / 1: 1~2곳 / 0: 3곳 이상
 - J6 어투 품질: 합니다체 글이면 공문체가 아닌가, 해요체 글이면 정중하고 반말·과한 구어·이모지가 없는가, 어투가 섞이지 않았는가. 2 / 1 / 0
 - J8 과교정: 문장이 지나치게 단조롭거나, 자연스러운 대조, 단서, 원어와 단위 보충, 긴 문장이 사라져 기계적으로 읽히는가. 같은 주어를 문장마다 되풀이해 늘어진 곳도 과교정이다. 2: 자연스럽다 / 1: 다소 단조롭다 / 0: 내용이나 흐름이 손상됐다
 
-J10은 scores 밖의 J10 칸에 따로 매기세요. 이 판정에서만 독자를 "개발자이지만 글이 다루는 분야는 모르는 사람"으로 봅니다.
-- J10 용어와 중심 대상 설명: 글의 중심 대상(제목과 도입이 다루는 대상)을 도입이나 첫 절에서 한곳에 정의했는가, 그런 독자가 모를 용어를 처음 나올 때 무엇인지 설명했는가. 이름을 한국어로 옮긴 말이나 약어의 풀네임만 쓴 것은 설명이 아니다. 2: 그렇다 / 1: 설명이 빠졌거나 이름만 옮긴 용어가 1~2개 / 0: 중심 대상의 정의가 없거나 여러 절에 흩어져 있거나, 설명이 빠진 용어가 3개 이상
-설명 없이 처음 나온 용어를 unexplained에 글에 쓰인 그대로 적으세요(최대 10개, 없으면 빈 목록).
 
 그리고 "AI가 쓴 것처럼 읽히는 문장"을 모두 찾아 ai_like에 원문 그대로 인용하세요. 인용은 글에 있는 문자열과 정확히 같아야 하고 한 문장 이내여야 합니다. 각 인용에 수사 동작(move)을 하나 고르고, 그 구절을 지우면 잃는 정보(lost_if_deleted, 없으면 "없음")를 적으세요.
 move: salience(중요하다고 말하기), contrast_reframe(X가 아니라 Y), summary_marker(결국·요컨대 등), lesson_ending(문단 끝 교훈), hedge_stack(추정 중첩), calque_metaphor(번역투 표현·상투 은유), triplet(근거 없는 셋 묶음), rhetorical_q(자문자답), translationese(번역투 문장), tone_slip(어투 이탈), generic_claim(근거 없는 일반론), other.
@@ -88,7 +91,8 @@ FIDELITY_SCHEMA = {
     "properties": {
         "claims": {"type": "array", "items": {"type": "object", "properties": {
             "article_quote": {"type": "string"}, "source_ref": {"type": "string"},
-            "verdict": {"type": "string", "enum": ["supported", "interpretation", "unsupported", "contradicted"]},
+            "verdict": {"type": "string", "enum": ["supported", "interpretation", "general_knowledge", "unsupported",
+                                                   "contradicted"]},
             "note": {"type": "string"}}, "required": ["article_quote", "source_ref", "verdict", "note"]}},
         "coverage": {"type": "object", "properties": {k: {"type": "boolean"} for k in
                                                         ("problem", "method", "results", "limitations")},
@@ -102,6 +106,7 @@ FIDELITY_PROMPT = """현재 폴더의 article.md는 자료 {source}를 정리한
    - supported: 자료가 그대로 뒷받침한다.
    - unsupported: 자료에서 찾을 수 없다(지어낸 수치, 경험, 출처, 사례 포함).
    - interpretation: 글쓴이의 해석이나 추론이고, 문장에 해석·추론임이 드러나 있으며("~라면 ~할 수 있습니다", "표를 보면 ~로 읽힙니다"), 자료의 사실과 모순되지 않는다. 자료의 결론처럼 단정했다면 unsupported로 판정한다.
+   - general_knowledge: 용어를 설명하려고 쓴 일반 지식(사전, 교과서, 백과사전 수준의 정의, 이름의 뜻, 구성, 위치, 하는 일)이라 자료에 없다. 수치, 연구 결과, 연도, 인물, 평가는 일반 지식이 아니다. note에 그 내용이 사실과 맞는지 적는다.
    - contradicted: 자료와 다르다(수치 오류, 조건이 빠져 뜻이 바뀜, 추정을 단정으로 바꿈, 대상을 혼동함).
    note에는 판정 이유를 짧게 적으세요.
 2. coverage: 자료의 문제(problem), 방법(method), 핵심 결과(results), 한계(limitations)가 글에 있는지 각각 true/false로 적으세요.
@@ -115,7 +120,8 @@ PAIR_SCHEMA = {
     "required": ["winner", "reasons"]}
 
 PAIR_PROMPT = """X.md와 Y.md는 같은 자료를 정리한 한국어 기술 블로그 글입니다. 두 글을 Read 도구로 끝까지 읽고, 한국 테크 기업 기술 블로그 편집자의 관점에서 어느 글이 나은지 고르세요.
-기준(앞의 것이 더 중요): 1) 독자가 이해하기 쉬운가(문장을 따로 읽어도 무엇에 대한 말인지, 수치가 무엇을 잰 값인지 알 수 있는가, 글의 핵심 주제가 분명한가) 2) 사람 개발자가 쓴 것처럼 자연스러운 한국어인가(강조 문장, 부정 대구, 요약 표지, 번역투, 상투 은유, 기계적인 리듬이 적은가) 3) 자료의 핵심을 정확하고 구체적으로 전달하는가 4) 구조.
+독자는 자료 분야의 지식이 충분하지 않거나 없을 수 있는 사람입니다.
+기준(앞의 것이 더 중요): 1) 독자가 이해하기 쉬운가(처음 나오는 말을 설명했는가, 문장을 따로 읽어도 무엇에 대한 말인지, 수치가 무엇을 측정한 값인지 알 수 있는가, 글의 핵심 주제가 분명한가) 2) 사람이 쓴 것처럼 자연스러운 한국어인가(강조 문장, 부정 대구, 요약 표지, 번역투, 상투 은유, 기계적인 리듬이 적은가) 3) 자료의 핵심을 정확하고 구체적으로 전달하는가 4) 구조.
 어투(합니다체/해요체) 차이는 판단에 넣지 마세요. winner는 "X", "Y", "tie" 중 하나, reasons에는 판단 근거 2~4개를 각 글의 문장을 인용해 적으세요."""
 
 CLARITY_SCHEMA = {
@@ -133,11 +139,11 @@ CLARITY_PROMPT = """현재 폴더의 items.md에는 한국어 기술 블로그 �
 - self_contained: 헤딩과 이 문장만 읽어도 알 수 있다.
 - needs_prev: 이 문장만으로는 알 수 없고, 바로 앞 문장을 읽어야 알 수 있다. 예: 앞 문장의 주어를 생략한 문장, "그 값은", "차이는"처럼 앞 문장을 가리키는 말로 시작하는 문장, 비교 기준이 앞 문장에만 있는 수치 문장.
 - unclear: 바로 앞 문장까지 읽어도 알 수 없다.
-needs_prev나 unclear이면 question에 이 문장만 읽은 독자가 갖게 되는 질문을 한 문장으로 적습니다. 예: "무엇이 22배인가?", "무엇과 무엇의 차이인가?", "'이 방식'은 어떤 방식인가?" self_contained이면 question은 빈 문자열로 둡니다. 독자는 그 분야를 아는 개발자이므로 전문 용어를 모르는 것은 판정 이유가 아닙니다. 판정할 문장이 표나 목록 바로 뒤에 있으면 앞 문장 칸에 그렇게 적혀 있습니다."""
+needs_prev나 unclear이면 question에 이 문장만 읽은 독자가 갖게 되는 질문을 한 문장으로 적습니다. 예: "무엇이 22배인가?", "무엇과 무엇의 차이인가?", "'이 방식'은 어떤 방식인가?" self_contained이면 question은 빈 문자열로 둡니다. 용어를 모르는 것은 이 판정의 이유가 아닙니다(용어 설명은 J10에서 봅니다). 판정할 문장이 표나 목록 바로 뒤에 있으면 앞 문장 칸에 그렇게 적혀 있습니다."""
 
 CLARITY_CONTROLS = 3  # 어투마다 사람 글 대조군 수
 
-KOREAN_TYPES = ["", "A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L"]
+KOREAN_TYPES = ["", "A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "N", "O", "P", "Q", "R"]
 KOREAN_SCHEMA = {
     "type": "object",
     "properties": {"items": {"type": "array", "items": {"type": "object", "properties": {
@@ -150,8 +156,8 @@ KOREAN_SCHEMA = {
 
 KOREAN_PROMPT = """현재 폴더의 items.md에는 한국어 기술 블로그 글 한 편의 헤딩과 문장이 번호와 함께 있습니다. 번호마다 그 문장이 속한 절의 헤딩, 바로 앞 문장, 판정할 문장이 적혀 있습니다. 헤딩을 판정할 때는 헤딩 칸에 "(헤딩)"이라고 적혀 있습니다. Read 도구로 items.md를 끝까지 읽고 모든 번호에 답하세요.
 
-판정할 문장을 한국 개발자가 쓴 기술 블로그 문장으로 읽었을 때 자연스러운지 고르세요.
-- natural: 한 번 읽어서 뜻이 들어오고, 한국 개발자가 동료에게 그대로 말할 만한 문장이다.
+판정할 문장을 사람이 쓴 한국어 정보 글(기술 블로그)의 문장으로 읽었을 때 자연스러운지 고르세요.
+- natural: 한 번 읽어서 뜻이 들어오고, 사람이 쓴 한국어 정보 글에 그대로 실릴 만한 문장이다.
 - awkward: 아래 유형 중 하나에 해당한다. type에 유형 글자를, reason에 어느 말이 왜 어색한지 한 문장으로 적습니다.
   A 범위, 기간, 한도를 "창"으로 쓴 말(적분 창, 시간 창, 창이 열리는 시각)
   B 영어 낱말을 따옴표째 문장 성분으로 끼운 말("likely"로 쓴 추정, "slow" 반응)
@@ -163,8 +169,13 @@ KOREAN_PROMPT = """현재 폴더의 items.md에는 한국어 기술 블로그 �
   H 숫자나 영어 낱말 뒤 조사가 읽는 소리와 맞지 않음(0.7717예요, 0.512이에요)
   J 헤딩이나 질문 문장의 비유와 직역(무엇이 남을까, 흔들어 보면)
   K 문장 부호 오류(가운뎃점, en dash, em dash, 쉼표로 바꾼 짝이 나열로 읽힘)
-  L 자료의 말을 옮기는 동사의 직역(저자들은 "..."고 써요, ~라고 적었어요)
-독자는 그 분야를 아는 개발자입니다. 기술 용어를 영어로 쓴 것(latency, token bucket)은 판정 이유가 아닙니다. 바로 앞 문장을 읽어야 무엇에 대한 말인지 아는 것도 이 판정의 이유가 아닙니다(다른 판정에서 봅니다). natural이면 type과 reason은 빈 문자열로 둡니다."""
+  L 자료의 말을 옮기는 동사의 직역(저자들은 "..."고 써요, ~라고 적었어요). 따옴표 뒤의 "고"와 "라고"는 둘 다 맞다
+  N 호응이 어긋난 말(짝이 없는 "결코", "비록", "만약", "왜냐하면", 묶은 말 모두와 어울리지 않는 서술어)
+  O 피동이나 사동을 겹치거나 필요 없이 쓴 말(보여지다, 되어지다, 연결시키다)
+  P 같은 뜻을 두 번 쓴 말(약 3억 건 정도, 다시 재시작, 과반수 이상)
+  Q 헷갈리기 쉬운 말과 맞춤법(다르다를 틀리다로, 맞히다를 맞추다로, 되요, 몇일)
+  R 같은 뜻에 사람이 쓴 정보 글이 더 자주 쓰는 말이 있는 동사('사용' 뜻의 쓰다는 사용하다, 재다는 측정하다, 값을 정하는 두다는 설정하다, 판단을 옮기는 "~라고 봅니다"는 추정합니다나 예상합니다)
+기술 용어를 영어로 쓴 것(latency, token bucket)과 용어 설명이 없는 것은 이 판정의 이유가 아닙니다(용어 설명은 다른 판정에서 봅니다). 바로 앞 문장을 읽어야 무엇에 대한 말인지 아는 것도 이 판정의 이유가 아닙니다(다른 판정에서 봅니다). natural이면 type과 reason은 빈 문자열로 둡니다."""
 
 KOREAN_CHUNK = 80  # judge 한 번에 보여 줄 문장 수. 모든 문장을 판정하므로 글 하나를 여러 번에 나눠 묻는다.
 
@@ -194,6 +205,11 @@ def _norm(s):
     return re.sub(r"\s+", " ", L.normalize_text(s)).strip()
 
 
+def human_md(work, aid):
+    """measure.py collect로 모은 사람 글 원문 경로."""
+    return os.path.join(HUMAN_CACHE or os.path.join(work, "baseline", "cache"), "md", aid + ".md")
+
+
 def human_controls(work, tone, n, seed):
     """baseline 캐시에서 같은 어투, 비슷한 길이의 사람 글을 고른다."""
     stats = json.load(open(os.path.join(ROOT, "dev", "baseline", "stats.json"), encoding="utf-8"))
@@ -202,7 +218,7 @@ def human_controls(work, tone, n, seed):
     rnd.shuffle(pool)
     out = []
     for a in pool:
-        path = os.path.join(work, "baseline", "cache", "md", a["id"] + ".md")
+        path = human_md(work, a["id"])
         if os.path.exists(path):
             out.append((a["id"], path))
         if len(out) == n:
@@ -248,8 +264,7 @@ def run_style(iter_dir, work, model, runs=2):
                 valid = [q for q in t["ai_like"] if _norm(q["quote"]) and _norm(q["quote"]) in body]
                 rec = results.setdefault(name, {"human": human, "runs": []})
                 rec["runs"].append({"scores": t["scores"], "ai_like": valid, "invalid_quotes": len(t["ai_like"]) - len(valid),
-                                    "j7_per_1k": round(len(valid) * 1000 / chars, 2), "comment": t.get("comment", ""),
-                                    "j10": t.get("J10"), "unexplained": t.get("unexplained", [])})
+                                    "j7_per_1k": round(len(valid) * 1000 / chars, 2), "comment": t.get("comment", "")})
     return results
 
 
@@ -287,6 +302,7 @@ def run_fidelity(iter_dir, model, only=None):
         bad = [x for x in claims if x["verdict"] in ("unsupported", "contradicted")]
         out[c] = {"j1": res.get("j1"), "coverage": res.get("coverage"), "missing": res.get("missing"),
                   "claims": len(claims), "interpretation": sum(1 for x in claims if x["verdict"] == "interpretation"),
+                  "general_knowledge": [x for x in claims if x["verdict"] == "general_knowledge"],
                   "unsupported": [x for x in bad if x["verdict"] == "unsupported"],
                   "contradicted": [x for x in bad if x["verdict"] == "contradicted"],
                   "quote_not_found": sum(1 for x in claims if _norm(x["article_quote"]) not in body),
@@ -427,7 +443,7 @@ def clarity_controls(work, tones=("default", "casual")):
         random.Random(f"clarity-controls-{tone}").shuffle(pool)
         picked = []
         for a in pool:
-            path = os.path.join(work, "baseline", "cache", "md", a["id"] + ".md")
+            path = human_md(work, a["id"])
             if os.path.exists(path):
                 picked.append((a["id"], path))
             if len(picked) == CLARITY_CONTROLS:
@@ -573,6 +589,132 @@ def run_korean(iter_dir, work, model, extras=(), only=None):
     return out
 
 
+# ---------------------------------------------------------------- terms: 용어 설명 J10(0.9.0)
+
+TERMS_MISSING = ["what", "does", "name", "words", "list_only"]
+TERMS_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "central": {"type": "object", "properties": {
+            "subject": {"type": "string"}, "defined_in_one_place": {"type": "boolean"}, "quote": {"type": "string"}},
+            "required": ["subject", "defined_in_one_place", "quote"]},
+        "terms": {"type": "array", "items": {"type": "object", "properties": {
+            "term": {"type": "string"}, "first_quote": {"type": "string"}, "explanation_quote": {"type": "string"},
+            "missing": {"type": "array", "items": {"type": "string", "enum": TERMS_MISSING}}},
+            "required": ["term", "first_quote", "explanation_quote", "missing"]}}},
+    "required": ["central", "terms"]}
+
+TERMS_PROMPT = """현재 폴더의 article.md는 자료 하나를 정리한 한국어 기술 블로그 글입니다. Read 도구로 끝까지 읽고, 이 글의 독자가 모를 수 있는 말을 모두 적으세요. 독자는 자료 분야의 지식이 충분하지 않거나 없을 수 있는 사람이고, 자료를 읽지 않았습니다.
+
+적을 말은 그 분야를 공부하거나 그 분야에서 일해야 아는 말입니다. 일상 한국어와, 분야를 공부하지 않은 사람도 생활과 뉴스로 아는 말(컴퓨터, 인터넷, 앱, 유전자)은 적지 않습니다. 자료가 소프트웨어 분야면 캐시, API, latency 같은 말도 적습니다. 본문, 헤딩, 표, 목록, 그림 설명에 나온 말과 다른 말을 설명하는 데 쓴 말도 적습니다. 같은 말은 한 번만 적습니다.
+
+말마다 아래를 적으세요.
+- term: 글에 쓰인 그대로의 말
+- first_quote: 그 말이 처음 나온 문장. 글에 있는 문자열과 정확히 같아야 하고 한 문장 이내입니다.
+- explanation_quote: 글에서 그 말을 설명한 부분(괄호 설명, 설명 문장)을 그대로 인용합니다. 설명이 없으면 빈 문자열입니다.
+- missing: 글의 설명으로 답할 수 없는 질문을 모두 고릅니다. 없으면 빈 목록입니다.
+  - what: 무엇인지(어떤 종류의 대상이고 같은 종류의 다른 대상과 무엇이 다른지)
+  - does: 무엇을 하는 대상(세포, 리듬, 장치, 방법, 알고리즘)인데 그 대상이 하는 일
+  - name: 원어로 둔 이름이 낱말 뜻으로 대상을 가리킬 때(pyloric은 '유문의') 그 이름의 뜻
+  - words: 설명에 쓴 말 가운데 독자가 모를 말이 설명 없이 있다
+  - list_only: 여럿을 나열한 문장에서만 소개하고 뒤에서 혼자 다시 쓴다
+판정은 글의 문장만으로 합니다. 당신이 그 말을 알아도 글에 설명이 없으면 빠진 것입니다. 이름을 한국어로 옮긴 말이나 약어의 풀네임만 쓴 것은 what에 답한 것이 아닙니다.
+
+central에는 글의 중심 대상(제목과 도입이 다루는 대상)을 subject에, 그 대상을 도입이나 첫 절에서 한곳에 정의했는지를 defined_in_one_place에, 정의한 문장을 quote에 적습니다(없으면 빈 문자열)."""
+
+
+def j10_score(n_missing, central_ok):
+    """rubric.md의 J10: 2 = 중심 대상을 한곳에 정의했고 설명이 빠진 말이 없다, 1 = 1~2개, 0 = 3개 이상이거나 정의가 없다."""
+    if not central_ok or n_missing >= 3:
+        return 0
+    return 1 if n_missing else 2
+
+
+def _term_key(term):
+    return re.sub(r"\s+", " ", term).strip().lower()
+
+
+def terms_summary(res, text):
+    """terms judge 한 번의 답을 정리한다. 처음 나온 문장이 본문에 없는 말은 판정에서 뺀다."""
+    body = _norm(text)
+    terms, invalid = [], 0
+    for t in res.get("terms", []):
+        q = _norm(t.get("first_quote", ""))
+        if q and q in body:
+            terms.append(t)
+        else:
+            invalid += 1
+    missing = [t for t in terms if t.get("missing")]
+    central = res.get("central") or {}
+    chars = L.analyze(text)["stats"]["chars"] or 1
+    return {"j10": j10_score(len(missing), bool(central.get("defined_in_one_place"))),
+            "terms": len(terms), "missing": len(missing),
+            "missing_ratio": round(len(missing) / len(terms), 3) if terms else None,
+            "missing_per_1k": round(len(missing) * 1000 / chars, 2),
+            "by_missing": {k: sum(1 for t in terms if k in t.get("missing", [])) for k in TERMS_MISSING},
+            "central": central, "invalid_quotes": invalid,
+            "invalid_explanations": sum(1 for t in terms if t.get("explanation_quote")
+                                        and _norm(t["explanation_quote"]) not in body),
+            "missing_terms": [{"term": t["term"], "missing": t["missing"], "first_quote": t["first_quote"][:200]}
+                              for t in missing]}
+
+
+def terms_agreement(runs):
+    """두 실행이 빠졌다고 적은 말의 겹침(Jaccard)과 두 실행이 모두 적은 말."""
+    sets = [{_term_key(t["term"]) for t in r["missing_terms"]} for r in runs]
+    if len(sets) < 2:
+        return {"jaccard": None, "both": sorted(sets[0]) if sets else []}
+    inter, union = sets[0] & sets[1], sets[0] | sets[1]
+    return {"jaccard": round(len(inter) / len(union), 3) if union else 1.0, "both": sorted(inter)}
+
+
+def judge_terms(path, jdir, model, runs=2):
+    text = L.read_text(path)
+    out, cost = [], 0.0
+    for r in range(runs):
+        rdir = os.path.join(jdir, f"run{r}")
+        os.makedirs(rdir, exist_ok=True)
+        shutil.copyfile(path, os.path.join(rdir, "article.md"))
+        res = call_judge(TERMS_PROMPT, TERMS_SCHEMA, rdir, model)
+        with open(os.path.join(rdir, "result.json"), "w", encoding="utf-8") as f:
+            json.dump(res, f, ensure_ascii=False, indent=1)
+        out.append(dict(terms_summary(res, text), error=res.get("error")))
+        cost += res.get("_cost") or res.get("cost") or 0
+    agree = terms_agreement(out)
+    central_both = all(s["central"].get("defined_in_one_place") for s in out)
+    return {"runs": out, "j10": [s["j10"] for s in out], "agreement": agree,
+            "j10_both": j10_score(len(agree["both"]), central_both), "cost": round(cost, 3)}
+
+
+def run_terms(iter_dir, work, model, extras=(), only=None):
+    """케이스의 최종 글, --extra로 준 글, 사람 글 대조군 6편을 판정한다. 사람 글 결과는 _terms_humans.json에 둔다."""
+    out = {}
+    targets = []
+    if os.path.isdir(iter_dir):
+        for c in sorted(os.listdir(iter_dir)):
+            path = os.path.join(iter_dir, c, "article.md")
+            if os.path.isfile(path) and (not only or c in only):
+                targets.append((c, path))
+    for spec in extras:
+        name, path = spec.split("=", 1)
+        targets.append((name, path if os.path.isabs(path) else os.path.join(ROOT, path)))
+    for name, path in targets:
+        out[name] = dict(judge_terms(path, os.path.join(iter_dir, "_judge", f"terms-{name}"), model), human=False,
+                         file=path)
+    cache_path = os.path.join(work, "dogfood", "_terms_humans.json")
+    key = hashlib.sha1((TERMS_PROMPT + model).encode("utf-8")).hexdigest()[:12]
+    cache = json.load(open(cache_path, encoding="utf-8")) if os.path.exists(cache_path) else {}
+    for hid, hpath in clarity_controls(work):
+        ck = f"{key}:{hid}"
+        if ck not in cache:
+            cache[ck] = judge_terms(hpath, os.path.join(work, "dogfood", "_terms_humans", hid), model)
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            with open(cache_path, "w", encoding="utf-8") as f:
+                json.dump(cache, f, ensure_ascii=False, indent=1)
+        out[hid] = dict(cache[ck], human=True)
+    return out
+
+
 # ---------------------------------------------------------------- within: 초안 사본 대 후처리를 마친 글
 
 SECTION_SCHEMA = {
@@ -583,7 +725,7 @@ SECTION_SCHEMA = {
     "required": ["sections"]}
 
 SECTION_PROMPT = """현재 폴더의 sections.md에는 같은 자료를 정리한 한국어 기술 블로그 글의 두 버전에서 내용이 다른 절만 모아 두었습니다. 절마다 A안과 B안이 있습니다. Read 도구로 끝까지 읽고, 절마다 한국 테크 기업 기술 블로그 편집자의 관점에서 더 나은 쪽을 고르세요.
-기준(앞의 것이 더 중요): 1) 독자가 이해하기 쉬운가(문장을 따로 읽어도 무엇에 대한 말인지, 수치가 무엇을 잰 값이고 무엇과 비교한 값인지 알 수 있는가) 2) 사람 개발자가 쓴 것처럼 자연스러운 한국어인가(불필요한 반복, 같은 문형의 연속, 강조 문장, 부정 대구, 요약 표지, 번역투, 기계적인 리듬이 적은가) 3) 자료의 내용을 정확하고 구체적으로 전달하는가.
+기준(앞의 것이 더 중요): 1) 독자가 이해하기 쉬운가(문장을 따로 읽어도 무엇에 대한 말인지, 수치가 무엇을 잰 값이고 무엇과 비교한 값인지 알 수 있는가) 2) 사람이 쓴 것처럼 자연스러운 한국어인가(불필요한 반복, 같은 문형의 연속, 강조 문장, 부정 대구, 요약 표지, 번역투, 기계적인 리듬이 적은가) 3) 자료의 내용을 정확하고 구체적으로 전달하는가.
 두 안의 차이가 판단에 영향을 주지 않을 만큼 작으면 tie를 고르세요. reason에는 판단 근거를 한두 문장으로 적고, 두 안의 문장을 인용하세요. id는 절 번호입니다."""
 
 WITHIN_STYLE_SCHEMA = copy.deepcopy(STYLE_SCHEMA)
@@ -735,6 +877,7 @@ def fidelity_one(article, case_dir, meta, jdir, model, work):
     claims = res.get("claims", [])
     body = _norm(L.read_text(article))
     return {"j1": res.get("j1"), "coverage": res.get("coverage"), "missing": res.get("missing"), "claims": len(claims),
+            "general_knowledge": [x for x in claims if x["verdict"] == "general_knowledge"],
             "unsupported": [x for x in claims if x["verdict"] == "unsupported"],
             "contradicted": [x for x in claims if x["verdict"] == "contradicted"],
             "quote_not_found": sum(1 for x in claims if _norm(x["article_quote"]) not in body),
@@ -871,10 +1014,13 @@ def main():
     ap.add_argument("--model", default="sonnet")
     ap.add_argument("--skip", nargs="*", default=[])
     ap.add_argument("--only", nargs="*")
-    ap.add_argument("--extra", action="append", default=[], help="clarity와 korean만 판정할 추가 글: 이름=경로")
+    ap.add_argument("--extra", action="append", default=[], help="clarity, korean, terms만 판정할 추가 글: 이름=경로")
+    ap.add_argument("--human-cache", help="사람 글 캐시 폴더(measure.py collect --cache). 없으면 {work}/baseline/cache")
     ap.add_argument("--within", action="store_true", help="초안 사본과 후처리를 마친 글을 비교한다")
     ap.add_argument("--cross", help="다른 iteration의 같은 케이스와 후처리를 마친 글끼리 비교한다")
     args = ap.parse_args()
+    global HUMAN_CACHE
+    HUMAN_CACHE = args.human_cache
     iter_dir = os.path.join(args.work, "dogfood", args.iter)
     report_path = os.path.join(iter_dir, "judge.json")
     if args.within or args.cross:
@@ -900,10 +1046,13 @@ def main():
         report["clarity"] = run_clarity(iter_dir, args.work, args.model, args.extra)
     if "korean" not in args.skip:
         report["korean"] = run_korean(iter_dir, args.work, args.model, args.extra, args.only)
+    if "terms" not in args.skip:
+        report["terms"] = run_terms(iter_dir, args.work, args.model, args.extra, args.only)
     # 같은 iteration에 judge를 동시에 돌려도 서로의 결과를 덮어쓰지 않게, 저장 직전에 파일을 다시 읽고
     # 이번에 실행한 단계만 바꾼다.
     os.makedirs(iter_dir, exist_ok=True)
-    ran = [k for k in ("style", "fidelity", "pairwise", "clarity", "korean") if k in report and k not in args.skip]
+    ran = [k for k in ("style", "fidelity", "pairwise", "clarity", "korean", "terms")
+           if k in report and k not in args.skip]
     latest = json.load(open(report_path, encoding="utf-8")) if os.path.exists(report_path) else {}
     latest.update({k: report[k] for k in ran})
     report = latest
@@ -917,17 +1066,14 @@ def main():
                 sc.setdefault(k, []).append(v)
         avg = {k: round(sum(v) / len(v), 2) for k, v in sc.items()}
         j7 = [r["j7_per_1k"] for r in rec["runs"]]
-        j10 = [r.get("j10") for r in rec["runs"]]
-        print(f"[style] {'HUMAN ' if rec['human'] else ''}{name}: {avg} J7/1k={j7} J10={j10}")
-        for r in rec["runs"]:
-            if r.get("unexplained"):
-                print(f"    - 설명 없는 용어: {', '.join(r['unexplained'][:10])}")
+        print(f"[style] {'HUMAN ' if rec['human'] else ''}{name}: {avg} J7/1k={j7}")
         for r in rec["runs"]:
             for q in r["ai_like"][:6]:
                 print(f"    - ({q['move']}) {q['quote'][:90]}")
     for name, f in report.get("fidelity", {}).items():
         print(f"[fidelity] {name}: j1={f['j1']} claims={f['claims']} unsupported={len(f['unsupported'])} "
-              f"contradicted={len(f['contradicted'])} coverage={f['coverage']} missing={f['missing']}")
+              f"contradicted={len(f['contradicted'])} general_knowledge={len(f.get('general_knowledge', []))} "
+              f"coverage={f['coverage']} missing={f['missing']}")
         for x in (f["unsupported"] + f["contradicted"])[:6]:
             print(f"    - {x['verdict']}: {x['article_quote'][:90]} | {x['note'][:120]}")
     for name, p in report.get("pairwise", {}).items():
@@ -945,6 +1091,16 @@ def main():
               + (f" error={k['error'][:80]}" if k.get("error") else ""))
         for it in k["awkward_items"][:8]:
             print(f"    - ({it['type']}) {it['sentence'][:80]} | {it['reason'][:70]}")
+    for name, t in report.get("terms", {}).items():
+        runs = t["runs"]
+        print(f"[terms] {'HUMAN ' if t['human'] else ''}{name}: J10 {t['j10']} (두 실행 공통 {t['j10_both']}), "
+              f"설명이 빠진 말 {[r['missing'] for r in runs]}/{[r['terms'] for r in runs]} "
+              f"(1,000자당 {[r['missing_per_1k'] for r in runs]}), Jaccard {t['agreement']['jaccard']}, "
+              f"중심 대상 정의 {[bool(r['central'].get('defined_in_one_place')) for r in runs]}, "
+              f"인용 없음 {[r['invalid_quotes'] for r in runs]}"
+              + (f" error={runs[0]['error'][:80]}" if runs and runs[0].get("error") else ""))
+        if not t["human"]:
+            print(f"    - 두 실행이 모두 적은 말: {', '.join(t['agreement']['both'][:20])}")
 
 
 if __name__ == "__main__":
