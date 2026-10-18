@@ -124,7 +124,7 @@ Claude Code:
 
 ```
 /techblog paper.pdf
-/techblog casual https://arxiv.org/pdf/2309.06180 -o paged-attention.md
+/techblog casual https://arxiv.org/pdf/2309.06180 -o paged-attention.md --defaults
 /techblog default design-doc.md 독자는 백엔드 개발자, 분량은 5,000자 안팎
 /techblog casual --retone paged-attention.md
 ```
@@ -133,7 +133,7 @@ Codex:
 
 ```text
 $techblog paper.pdf
-$techblog casual https://arxiv.org/pdf/2309.06180 -o paged-attention.md
+$techblog casual https://arxiv.org/pdf/2309.06180 -o paged-attention.md --defaults
 $techblog default design-doc.md 독자는 백엔드 개발자, 분량은 5,000자 안팎
 $techblog casual --retone paged-attention.md
 ```
@@ -143,17 +143,28 @@ $techblog casual --retone paged-attention.md
 위 호출은 각 제품의 대화 입력입니다. 셸에서 비대화형으로 호출할 때는 `$`가 확장되지 않도록 인용합니다.
 
 ```bash
-codex exec '$techblog default design-doc.md -o article.md'
+codex exec '$techblog default design-doc.md -o article.md --defaults'
 ```
+
+글을 쓰기 전에 skill은 요청에 없는 설정값을 묻습니다. 새 글이면 독자, 어투, 분량을 묻고, 어투만 바꿀 때(`--retone`)와 짧은 글 모드(short)에서는 어투만 묻습니다. 요청에 이미 적은 값은 다시 묻지 않습니다. Claude Code는 선택지 질문 창으로 묻고, Codex는 대화에 선택지와 기본값을 적어 묻습니다.
+
+| 설정값 | 기본값 | 다른 선택지 |
+|---|---|---|
+| 독자 | 사전 지식이 없는 사람(자료 분야의 지식이 충분하지 않거나 없을 수 있는 사람) | 그 분야를 공부하는 사람, 그 분야 실무자나 연구자, 직접 입력(예: 백엔드 개발자) |
+| 어투 | Default(합니다체) | Casual(해요체) |
+| 분량 | 자료 크기에 맞춤(논문 한 편이면 공백 제외 5,000~10,000자) | 짧게(3,000~5,000자), 자세히(10,000~15,000자), 직접 입력 |
+
+`--defaults`를 붙이면 묻지 않고 빈 값을 기본값으로 채웁니다. `claude -p`, `codex exec`처럼 답할 사람이 없는 실행에서는 값을 모두 적거나 `--defaults`를 붙입니다. 질문을 보낼 수 없는 환경이면 skill이 기본값으로 진행하고 사용한 값을 보고합니다.
 
 | 인자 | 설명 |
 |---|---|
-| `default`, `casual` | 글의 어투를 정합니다. 생략하면 Default(합니다체)로 씁니다. `합니다체`, `해요체`라고 써도 됩니다. |
+| `default`, `casual` | 글의 어투를 정합니다. 생략하면 skill이 묻고, `--defaults`가 있으면 Default(합니다체)로 씁니다. `합니다체`, `해요체`라고 써도 됩니다. |
 | 자료 | 정리할 자료의 파일 경로(PDF, 마크다운, 텍스트)나 URL입니다. 생략하면 대화에 붙여넣은 텍스트를 자료로 씁니다. |
 | `-o <경로>` | 글을 저장할 파일 경로입니다. 생략하면 현재 폴더에 글 주제를 나타내는 영문 이름(예: `cache-invalidation-latency.md`)으로 저장합니다. |
 | `--retone` | 이미 쓴 글의 어투만 바꿉니다. 문장의 순서, 수치, 고유명사는 바꾸지 않습니다. |
 | `--keep-work` | 작업 중에 만든 파일인 fact sheet(`<이름>.facts.md`), Default 초안(`<이름>.draft.md`, Casual일 때), 후처리 전 초안 사본(`<이름>.unrevised.md`), 반복 후보 목록(`<이름>.repeats.md`)을 지우지 않고 남깁니다. 후처리 전 초안 사본과 최종 글을 비교하면 후처리에서 바뀐 문장을 볼 수 있습니다. |
-| 추가 지시 | 독자, 분량, 강조할 부분 같은 요청을 문장으로 덧붙일 수 있습니다. |
+| `--defaults` | 설정값을 묻지 않고, 요청에 없는 값은 기본값으로 씁니다. 자동 실행에 사용합니다. |
+| 추가 지시 | 독자, 분량, 강조할 부분 같은 요청을 문장으로 덧붙일 수 있습니다. 독자와 분량을 적으면 그 값은 묻지 않습니다. |
 
 ### 짧은 글 모드 (short)
 

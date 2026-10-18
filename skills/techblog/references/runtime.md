@@ -6,6 +6,7 @@
 
 - Claude Code: `/techblog` 또는 `/techblog:techblog` 뒤의 인자가 `$ARGUMENTS`에 들어온다. 자연어 요청도 같은 규칙으로 읽는다.
 - Codex: `$techblog`와 함께 보낸 사용자 요청에서 옵션과 자료를 읽는다. 플러그인에서는 스킬 선택기에 표시되는 techblog 스킬을 선택할 수도 있다. `$ARGUMENTS`는 Codex가 치환하는 변수가 아니다.
+- 설정 질문(settings.md): Claude Code는 AskUserQuestion으로 묻는다. Codex는 대화에 선택지와 기본값을 적어 묻고 답을 기다린다. `claude -p`, `codex exec`, plugin eval처럼 답할 사람이 없는 실행에서는 요청에 독자, 어투, 분량을 모두 적거나 `--defaults`를 붙인다. 그래도 질문이 거부되거나 답이 없으면 기본값으로 진행하고 보고한다.
 - 스킬 기준 경로는 **지금 읽은 `SKILL.md`가 있는 디렉터리**다. 모든 `references/`와 `scripts/` 경로는 그 디렉터리를 기준으로 해석한다. 사용자 자료와 출력의 상대 경로는 사용자의 작업 폴더 기준이다.
 - Claude Code가 치환하는 `${CLAUDE_SKILL_DIR}`는 frontmatter의 Bash 사전 허용에 사용한다. Codex에서 이 변수를 만들거나 셸에 이미 있다고 가정하지 않는다. 명령과 subagent prompt에는 실제 절대 경로를 쓴다.
 

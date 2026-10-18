@@ -4,7 +4,8 @@
   "mode: skill(기본), baseline(스킬 없이 일반 프롬프트), retone(완성된 글의 어투만 변환), pasted(자료 텍스트를 프롬프트에 붙여넣음)",
   "allowed_tools: claude -p에 --allowedTools로 넘길 도구 목록(baseline의 URL 읽기용)",
   "mode revise: 다른 iteration 케이스의 초안 사본(article.unrevised.md), fact sheet, 자료로 새 세션에서 6단계(후처리)만 실행한다. revise_from에 <iteration>/<case>를 쓴다.",
-  "source_local: URL 자료를 한 번 받아 둔 로컬 파일. judge가 초안과 최종 글을 같은 원문으로 판정할 때 쓴다."
+  "source_local: URL 자료를 한 번 받아 둔 로컬 파일. judge가 초안과 최종 글을 같은 원문으로 판정할 때 쓴다.",
+  "settings: run.py는 skill 프롬프트에 --defaults를 붙여 설정 질문 없이 실행한다. \"ask\"면 어투와 --defaults를 빼고 실행해, 질문할 수 없을 때(AskUserQuestion은 disallowed) 기본값으로 진행하고 보고하는지 본다."
  ],
  "cases": [
   {
@@ -151,6 +152,13 @@
    "tone": "casual",
    "set": "terms",
    "note": "Bargmann & Marder(2013), From the connectome to brain function, Nature Methods 10(6). 사용자 검토 3주차 3편(STG와 C. elegans) 노트의 주 자료. 0.8.0의 용어 설명, 출처 주어와 인용 동사, 한 낱말 한 뜻 규칙 확인용. 저작권 자료라 저장소에 넣지 않는다"
+  },
+  {
+   "name": "N3-note-nosettings",
+   "source": "{work}/sources/note.md",
+   "settings": "ask",
+   "set": "settings",
+   "note": "0.9.0 설정 질문의 대체 경로 확인용. 어투, 독자, 분량과 --defaults 없이 실행한다. AskUserQuestion을 쓸 수 없으므로 기본값(Default, 사전 지식 없는 독자, 자료에 맞춘 분량)으로 쓰고 보고에 값과 출처를 적어야 한다"
   }
  ]
 }

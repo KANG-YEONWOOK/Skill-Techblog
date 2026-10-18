@@ -74,19 +74,25 @@ def build(case, run_dir):
         shutil.copyfile(src, os.path.join(run_dir, name))
         src_arg = "./" + name
     tone = case.get("tone", "default")
+    # 0.9.0부터 skill은 요청에 없는 설정값(독자, 어투, 분량)을 묻는다. headless 실행은 답할 사람이 없으므로
+    # --defaults로 기본값을 쓰게 한다. "settings": "ask" 케이스는 어투와 --defaults를 빼고 실행해
+    # 질문할 수 없을 때 기본값으로 진행하는지 본다.
+    ask = case.get("settings") == "ask"
+    tone_arg = "" if ask else f"{tone} "
+    defaults = "" if ask else " --defaults"
     extra = []
     if case.get("mode") == "baseline":
         prompt = BASELINE_PROMPT.format(src=src_arg, tone_ko="해요체" if tone == "casual" else "합니다체")
         extra.append("--disable-slash-commands")
     elif case.get("mode") == "retone":
-        prompt = f"/techblog {tone} --retone {src_arg} -o article.md"
+        prompt = f"/techblog {tone_arg}--retone {src_arg} -o article.md{defaults}"
     elif case.get("mode") == "pasted":
         with open(src, encoding="utf-8-sig") as f:
             text = f.read()
-        prompt = f"/techblog {tone} -o article.md --keep-work\n\n{text}"
+        prompt = f"/techblog {tone_arg}-o article.md --keep-work{defaults}\n\n{text}"
         os.remove(os.path.join(run_dir, "input" + os.path.splitext(src)[1]))
     else:
-        prompt = f"/techblog {tone} {src_arg} -o article.md --keep-work"
+        prompt = f"/techblog {tone_arg}{src_arg} -o article.md --keep-work{defaults}"
     if case.get("allowed_tools"):
         # 스킬 없이 실행하는 baseline은 skill의 allowed-tools가 없어서 URL을 읽으려면 WebFetch를 따로 허용해야 한다.
         extra += ["--allowedTools"] + case["allowed_tools"]
@@ -102,7 +108,9 @@ def run_case(case, iter_dir, model, effort, budget, timeout):
     cmd = [shutil.which("claude") or "claude", "-p", prompt,
            "--model", case.get("model", model), "--effort", case.get("effort", effort),
            "--output-format", "stream-json", "--verbose", "--no-session-persistence", "--strict-mcp-config",
-           "--permission-mode", "acceptEdits", "--max-budget-usd", str(budget)] + extra
+           "--permission-mode", "acceptEdits", "--max-budget-usd", str(budget),
+           # 답할 사람이 없는 실행이라 설정 질문 도구를 context에서 뺀다(질문 대신 기본값을 쓰는지 본다).
+           "--disallowedTools", "AskUserQuestion"] + extra
     env = dict(os.environ)
     env.update({"CLAUDE_CODE_DISABLE_CLAUDE_MDS": "1", "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"})
     env.pop("PYTHONUTF8", None)

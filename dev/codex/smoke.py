@@ -33,7 +33,8 @@ def prepare_case(project, case, source=None, skill_mention="$techblog"):
     """Return the user prompt and source paths whose contents must stay unchanged."""
     keep = "" if case == "cleanup" or case.startswith("retone-") else " --keep-work"
     tone = "casual" if case in ("casual", "retone-casual") else "default"
-    prefix = "{} {} -o article.md{}".format(skill_mention, tone, keep)
+    # 0.9.0부터 skill은 요청에 없는 설정값을 묻는다. codex exec에는 답할 사람이 없으므로 --defaults를 붙인다.
+    prefix = "{} {} -o article.md{} --defaults".format(skill_mention, tone, keep)
     if case.startswith("retone-"):
         example = "paged-attention.{}.md".format("default" if tone == "casual" else "casual")
         original = Path(source) if source else ROOT / "examples" / example

@@ -20,14 +20,9 @@ Claude Code 호출 인자: $ARGUMENTS
 
 Codex에서는 `$techblog`와 함께 보낸 사용자 요청을 입력으로 삼는다. `$ARGUMENTS`가 치환되지 않았거나 자연어로 호출했다면 현재 사용자 요청에서 자료와 옵션을 읽는다.
 
-## 인자 해석
+## 인자와 설정
 
-- `short` 또는 `--short`가 있으면 [short.md](references/short.md)만 따른다. 아래 인자와 작업 순서는 쓰지 않는다.
-- 입력에 `casual`, `Casual`, `해요체`가 있으면 Casual 글을 쓴다. `default`, `Default`, `합니다체`가 있거나 어투를 지정하지 않았으면 Default 글을 쓴다.
-- `-o <경로>`는 글을 저장할 파일 경로다. 이 인자가 없으면 현재 작업 디렉터리에 글 주제를 나타내는 영문 kebab-case 이름(예: `cache-invalidation-latency.md`)으로 저장한다.
-- `--retone`이 있으면 입력 파일을 완성된 아티클로 보고 7단계(어투 적용)만 한다. 6단계(후처리)는 하지 않는다. `--retone` 없이 이미 쓴 글의 어투만 바꿔 달라고 요청해도 `--retone`으로 본다. 출력 경로가 없으면 `<입력 이름>.<casual|default>.md`에 저장한다.
-- `--keep-work`가 있으면 작업 파일을 지우지 않는다.
-- 나머지 입력은 자료(파일 경로, URL)와 추가 지시(독자, 분량, 강조할 부분)다. 입력에 자료가 없으면 대화에 붙여넣은 텍스트를 자료로 쓴다. 붙여넣은 텍스트도 없으면 무엇을 정리할지 사용자에게 묻는다.
+먼저 [settings.md](references/settings.md)를 읽고 인자(`short`, `casual`/`default`, `-o`, `--retone`, `--keep-work`, `--defaults`)를 해석한다. 요청에 없는 설정값(새 글은 독자, 어투, 분량)은 subagent를 띄우기 전에 사용자에게 묻고, 값을 정한 뒤 자료를 읽는다. 질문할 수 없으면 기본값을 쓰고 보고한다. `short`나 `--short`가 있으면 [short.md](references/short.md)만 따른다.
 
 ## 파일
 

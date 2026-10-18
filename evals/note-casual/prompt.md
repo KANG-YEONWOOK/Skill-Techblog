@@ -5,7 +5,7 @@ timeout_seconds: 1500
 allowed_tools: [Read, Glob, Grep, Skill]
 ---
 
-아래 자료의 핵심 내용을 한국어 기술 블로그 아티클로 정리해서 현재 폴더에 article.md 파일로 저장해줘. 어투는 해요체(Casual)로 써줘.
+아래 자료의 핵심 내용을 한국어 기술 블로그 아티클로 정리해서 현재 폴더에 article.md 파일로 저장해줘. 어투는 해요체(Casual)로 써줘. 독자와 분량은 기본값으로 해줘.
 
 # Migrating the API rate limiter from fixed window to token bucket (internal engineering note, 2026)
 
