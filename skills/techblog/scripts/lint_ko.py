@@ -656,6 +656,8 @@ WORK_CITE_RE = re.compile(
     r"([A-Z][A-Za-z'’\-]+)(?:\s+(?:et\s+al\.|등|외)|\s*(?:&|and)\s*[A-Z][A-Za-z'’\-]+)?\s*\(\s*((?:19|20)\d{2})[a-z]?\s*\)"
     r"|([A-Z][A-Za-z'’\-]+)\s+et\s+al\."
     r"|([가-힣]{1,4})\s*(?:등|외)\s*\(\s*((?:19|20)\d{2})[a-z]?\s*\)")
+# 저자 이름 뒤에 조사가 붙은 말("Cornelia Bargmann과 Eve Marder는", "Marder는")도 연구를 이름으로 가리킨 것으로 본다.
+NAMED_SOURCE_RE = re.compile(r"[A-Z][a-z]{2,}(?:\s+(?:et\s+al\.|등))?(?:은|는|이|가|과|와|의|도)(?=[\s,]|$)")
 # "연구진", "연구팀", "이 연구", "이 논문", "원문"은 문장 첫머리에 올 때만 본다("Facebook의 AI 연구팀이"는 이름이 있다).
 BARE_AUTHOR_RE = re.compile(r"(?:^|[\s(])((?:저자들?|세\s저자|두\s저자|네\s저자|같은\s연구|같은\s논문|같은\s글|두\s글)"
                             r"(?:은|는|이|가|도))\s|^((?:연구진|연구팀|이\s연구|이\s논문|원문)(?:은|는|이|가|도))\s")
@@ -942,7 +944,7 @@ def bare_author_hits(blocks, sentences, max_hits=10):
         if prev is not None and any(blocks[k].type not in ("paragraph", "list_item")
                                     for k in range(prev.block + 1, s.block)):
             prev, prev_ok = None, False
-        named = bool(WORK_CITE_RE.search(s.text))
+        named = bool(WORK_CITE_RE.search(s.text) or NAMED_SOURCE_RE.search(s.masked))
         m = BARE_AUTHOR_RE.search(s.masked.lstrip())
         if m and not named:
             if not prev_ok:

@@ -432,7 +432,10 @@ class KoreanPatternTest(unittest.TestCase):
                 # 연구가 하나뿐인 글
                 "김 등(2025)은 로그를 모았습니다. 지연이 줄었습니다. 저자들은 배치 대기가 원인이라고 봅니다.",
                 # 이름이 붙은 연구팀
-                "Kim et al.(2020)이 먼저 썼습니다. 2014년에 Facebook의 AI 연구팀이 논문을 발표했습니다. Lee(2021)도 있습니다."):
+                "Kim et al.(2020)이 먼저 썼습니다. 2014년에 Facebook의 AI 연구팀이 논문을 발표했습니다. Lee(2021)도 있습니다.",
+                # 바로 앞 문장이 저자 이름을 산문으로 썼다(0.8.0 실제 실행에서 찾은 오탐)
+                "Cornelia Bargmann과 Eve Marder는 2013년 Nature Methods에 관점 글을 발표했어요. "
+                "이 글에서는 두 저자가 든 사례를 정리해요. Jang 등(2012)도 다뤄요.\n\nMacosko 등(2009)도 있어요.\n"):
             self.assertEqual(self.m(text)["A18.bare_author"]["value"], 0, text)
         # 헤딩을 지나면 바로 앞 문장으로 치지 않는다.
         m = self.m("Herting et al.(2012)은 DTI를 분석했어요. Sporns et al.(2005)도 있어요.\n\n## 결론\n\n저자들은 관계를 설명해요.\n")

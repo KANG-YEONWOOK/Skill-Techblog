@@ -26,7 +26,7 @@
 ## 스크립트 실행
 
 - 현재 환경의 셸 실행 도구를 쓴다. Windows에서는 `python`, macOS와 Linux에서는 `python3`를 쓴다. 아래 `<스킬 절대 경로>`는 로드한 `SKILL.md`가 있는 디렉터리로 바꾼다. 현재 작업 폴더나 환경 변수의 존재로 추측하지 않는다.
-- 경로는 큰따옴표로 감싼다. 검사 명령은 한 번에 하나씩 실행한다. Claude Code의 Bash 사전 허용은 frontmatter의 검사 스크립트에 한정된다. Claude Code에서는 참고 문서를 Read로 열고 파일 목록은 Glob으로 확인한다. `cat`, `ls`, `Get-ChildItem` 같은 명령을 Bash나 PowerShell로 실행하거나 검사 명령에 이어 붙이지 않는다. Codex의 파일 읽기와 PDF 처리는 runtime.md를 따른다.
+- 경로는 큰따옴표로 감싼다. 검사 명령은 한 번에 하나씩 실행한다. Claude Code의 Bash 사전 허용은 frontmatter의 검사 스크립트에 한정된다. Claude Code에서는 참고 문서를 Read로 열고 파일 목록은 Glob으로 확인한다. `cat`, `ls`, `Get-ChildItem` 같은 명령을 Bash나 PowerShell로 실행하거나 검사 명령에 이어 붙이지 않는다. 종료 코드를 보려고 `; echo "exit=$?"`를 붙이지 않는다. Bash 도구가 0이 아닌 종료 코드를 결과에 함께 보여 주고, 다른 명령을 붙인 검사 명령은 사전 허용과 맞지 않아 권한이 거부된다(0.8.0 시험 실행에서 `revise_ko.py check`가 이 이유로 두 번 거부됐다). Codex의 파일 읽기와 PDF 처리는 runtime.md를 따른다.
   - 문체 검사: `python3 "<스킬 절대 경로>/scripts/lint_ko.py" "<글>" --tone default --facts "<이름>.facts.md"`
   - 후처리: `python3 "<스킬 절대 경로>/scripts/revise_ko.py" start "<후처리 대상>"`, 같은 스크립트의 `repeats "<후처리 대상>"`, `check "<후처리 대상>"`
   - 어투 검사: `python3 "<스킬 절대 경로>/scripts/tone_check.py" "<Default 글>" "<Casual 글>"`
