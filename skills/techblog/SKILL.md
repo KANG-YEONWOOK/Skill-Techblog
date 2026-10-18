@@ -12,7 +12,7 @@ metadata:
 
 이 스킬은 자료를 읽고 그 핵심을 한국어 기술 블로그 아티클로 쓴다. 기본 독자는 자료 분야의 지식이 충분하지 않거나 없을 수 있는 사람이고, 글은 토스, 카카오, 당근 기술 블로그 글처럼 읽혀야 한다. 중심 대상과 생소한 용어는 처음 나올 때 무엇인지 설명한다. 글의 모든 문장은 따로 읽어도 무엇에 대한 말이고 누구의 주장인지 알 수 있어야 한다. 영어 자료를 옮긴 문장도 사람이 쓴 한국어 기술 블로그 글에서 사용하는 말로 쓴다.
 
-1~5단계에서는 모든 글에 같은 규칙으로 초안을 쓰고 점검한다. 6단계(후처리)에서는 초안을 독자 입장에서 다시 읽어 이 글에 맞게 고친 뒤 문장마다 한국어 표현을 점검한다.
+1~5단계에서는 모든 글에 같은 규칙으로 초안을 쓰고 점검한다. 6단계에서는 글만 읽는 독자 점검으로 독자가 모를 말을 찾고, 초안을 이 글에 맞게 고친 뒤 문장마다 한국어 표현을 점검한다.
 
 Claude Code와 Codex에서 사용한다. 먼저 [실행 환경 안내](references/runtime.md)를 읽고 현재 환경의 입력, 도구, 스킬 경로를 확인한다.
 
@@ -27,7 +27,7 @@ Codex에서는 `$techblog`와 함께 보낸 사용자 요청을 입력으로 삼
 ## 파일
 
 - 글은 `<이름>.md`에 저장한다.
-- 작업 파일은 출력 파일과 같은 폴더에 만든다. fact sheet는 `<이름>.facts.md`이고, Casual 글을 쓸 때만 만드는 Default 초안은 `<이름>.draft.md`다. 6단계를 시작할 때 스크립트가 후처리 전 초안을 `<이름>.unrevised.md`에 복사하고 반복 후보를 `<이름>.repeats.md`에 적는다. 작업 파일은 8단계에서 지운다.
+- 작업 파일은 출력 파일과 같은 폴더에 만든다. fact sheet는 `<이름>.facts.md`이고, Casual 글을 쓸 때만 만드는 Default 초안은 `<이름>.draft.md`다. 6단계를 시작할 때 스크립트가 후처리 전 초안을 `<이름>.unrevised.md`에 복사하고 반복 후보를 `<이름>.repeats.md`에 적는다. 독자 점검 결과는 `<이름>.reader.md`다. 작업 파일은 8단계에서 지운다.
 - 후처리 대상은 합니다체 글이다. Default 글이면 출력 파일 `<이름>.md`, Casual 글이면 Default 초안 `<이름>.draft.md`다.
 
 ## 작업 순서와 필수 문서
@@ -38,7 +38,7 @@ Codex에서는 `$techblog`와 함께 보낸 사용자 요청을 입력으로 삼
 
 1. [drafting.md](references/drafting.md)를 읽고 1~4단계를 수행한다. 자료 전체 읽기, fact sheet 작성, 개요, Default 초안 작성 순서다. Casual도 먼저 합니다체 초안을 쓴다. [style-guide.md](references/style-guide.md)는 3단계에서 읽고, AI 패턴 문서는 초안을 쓰기 전에 읽지 않는다.
 2. [validation.md](references/validation.md)를 읽고 5단계를 수행한다. 문체 검사, 문장별 단독 읽기, fact sheet 대조, [rubric.md](references/rubric.md)의 J1~J10 점검을 한다. [ai-patterns.md](references/ai-patterns.md)는 이 단계에서 읽는다.
-3. [finalization.md](references/finalization.md)를 읽고 6~8단계를 수행한다. [revision.md](references/revision.md)에 따른 독립 후처리와 [korean-review.md](references/korean-review.md)에 따른 한국어 문장 점검(도구가 없으면 직접 수행), Casual 어투 적용, 작업 파일 정리와 결과 보고 순서다. 어투를 적용할 때 [tone.md](references/tone.md)를 읽는다.
+3. [finalization.md](references/finalization.md)를 읽고 6~8단계를 수행한다. [reader-check.md](references/reader-check.md)에 따른 독자 점검, [revision.md](references/revision.md)에 따른 독립 후처리와 [korean-review.md](references/korean-review.md)에 따른 한국어 문장 점검(도구가 없으면 직접 수행), Casual 어투 적용, 작업 파일 정리와 결과 보고 순서다. 어투를 적용할 때 [tone.md](references/tone.md)를 읽는다.
 
 ### 완성된 글의 어투만 변환
 

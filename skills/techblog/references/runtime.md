@@ -18,7 +18,7 @@
 | 파일 생성과 수정 | Write, Edit | 제공된 파일 편집 도구 또는 `apply_patch` |
 | Python 검사기 | Bash | 제공된 셸 실행 도구 |
 | URL 본문 | WebFetch | 웹을 열거나 가져오는 도구 또는 허용된 HTTP 다운로드 |
-| 6단계의 두 독립 점검(후처리, 한국어 문장 점검) | Agent의 general-purpose subagent | 사용 가능한 subagent 도구, 대화 상속 없이 실행 |
+| 6단계의 세 독립 점검(독자 점검, 후처리, 한국어 문장 점검) | Agent의 general-purpose subagent | 사용 가능한 subagent 도구, 대화 상속 없이 실행 |
 
 도구 이름을 흉내 내거나 없는 도구를 호출하지 않는다. macOS/Linux에서는 `python3`, Windows에서는 `python`을 사용한다. 사용할 수 있는 Python 3.8 이상 실행 파일이 따로 있으면 그 경로를 쓴다. 검사기는 외부 패키지가 필요 없다. 검사는 개별 명령으로 실행하고 경로를 인용한다. Claude의 `allowed-tools`는 Codex에 실행 권한을 부여하지 않으며 현재 환경의 권한 정책을 따른다.
 
@@ -31,7 +31,7 @@
   - 문체 검사: `python3 "<스킬 절대 경로>/scripts/lint_ko.py" "<글>" --tone default --facts "<이름>.facts.md"`
   - 후처리: `python3 "<스킬 절대 경로>/scripts/revise_ko.py" start "<후처리 대상>"`, 같은 스크립트의 `repeats "<후처리 대상>"`, `check "<후처리 대상>"`
   - 어투 검사: `python3 "<스킬 절대 경로>/scripts/tone_check.py" "<Default 글>" "<Casual 글>"`
-  - 작업 파일 삭제: `python3 "<스킬 절대 경로>/scripts/tone_check.py" --cleanup "<이름>.facts.md" "<이름>.draft.md" "<이름>.unrevised.md" "<이름>.repeats.md"`
+  - 작업 파일 삭제: `python3 "<스킬 절대 경로>/scripts/tone_check.py" --cleanup "<이름>.facts.md" "<이름>.draft.md" "<이름>.unrevised.md" "<이름>.repeats.md" "<이름>.reader.md"`
 - Python이나 셸을 쓸 수 없으면 `references/rubric.md`로 직접 점검하고 자동 검사를 실행하지 못했다고 보고한다. 스크립트가 실행된 뒤 오류가 나면 경로와 오류를 확인한다. 실행 오류를 Python 부재로 취급하거나 검사를 통과했다고 보고하지 않는다.
 
 ## PDF와 URL
@@ -51,7 +51,7 @@
 
 ## 후처리 context
 
-- 6단계는 독립 subagent를 두 번 띄운다. 첫 subagent는 후처리(revision.md)를, 두 번째 subagent는 한국어 문장 점검(korean-review.md)을 맡는다. 두 subagent 모두 초안 작성 대화와 앞 subagent의 대화를 상속하지 않게 실행한다. `fork_context`나 `fork_turns` 같은 설정이 있으면 상속을 끈다. 별도 모델은 지정하지 않는다.
+- 6단계는 독립 subagent를 세 번 띄운다. 첫 subagent는 독자 점검(reader-check.md), 두 번째는 후처리(revision.md), 세 번째는 한국어 문장 점검(korean-review.md)을 맡는다. 세 subagent 모두 초안 작성 대화와 앞 subagent의 대화를 상속하지 않게 실행한다. `fork_context`나 `fork_turns` 같은 설정이 있으면 상속을 끈다. 별도 모델은 지정하지 않는다.
 - subagent가 끝날 때까지 기다렸다가 보고를 받은 뒤 다음 순서로 넘어간다. Claude Code의 Agent는 `run_in_background`를 쓰지 않는다. 0.6.0 시험 실행에서 한국어 문장 점검 subagent를 background로 띄우자 그 subagent의 검사 명령이 권한 거부됐다. 상위 agent의 턴도 그 자리에서 끝났고, subagent가 끝난 뒤 이어진 턴에서는 skill의 검사 스크립트 허용이 적용되지 않아 `revise_ko.py check`와 최종 lint를 실행하지 못했다.
-- subagent에는 [finalization.md](finalization.md) 6단계의 prompt와 실제 파일 경로만 넘긴다. 붙여넣은 자료는 fact sheet의 별도 `원문` 절에 그대로 보관하고 그 절을 자료 위치로 지정한다. subagent도 원문을 다시 확인할 수 있어야 한다.
-- 독립 실행 도구가 없거나 사용자가 subagent를 쓰지 말라고 하면 현재 agent가 revision.md와 korean-review.md 순서를 차례로 따라 직접 한다. 이 경우 독립 검토를 했다고 보고하지 않는다. 후처리를 위해 별도 CLI 설치나 인증을 시도하지 않는다.
+- subagent에는 [finalization.md](finalization.md) 6단계의 prompt와 실제 파일 경로만 넘긴다. 독자 점검 subagent에는 독자 줄과 용어 이름만 넘기고 fact sheet와 자료의 경로는 넘기지 않는다. 그 subagent가 자료를 읽으면 빠진 설명을 자료의 내용으로 채워 읽는다. 붙여넣은 자료는 fact sheet의 별도 `원문` 절에 그대로 보관하고 그 절을 자료 위치로 지정한다. subagent도 원문을 다시 확인할 수 있어야 한다.
+- 독립 실행 도구가 없거나 사용자가 subagent를 쓰지 말라고 하면 현재 agent가 reader-check.md, revision.md, korean-review.md 순서를 차례로 따라 직접 한다. 이 경우 독립 검토를 했다고 보고하지 않는다. 후처리를 위해 별도 CLI 설치나 인증을 시도하지 않는다.

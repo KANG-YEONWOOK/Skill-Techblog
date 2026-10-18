@@ -21,7 +21,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 CASES = ("default", "casual", "retone-casual", "retone-default", "url", "pdf", "cleanup")
-WORK_SUFFIXES = (".facts.md", ".draft.md", ".unrevised.md", ".repeats.md")
+WORK_SUFFIXES = (".facts.md", ".draft.md", ".unrevised.md", ".repeats.md", ".reader.md")
 
 
 def note_text():
