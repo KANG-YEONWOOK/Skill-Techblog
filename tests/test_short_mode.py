@@ -105,10 +105,11 @@ class ShortModeTest(unittest.TestCase):
         ko = self.write("good.md", GOOD)
         src = self.write("src.md", SOURCE)
         script = os.path.join(SCRIPTS, "lint_ko.py")
-        done = subprocess.run([sys.executable, script, ko, "--source", src], capture_output=True, text=True)
+        done = subprocess.run([sys.executable, script, ko, "--source", src], capture_output=True, text=True,
+                              encoding="utf-8")
         self.assertEqual(done.returncode, 2)
         done = subprocess.run([sys.executable, script, ko, "--short", "--source", src, "--tone", "default"],
-                              capture_output=True, text=True)
+                              capture_output=True, text=True, encoding="utf-8")
         self.assertEqual(done.returncode, 0, done.stdout)
 
     def test_a_default_question_may_end_in_ingayo(self):
