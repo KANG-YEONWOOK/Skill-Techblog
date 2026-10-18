@@ -636,19 +636,22 @@ SPECIES_ABBR_RE = re.compile(r"(?<![A-Za-z0-9_.])[A-Z]\.\s[a-z]{3,}(?![A-Za-z])"
 SPECIES_ITALIC_RE = re.compile(r"(?<![*_A-Za-z0-9])[*_]([A-Z][a-z]+ [a-z]{3,})[*_](?![*_A-Za-z0-9])")
 LATIN_PHRASES = frozenset(("In vivo", "In vitro", "In silico", "In situ", "Ex vivo", "De novo"))
 ABBR_RE = re.compile(r"(?<![A-Za-z0-9_\-])[A-Z]{2}[A-Z0-9]{0,5}(?![A-Za-z0-9_\-])")
-# 분야 밖 개발자도 아는 약어. 처음 나올 때 풀네임이 없어도 후보로 보여 주지 않는다.
-COMMON_ABBR = frozenset((
-    "AI", "API", "ASCII", "AWS", "BE", "CD", "CDN", "CI", "CLI", "CORS", "CPU", "CRUD", "CSR", "CSS", "CSV", "CT",
-    "DAU", "DB", "DBMS", "DNA", "DNS", "DOM", "EOF", "FAQ", "FE", "GB", "GC", "GCP", "GPT", "GPU", "HTML", "HTTP",
-    "HTTPS", "ID", "IDE", "II", "III", "IO", "IP", "IT", "IV", "JDK", "JSON", "JVM", "JWT", "KB", "KPI", "KST", "LLM",
-    "MAU", "MB", "ML", "MRI", "MSA", "MVC", "NLP", "NPM", "OK", "OOM", "ORM", "OS", "PB", "PC", "PDF", "PID", "PM",
-    "PO", "PR", "QA", "QPS", "RAM", "RDBMS", "REST", "RNA", "RPC", "RPS", "SDK", "SLA", "SLO", "SPA", "SQL", "SSD",
-    "SSH", "SSL", "SSR", "TB", "TCP", "TLS", "TPS", "TPU", "TTL", "TV", "UDP", "UI", "URI", "URL", "USB", "UTC",
-    "UTF", "UX", "VM", "XML", "YAML", "AMD", "IBM", "NVIDIA", "ON", "OFF",
-    # SQL과 HTTP 낱말은 약어가 아니라 대문자로 쓰는 키워드다.
-    "ALTER", "AND", "CREATE", "DELETE", "DROP", "FALSE", "FORCE", "FROM", "GET", "GROUP", "HEAD", "INDEX", "INSERT",
-    "JOIN", "LIMIT", "NOT", "NULL", "ORDER", "PATCH", "POST", "PUT", "SELECT", "TABLE", "TEXT", "TRUE", "UPDATE",
-    "WHERE"))
+# 처음 나올 때 풀네임이 없어도 후보로 보여 주지 않는 대문자 낱말. 0.9.0부터 독자를 개발자로 가정하지 않으므로
+# API, CPU, HTTP 같은 분야 약어는 넣지 않는다(자료 분야의 지식이 없을 수 있는 독자는 이 약어도 모른다).
+# GENERAL_ABBR: 분야를 공부하지 않은 사람도 생활과 뉴스에서 설명 없이 접하는 약어와 회사 이름
+GENERAL_ABBR = frozenset((
+    "AI", "IT", "PC", "TV", "USB", "PDF", "DNA", "CEO", "SNS", "GPS", "ID", "OK", "ON", "OFF", "FAQ", "CCTV", "LED",
+    "QR", "SMS", "MRI", "CT", "ATM", "VR", "GPT", "AMD", "IBM", "NVIDIA", "LG", "SK", "KT"))
+# CODE_WORDS: 약어가 아니라 대문자로 쓰는 낱말(SQL과 HTTP 키워드, 로그 레벨), 용량 단위, 시간대, 로마 숫자
+CODE_WORDS = frozenset((
+    "ALTER", "AND", "AS", "ASC", "BY", "CREATE", "DELETE", "DESC", "DISTINCT", "DROP", "EXISTS", "FALSE", "FORCE",
+    "FROM", "GET", "GROUP", "HAVING", "HEAD", "IN", "INDEX", "INNER", "INSERT", "INTO", "IS", "JOIN", "LEFT", "LIKE",
+    "LIMIT", "NOT", "NULL", "OFFSET", "OPTIONS", "OR", "ORDER", "OUTER", "PATCH", "POST", "PUT", "RIGHT", "SELECT",
+    "SET", "TABLE", "TEXT", "TRUE", "UNION", "UNIQUE", "UPDATE", "VALUES", "WHERE", "WITH",
+    "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "TODO",
+    "KB", "MB", "GB", "TB", "PB", "KST", "UTC", "GMT",
+    "II", "III", "IV", "VI", "VII", "VIII", "IX", "XI", "XII"))
+COMMON_ABBR = GENERAL_ABBR | CODE_WORDS
 DESC_SKIP = ("-", "—", "없음")
 
 # 출처를 밝히지 않은 주어(A18.bare_author). 본문이 연구를 둘 이상 인용할 때만 본다.
@@ -1574,7 +1577,7 @@ def render_text(path, tone, analysis, ev, show_all=False):
          "누구의 말인지, 수치가 무엇을 잰 값인지 알 수 있으면 그대로 둔다."),
         ([r for r in checks if r.get("group") == "ko"], True,
          "한국어 점검 후보 (판정에 들어가지 않음): 걸린 말이 references/ai-patterns.md의 \"과교정하지 않기\"에 "
-         "있는 쓰임이면 그대로 두고, 아니면 한국 개발자가 쓰는 말로 고친다."),
+         "있는 쓰임이면 그대로 두고, 아니면 사람이 쓴 한국어 기술 블로그 글에서 사용하는 말로 고친다."),
         ([r for r in checks if r.get("group") == "term"], True,
          "용어 설명 점검 후보 (판정에 들어가지 않음): 걸린 말이 처음 나온 이 문장이나 바로 다음 문장에 그 말이 "
          "무엇인지 쓴 설명이 있으면 그대로 둔다. 이름을 옮긴 말이나 약어의 풀네임뿐이면 references/style-guide.md의 "

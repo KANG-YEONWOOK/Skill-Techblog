@@ -351,12 +351,12 @@ class KoreanPatternTest(unittest.TestCase):
         # 0.8.0: 용어 표에 "처음 나올 때 설명" 열을 더해도 A19.term_avoid는 "쓰지 않을" 열만 읽는다.
         facts = ("| 원어 | 글에 쓸 표기 | 근거 | 쓰지 않을 표기 | 처음 나올 때 설명(근거) |\n|---|---|---|---|---|\n"
                  "| lease | lease | 원어로 씀 | 임대 | 캐시 노드가 정해진 시간 동안 값을 바꿀 수 있는 권한(자료 2쪽) |\n"
-                 "| p99 latency | p99 latency | 원어로 씀 | - | 설명하지 않음(개발자가 아는 말) |\n"
+                 "| service | 서비스 | 일상에서 쓰는 말 | - | 설명하지 않음(일상어) |\n"
                  "| C. elegans | C. elegans(예쁜꼬마선충) | 교과서 이름 | 선충 | 흙에 사는 아주 작은 벌레(범주 설명) |\n")
         self.assertEqual(L.avoid_terms(facts), ["임대", "선충"])
         self.assertEqual(L.described_terms(facts), ["lease", "C. elegans"])
         m = self.m("캐시 노드는 lease(임대)를 받습니다. lease가 끝나면 값을 바꾸지 못합니다. "
-                   "p99 latency는 4.2초입니다. C. elegans(예쁜꼬마선충)는 작습니다.", facts)
+                   "서비스는 12개입니다. C. elegans(예쁜꼬마선충)는 작습니다.", facts)
         self.assertEqual([h["match"] for h in m["A20.term_first"]["hits"]], ["lease", "C. elegans"])
         self.assertEqual(m["A19.term_avoid"]["value"], 0)
         self.assertNotIn("A20.term_first", self.m("lease가 끝납니다."))
@@ -374,10 +374,14 @@ class KoreanPatternTest(unittest.TestCase):
     def test_abbr_first(self):
         m = self.m("STG는 신경절입니다. STG에는 뉴런이 있습니다. STG는 리듬을 만듭니다.")
         self.assertEqual([h["match"] for h in m["A20.abbr_first"]["hits"]], ["STG"])
+        # 0.9.0: 독자를 개발자로 가정하지 않으므로 API 같은 분야 약어도 후보에 오른다.
+        m = self.m("API를 부릅니다. API는 빠릅니다. API도 느려집니다.")
+        self.assertEqual([h["match"] for h in m["A20.abbr_first"]["hits"]], ["API"])
         for text in ("STG(stomatogastric ganglion)는 신경절입니다. STG는 작습니다. STG에는 뉴런이 있습니다.",
                      "stomatogastric ganglion(STG)은 신경절입니다. STG는 작습니다. STG에는 뉴런이 있습니다.",
                      "STG는 신경절입니다. STG는 작습니다.",
-                     "API를 부릅니다. API는 빠릅니다. API도 느려집니다.",
+                     "PDF를 엽니다. PDF는 작습니다. PDF도 큽니다.",
+                     "메모리는 8 GB입니다. 디스크는 4 GB입니다. 캐시는 16 GB입니다.",
                      "WHERE 절을 씁니다. WHERE 조건이 없습니다. WHERE를 지웁니다.",
                      "K1 키가 있습니다. K1 뒤에 둡니다. K1을 지웁니다."):
             self.assertEqual(self.m(text)["A20.abbr_first"]["value"], 0, text)
