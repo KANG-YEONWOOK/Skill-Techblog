@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""0.6.0의 한국어 점검 항목이 사람 글에서 얼마나 걸리는지 재고, 걸린 문장을 보여 준다.
+"""0.6.0 이후의 한국어 점검 항목이 사람 글에서 얼마나 걸리는지 재고, 걸린 문장을 보여 준다.
 
 새 항목은 사람 글 분포에서 정한 기준치가 아니라 대부분 정책(policy)이나 점검 후보(CHECK)다. 그래서 이 스크립트는
 기준치를 계산하지 않고 오탐을 찾는 용도로 쓴다. 사람 글에서 걸린 문장은 모두 읽고, 잘못 걸린 형태는 정규식에서 뺀다.
@@ -29,7 +29,8 @@ import lint_ko as L  # noqa: E402
 
 # lint에 넣은 항목
 ADOPTED = ("G6.emdash", "G6.punct_policy", "G10.num_particle", "A6.window_range", "A14.quoted_english_token",
-           "A14.quoted_english_check", "A5.archaic_words", "A6.calque_check", "A18.negation_scope", "A19.term_mix")
+           "A14.quoted_english_check", "A5.archaic_words", "A6.calque_check", "A18.negation_scope", "A19.term_mix",
+           "A20.species_first", "A20.abbr_first")
 # lint에 넣을지 정하려고 따로 재는 후보. 문장 단위로 센다.
 CANDIDATES = {
     "옛(관형사)": r"(?<![가-힣])옛\s",

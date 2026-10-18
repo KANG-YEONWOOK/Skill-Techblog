@@ -347,6 +347,51 @@ class KoreanPatternTest(unittest.TestCase):
         self.assertEqual(m["A19.term_avoid"]["value"], 2)
         self.assertNotIn("A19.term_avoid", self.m("보고자 유전자를 넣었습니다."))
 
+    def test_term_table_with_description_column(self):
+        # 0.8.0: 용어 표에 "처음 나올 때 설명" 열을 더해도 A19.term_avoid는 "쓰지 않을" 열만 읽는다.
+        facts = ("| 원어 | 글에 쓸 표기 | 근거 | 쓰지 않을 표기 | 처음 나올 때 설명(근거) |\n|---|---|---|---|---|\n"
+                 "| lease | lease | 원어로 씀 | 임대 | 캐시 노드가 정해진 시간 동안 값을 바꿀 수 있는 권한(자료 2쪽) |\n"
+                 "| p99 latency | p99 latency | 원어로 씀 | - | 설명하지 않음(개발자가 아는 말) |\n"
+                 "| C. elegans | C. elegans(예쁜꼬마선충) | 교과서 이름 | 선충 | 흙에 사는 아주 작은 벌레(범주 설명) |\n")
+        self.assertEqual(L.avoid_terms(facts), ["임대", "선충"])
+        self.assertEqual(L.described_terms(facts), ["lease", "C. elegans"])
+        m = self.m("캐시 노드는 lease(임대)를 받습니다. lease가 끝나면 값을 바꾸지 못합니다. "
+                   "p99 latency는 4.2초입니다. C. elegans(예쁜꼬마선충)는 작습니다.", facts)
+        self.assertEqual([h["match"] for h in m["A20.term_first"]["hits"]], ["lease", "C. elegans"])
+        self.assertEqual(m["A19.term_avoid"]["value"], 0)
+        self.assertNotIn("A20.term_first", self.m("lease가 끝납니다."))
+
+    def test_species_first(self):
+        # 사용자 검토 1편: "C. elegans라는 선충"은 이름과 범주만 쓰고 무엇인지 설명하지 않았다.
+        m = self.m("C. elegans라는 선충의 신경계에는 뉴런이 302개 있습니다. C. elegans는 작습니다.\n\n"
+                   "게 *Cancer borealis*의 STG를 봅니다. _Homarus americanus_에서도 잽니다. *In vivo* 실험입니다.\n")
+        self.assertEqual([h["match"] for h in m["A20.species_first"]["hits"]],
+                         ["C. elegans", "Cancer borealis", "Homarus americanus"])
+        for text in ("U.S. 시장을 봅니다.", "J. Nagumo가 회로를 만들었습니다.", "Fig. 5C를 봅니다.", "e.g. 캐시",
+                     "_M.call()을 부릅니다.", "R.id 값을 씁니다."):
+            self.assertEqual(self.m(text)["A20.species_first"]["value"], 0, text)
+
+    def test_abbr_first(self):
+        m = self.m("STG는 신경절입니다. STG에는 뉴런이 있습니다. STG는 리듬을 만듭니다.")
+        self.assertEqual([h["match"] for h in m["A20.abbr_first"]["hits"]], ["STG"])
+        for text in ("STG(stomatogastric ganglion)는 신경절입니다. STG는 작습니다. STG에는 뉴런이 있습니다.",
+                     "stomatogastric ganglion(STG)은 신경절입니다. STG는 작습니다. STG에는 뉴런이 있습니다.",
+                     "STG는 신경절입니다. STG는 작습니다.",
+                     "API를 부릅니다. API는 빠릅니다. API도 느려집니다.",
+                     "WHERE 절을 씁니다. WHERE 조건이 없습니다. WHERE를 지웁니다.",
+                     "K1 키가 있습니다. K1 뒤에 둡니다. K1을 지웁니다."):
+            self.assertEqual(self.m(text)["A20.abbr_first"]["value"], 0, text)
+
+    def test_term_checks_render_in_own_group(self):
+        a = L.analyze("C. elegans라는 선충입니다.\n")
+        ev = L.evaluate(a, L.load_json(L.THRESHOLDS_PATH), "default")
+        st = {r["id"]: r for r in ev["results"]}
+        self.assertEqual(st["A20.species_first"]["status"], "CHECK")
+        self.assertEqual(st["A20.species_first"]["group"], "term")
+        out = L.render_text("x.md", "default", a, ev)
+        self.assertIn("용어 설명 점검 후보", out)
+        self.assertNotIn("단독 읽기 점검 후보", out)
+
     def test_korean_checks_render_in_own_group(self):
         text = "모든 영역이 한 값에 머물지 않았습니다.\n\n기존 설정과 비교하면 최대 5배입니다.\n"
         a = L.analyze(text)

@@ -631,6 +631,26 @@ PHRASE_END_RE = re.compile(r"(에서도|에서|에는|에게|으로|까지|부�
 PAREN_RE = re.compile(r"\([^()]*\)")
 KO_PARTICLES = r"(?:에서는|에서도|에서|에는|으로|처럼|보다|까지|부터|은|는|이|가|을|를|의|에|과|와|도|만|로)"
 
+# 처음 나오는 용어의 설명(A20). 학명("C. elegans", 기울임꼴 "*Cancer borealis*")과 대문자 약어를 찾는다.
+SPECIES_ABBR_RE = re.compile(r"(?<![A-Za-z0-9_.])[A-Z]\.\s[a-z]{3,}(?![A-Za-z])")
+SPECIES_ITALIC_RE = re.compile(r"(?<![*_A-Za-z0-9])[*_]([A-Z][a-z]+ [a-z]{3,})[*_](?![*_A-Za-z0-9])")
+LATIN_PHRASES = frozenset(("In vivo", "In vitro", "In silico", "In situ", "Ex vivo", "De novo"))
+ABBR_RE = re.compile(r"(?<![A-Za-z0-9_\-])[A-Z]{2}[A-Z0-9]{0,5}(?![A-Za-z0-9_\-])")
+# 분야 밖 개발자도 아는 약어. 처음 나올 때 풀네임이 없어도 후보로 보여 주지 않는다.
+COMMON_ABBR = frozenset((
+    "AI", "API", "ASCII", "AWS", "BE", "CD", "CDN", "CI", "CLI", "CORS", "CPU", "CRUD", "CSR", "CSS", "CSV", "CT",
+    "DAU", "DB", "DBMS", "DNA", "DNS", "DOM", "EOF", "FAQ", "FE", "GB", "GC", "GCP", "GPT", "GPU", "HTML", "HTTP",
+    "HTTPS", "ID", "IDE", "II", "III", "IO", "IP", "IT", "IV", "JDK", "JSON", "JVM", "JWT", "KB", "KPI", "KST", "LLM",
+    "MAU", "MB", "ML", "MRI", "MSA", "MVC", "NLP", "NPM", "OK", "OOM", "ORM", "OS", "PB", "PC", "PDF", "PID", "PM",
+    "PO", "PR", "QA", "QPS", "RAM", "RDBMS", "REST", "RNA", "RPC", "RPS", "SDK", "SLA", "SLO", "SPA", "SQL", "SSD",
+    "SSH", "SSL", "SSR", "TB", "TCP", "TLS", "TPS", "TPU", "TTL", "TV", "UDP", "UI", "URI", "URL", "USB", "UTC",
+    "UTF", "UX", "VM", "XML", "YAML", "AMD", "IBM", "NVIDIA", "ON", "OFF",
+    # SQL과 HTTP 낱말은 약어가 아니라 대문자로 쓰는 키워드다.
+    "ALTER", "AND", "CREATE", "DELETE", "DROP", "FALSE", "FORCE", "FROM", "GET", "GROUP", "HEAD", "INDEX", "INSERT",
+    "JOIN", "LIMIT", "NOT", "NULL", "ORDER", "PATCH", "POST", "PUT", "SELECT", "TABLE", "TEXT", "TRUE", "UPDATE",
+    "WHERE"))
+DESC_SKIP = ("-", "—", "없음")
+
 
 class Sentence:
     __slots__ = ("text", "masked", "kind", "block", "para", "line", "first", "last",
@@ -820,6 +840,94 @@ def term_avoid_hits(units, terms, max_hits=10):
     return hits
 
 
+def described_terms(facts_text):
+    """fact sheet 용어 표에서 "처음 나올 때 설명" 열에 설명을 적은 용어의 "글에 쓸 표기"를 모은다.
+    설명 열이 없거나 "설명하지 않음"으로 적은 용어는 빼고, 표기 뒤 괄호("C. elegans(예쁜꼬마선충)")는 걷어 낸다."""
+    terms = []
+    lines = facts_text.split("\n")
+    for i, ln in enumerate(lines):
+        if "|" not in ln or "설명" not in ln or "글에 쓸" not in ln:
+            continue
+        header = [c.strip() for c in ln.strip().strip("|").split("|")]
+        desc_col = next((j for j, c in enumerate(header) if "설명" in c), None)
+        term_col = next((j for j, c in enumerate(header) if "글에 쓸" in c), None)
+        if desc_col is None or term_col is None:
+            continue
+        for row in lines[i + 1:]:
+            if "|" not in row:
+                break
+            if TABLE_DELIM_RE.match(row):
+                continue
+            cells = [c.strip() for c in row.strip().strip("|").split("|")]
+            if max(desc_col, term_col) >= len(cells):
+                continue
+            desc = cells[desc_col]
+            if not desc or desc in DESC_SKIP or desc.startswith("설명하지 않"):
+                continue
+            term = PAREN_RE.sub("", cells[term_col]).strip().strip("`\"'“”‘’ ")
+            if term and term not in DESC_SKIP and term not in terms:
+                terms.append(term)
+    return terms
+
+
+def _term_re(term):
+    if re.fullmatch(r"[A-Za-z0-9 .'\-]+", term):
+        return _latin_term_re(term)
+    return re.compile(r"(?<![가-힣])" + re.escape(term))
+
+
+def term_first_hits(units, terms, max_hits=10):
+    """units: (줄 번호, 원문, 따옴표를 가린 문장). fact sheet가 설명을 적은 용어가 본문에 처음 나온 문장.
+    설명이 있는지는 문장을 읽어야 알 수 있어서 괄호가 있어도 보여 준다."""
+    hits = []
+    for term in terms:
+        rx = _term_re(term)
+        for line, text, masked in units:
+            if rx.search(masked):
+                hits.append({"line": line, "text": text[:160], "match": term})
+                break
+    hits.sort(key=lambda h: h["line"])
+    return hits[:max_hits]
+
+
+def species_first_hits(units, italic_names, max_hits=5):
+    """학명이 본문에 처음 나온 문장. "C. elegans(예쁜꼬마선충)"처럼 괄호가 있어도 무엇인지 쓴 설명인지는
+    읽어야 알 수 있어서 괄호와 상관없이 보여 준다. italic_names는 기울임꼴로 쓴 학명("Cancer borealis")."""
+    hits, seen = [], set()
+    italic_rx = [(n, re.compile(r"(?<![A-Za-z])" + re.escape(n) + r"(?![A-Za-z])")) for n in italic_names]
+    for line, text, masked in units:
+        found = [(m.start(), re.sub(r"\s+", " ", m.group(0))) for m in SPECIES_ABBR_RE.finditer(masked)]
+        found += [(m.start(), n) for n, rx in italic_rx for m in rx.finditer(masked)]
+        for _, name in sorted(found):
+            key = name.replace(" ", "")
+            if key in seen:
+                continue
+            seen.add(key)
+            hits.append({"line": line, "text": text[:160], "match": name})
+    return hits[:max_hits]
+
+
+def abbr_first_hits(units, exclude=(), min_count=3, max_hits=8):
+    """본문에 min_count번 이상 나오는 대문자 약어가 처음 나온 자리에 괄호가 없는 문장.
+    "STG(stomatogastric ganglion)"처럼 바로 뒤에 괄호가 있거나 "stomatogastric ganglion(STG)"처럼
+    괄호 안에서 처음 나오면 세지 않는다. 흔한 약어(COMMON_ABBR)와 exclude(용어 표의 용어)도 세지 않는다."""
+    counts, first = {}, {}
+    for line, text, masked in units:
+        for m in ABBR_RE.finditer(masked):
+            a = m.group(0)
+            counts[a] = counts.get(a, 0) + 1
+            if a not in first:
+                before = masked[:m.start()]
+                in_paren = before.count("(") > before.count(")")
+                after_paren = masked[m.end():m.end() + 2].lstrip().startswith("(")
+                first[a] = (line, text, in_paren or after_paren)
+    skip = COMMON_ABBR | {e.upper() for e in exclude}
+    hits = [{"line": first[a][0], "text": first[a][1][:160], "match": a}
+            for a in first if counts[a] >= min_count and a not in skip and not first[a][2]]
+    hits.sort(key=lambda h: h["line"])
+    return hits[:max_hits]
+
+
 def analyze(text, patterns_spec=None, facts_text=None):
     """글을 분석해 metric 원값과 근거 문장을 돌려준다. 기준치 판정은 evaluate()가 한다."""
     if patterns_spec is None:
@@ -999,6 +1107,23 @@ def analyze(text, patterns_spec=None, facts_text=None):
     if facts_text is not None:
         avoid_hits = term_avoid_hits(ko_units, avoid_terms(facts_text))
         put("A19.term_avoid", len(avoid_hits), avoid_hits)
+
+    # A20 처음 나오는 용어의 설명. 제목과 헤딩은 빼고 본문 문장(목록 항목 포함)에서 첫 등장을 찾는다.
+    body_units = [(s.line, s.text, s.masked) for s in sentences if not s.in_refs]
+    italic_names = []
+    for b in blocks:
+        if b.type in ("paragraph", "list_item"):
+            for m in SPECIES_ITALIC_RE.finditer(b.text):
+                if m.group(1) not in italic_names and m.group(1) not in LATIN_PHRASES:
+                    italic_names.append(m.group(1))
+    species = species_first_hits(body_units, italic_names)
+    put("A20.species_first", len(species), species)
+    described = described_terms(facts_text) if facts_text is not None else []
+    if facts_text is not None:
+        firsts = term_first_hits(body_units, described)
+        put("A20.term_first", len(firsts), firsts)
+    abbrs = abbr_first_hits(body_units, exclude=described)
+    put("A20.abbr_first", len(abbrs), abbrs)
     g7 = []
     adverb_comma = []
     for s in body:
@@ -1354,12 +1479,16 @@ def render_text(path, tone, analysis, ev, show_all=False):
             m = f" «{h['match']}»" if h.get("match") else ""
             lines.append(f"    L{h['line']}{m}: {h['text']}")
     groups = (
-        ([r for r in checks if r.get("group") != "ko"], False,
+        ([r for r in checks if r.get("group") not in ("ko", "term")], False,
          "단독 읽기 점검 후보 (판정에 들어가지 않음): 이 문장과 바로 앞 문장만 읽고 무엇에 대한 말인지, "
          "수치가 무엇을 잰 값인지 알 수 있으면 그대로 둔다."),
         ([r for r in checks if r.get("group") == "ko"], True,
          "한국어 점검 후보 (판정에 들어가지 않음): 걸린 말이 references/ai-patterns.md의 \"과교정하지 않기\"에 "
          "있는 쓰임이면 그대로 두고, 아니면 한국 개발자가 쓰는 말로 고친다."),
+        ([r for r in checks if r.get("group") == "term"], True,
+         "용어 설명 점검 후보 (판정에 들어가지 않음): 걸린 말이 처음 나온 이 문장이나 바로 다음 문장에 그 말이 "
+         "무엇인지 쓴 설명이 있으면 그대로 둔다. 이름을 옮긴 말이나 약어의 풀네임뿐이면 references/style-guide.md의 "
+         "\"처음 나오는 용어와 중심 대상 설명\"대로 고친다."),
     )
     for group, show_match, header in groups:
         if not group:
