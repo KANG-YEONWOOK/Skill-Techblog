@@ -409,15 +409,22 @@ class KoreanPatternTest(unittest.TestCase):
         m = self.m('저자들이 "~로 보인다(suggest)"고 쓴 추정입니다. 그 수보다 많다고 적은 하한입니다.')
         self.assertEqual((m["A14.report_write"]["value"], m["A14.report_write_check"]["value"]), (0, 2))
 
-    def test_quote_go(self):
-        for text in ('저자들은 "각각 관련된다"고 말해요.', '“구조가 기능을 풀어 주지는 않는다”고 정리했어요.'):
-            self.assertEqual(self.m(text)["A14.quote_go"]["value"], 1, text)
-        for text in ('저자들은 "각각 관련된다"라고 말해요.', '값이 "0"이고 비어 있어요.', '지연이 줄었다고 합니다.',
-                     '상태가 "RUNNING"으로 바뀌면 다시 시도합니다.'):
-            self.assertEqual(self.m(text)["A14.quote_go"]["value"], 0, text)
-        ev = L.evaluate(L.analyze('저자들은 "관련된다"고 써요.'), L.load_json(L.THRESHOLDS_PATH), "casual")
-        st = {r["id"]: r["status"] for r in ev["results"]}
-        self.assertEqual((st["A14.report_write"], st["A14.quote_go"]), ("FAIL", "FAIL"))
+    def test_quote_go_is_not_checked(self):
+        # 0.8.0은 따옴표 뒤의 "고"를 FAIL로 셌다(A14.quote_go). 사용자 검토(2026-10-18)에서 직접 인용 뒤에도
+        # "고"를 쓴다고 해서 0.9.0에서 뺐다. 사람 글 224편 중 19편도 이 형태를 쓴다.
+        thresholds = L.load_json(L.THRESHOLDS_PATH)
+        for text in ('Herting et al.(2012)은 "각각 관련된다"고 말해요.', '“구조가 기능을 풀어 주지는 않는다”고 정리했어요.'):
+            a = L.analyze(text)
+            self.assertNotIn("A14.quote_go", a["metrics"], text)
+            ev = L.evaluate(a, thresholds, "casual")
+            self.assertEqual([r["id"] for r in ev["results"] if r["status"] in ("FAIL", "GATE")], [], text)
+        self.assertNotIn("A14.quote_go", thresholds["metrics"])
+        self.assertNotIn("A14.quote_go", thresholds["short"]["drop"])
+        # 자료의 말을 "쓰다"로 옮긴 문장은 따옴표 뒤 조사와 상관없이 FAIL로 남는다.
+        for text in ('저자들은 "관련된다"고 써요.', '저자들은 "관련된다"라고 써요.'):
+            ev = L.evaluate(L.analyze(text), thresholds, "casual")
+            st = {r["id"]: r["status"] for r in ev["results"]}
+            self.assertEqual(st["A14.report_write"], "FAIL", text)
 
     def test_bare_author(self):
         two = ("Herting et al.(2012)은 청소년 77명의 DTI를 분석했어요. 남자는 testosterone 수치가 FA를 예측했어요. "
@@ -488,7 +495,7 @@ class ExampleRegressionTest(unittest.TestCase):
             ev = L.evaluate(a, thresholds, tone)
             self.assertEqual(ev["summary"]["verdict"], "PASS", name)
             for mid in ("G6.emdash", "G6.punct_policy", "G10.num_particle", "A6.window_range",
-                        "A14.quoted_english_token", "A5.archaic_words", "A14.report_write", "A14.quote_go"):
+                        "A14.quoted_english_token", "A5.archaic_words", "A14.report_write"):
                 self.assertEqual(a["metrics"][mid]["value"], 0, (name, mid))
 
 

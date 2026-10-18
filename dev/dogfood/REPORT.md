@@ -639,7 +639,7 @@ iteration 12에서 멈춘다.
 | 3편 노트(같은 주 자료, StudyNote 절차) | 0.6~0.7 | - | - | FAIL(A14.report_write 12, A14.quote_go 6) | - | 0.90 (318문장 중 14, 유형 L 10) | - |
 
 - fact sheet에 "독자" 줄(개발자, 자료의 분야는 모를 수 있음), 중심 대상 표(커넥톰, C. elegans(예쁜꼬마선충), STG의 정의와 정의할 위치), 용어 표의 "처음 나올 때 설명" 열이 생겼다.
-- 첫 초안부터 A14.report_write와 A14.quote_go가 0이었다. 5단계를 마친 초안은 PASS 0/0/0이었다.
+- 첫 초안부터 A14.report_write와 A14.quote_go가 0이었다. 5단계를 마친 초안은 PASS 0/0/0이었다. A14.quote_go는 0.9.0에서 뺀 항목이다.
 - 6단계는 21.1분(실행 시간의 48.5%)이었고 subagent 2개(후처리, 한국어 문장 점검)와 `revise_ko.py check` 6회가 기록됐다.
 - 권한 거부 3회: 시작할 때의 PowerShell `Get-ChildItem` 1회, `revise_ko.py check`에 `; echo "exit=$?"`를 붙인 명령 2회. 뒤의 것은 runtime.md에 적었다(commit 4807b0d).
 - 최종 글에서 A18.bare_author가 앞 문장이 저자 이름을 산문으로 쓴 "두 저자가"를 잡았다. 이름 뒤에 조사가 붙은 말도 연구를 가리킨 것으로 보게 고쳤다(commit 4807b0d).

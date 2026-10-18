@@ -30,7 +30,7 @@ import lint_ko as L  # noqa: E402
 # lint에 넣은 항목
 ADOPTED = ("G6.emdash", "G6.punct_policy", "G10.num_particle", "A6.window_range", "A14.quoted_english_token",
            "A14.quoted_english_check", "A5.archaic_words", "A6.calque_check", "A18.negation_scope", "A19.term_mix",
-           "A20.species_first", "A20.abbr_first", "A14.report_write", "A14.report_write_check", "A14.quote_go",
+           "A20.species_first", "A20.abbr_first", "A14.report_write", "A14.report_write_check",
            "A18.bare_author", "A21.sseuda_senses")
 # lint에 넣을지 정하려고 따로 재는 후보. 문장 단위로 센다.
 CANDIDATES = {
