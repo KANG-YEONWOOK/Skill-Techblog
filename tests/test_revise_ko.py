@@ -80,6 +80,21 @@ class TestRepeats(unittest.TestCase):
     def ids(self, text, rid):
         return [c for c in R.find_repeats(text)["candidates"] if c["id"] == rid]
 
+    def test_r7_keeps_adjacent_context_and_paragraph_boundaries(self):
+        text = "첫 이유를 듭니다. 다른 이유도 듭니다.\n\n새 이유를 듭니다."
+        candidates = self.ids(text, "R7")
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0]["predicate"], "듭니다")
+        self.assertEqual(candidates[0]["previous"]["text"], "첫 이유를 듭니다.")
+        self.assertIn("다른 이유도 듭니다.", R.render_repeats("a.md", R.find_repeats(text)))
+
+    def test_check_exposes_untruncated_review_candidates(self):
+        text = "연구팀은 첫 이유를 듭니다. 연구팀은 다른 이유도 듭니다."
+        result = R.compare(text, text)
+        self.assertEqual(len(result["predicate_candidates"]), 1)
+        self.assertNotIn("A8.same_predicate_adjacent", [r["id"] for r in result["gate_fail"]])
+        self.assertIn("자동 수정 아님", R.render_check("a.unrevised.md", "a.md", result))
+
     def test_r6_change_without_baseline(self):
         texts = [c["text"] for c in self.ids(TABLE_ARTICLE, "R6")]
         self.assertIn("거절 비율은 0.5%p 올랐습니다.", texts)

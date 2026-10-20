@@ -186,6 +186,14 @@ def find_repeats(text):
     recs = sentence_records(text)
     cands = []
 
+    # R7: 어미 bucket과 별개인 인접 서술어 후보. lint와 같은 문단 경계를 쓴다.
+    for hit in L.analyze(text)["metrics"]["A8.same_predicate_adjacent"]["hits"]:
+        prev = hit["previous"]
+        cands.append({"id": "R7", "item": 3, "lines": [prev["line"], hit["line"]],
+                      "section": "", "text": prev["text"] + " " + hit["text"],
+                      "previous": prev, "predicate": hit["match"],
+                      "label": f"이웃한 같은 서술어 «{hit['match']}» (문맥 검토)"})
+
     # R6 비교 기준 없는 변화량
     for idx, r in enumerate(recs):
         m = r["masked"]
@@ -279,7 +287,7 @@ def find_repeats(text):
                           "label": f"{SHORT_LEN}자 미만 문장 {len(run)}개 연속"})
         run = [idx] if cur is not None and cur["kind"] == "paragraph" and len(cur["text"]) < SHORT_LEN else []
 
-    order = {"R6": 0, "R1": 1, "R4": 2, "R3": 3, "R5": 4}
+    order = {"R6": 0, "R7": 1, "R1": 2, "R4": 3, "R3": 4, "R5": 5}
     cands.sort(key=lambda c: (order[c["id"]], -c.get("count", 1), c["lines"][0]))
     return {"sentences": len(recs), "candidates": cands}
 
@@ -385,6 +393,7 @@ def compare(before, after, facts_text=None):
             "changed_share": share, "lost_numbers": lost, "new_numbers": new, "structure": structure,
             "lint_before": ev_b["summary"], "lint_after": ev_a["summary"],
             "worse_ai": worse_ai, "worse_dist": worse_dist, "gate_fail": bad_now, "long_new": long_new,
+            "predicate_candidates": an_a["metrics"]["A8.same_predicate_adjacent"]["hits"],
             "must_fix": must_fix}
 
 
@@ -443,11 +452,17 @@ def render_check(snap, path, res):
             lines += _fmt_metric(r)
     if not (res["gate_fail"] or res["worse_ai"] or res["worse_dist"]):
         lines.append("  나빠진 항목 없음")
+    if res["predicate_candidates"]:
+        lines.append("  이웃한 서술어 반복 후보(자동 수정 아님. 문맥을 읽고 고치거나 남긴 이유를 기록한다):")
+        for h in res["predicate_candidates"]:
+            lines.append(f"    L{h['previous']['line']} → L{h['line']} «{h['match']}»: "
+                         f"{h['previous']['text']} {h['text']}")
     if res["long_new"]:
-        lines.append(f"연결어미가 3개 이상인 새 문장 {len(res['long_new'])}개(사실 단위로 나눈다):")
+        lines.append(f"연결어미가 3개 이상인 새 문장 {len(res['long_new'])}개(절의 대상과 관계를 검토하고 필요한 곳만 나눈다):")
         for x in res["long_new"][:5]:
             lines.append(f"    L{x['line']}: {excerpt(x['text'], 80)}")
-    lines.append("판정: " + ("고칠 항목 있음" if res["must_fix"] else "고칠 항목 없음"))
+    lines.append("자동 판정: " + ("고칠 항목 있음" if res["must_fix"] else "고칠 항목 없음")
+                 + ". 후보의 문맥과 수정 후 단독 읽기는 별도로 확인한다.")
     return "\n".join(lines)
 
 

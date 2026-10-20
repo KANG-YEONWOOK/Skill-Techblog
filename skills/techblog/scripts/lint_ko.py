@@ -694,6 +694,33 @@ def _hit(sent, match=None):
     return h
 
 
+def same_predicate_adjacent_hits(paragraphs):
+    """같은 문단의 이웃한 서술문이 같은 마지막 어절로 끝나는 검토 후보.
+
+    형태소 분석이나 어미 분포(C_PRES 등)가 아니라 표면 어절을 비교한다. 따라서
+    '점도 들어요', '라고도 말해요'도 잡되 활용이 다른 동사와 문장 안 반복은 판정하지 않는다.
+    질문, 명령, 명사구, 인용문을 건너뛰어 떨어진 두 문장을 이어 붙이지 않는다.
+    """
+    hits = []
+    for sentences in paragraphs:
+        previous, previous_word = None, None
+        for sent in sentences:
+            # 인라인 인용, 코드, 링크 주소는 서술어로 세지 않는다. 링크의 표시 글자와
+            # 강조 표시는 clean_inline에서 처리하며, 밑줄 강조의 남은 여는 표지도 뗀다.
+            word = last_word(sent.masked).lstrip("*_~")
+            cls = classify_ending(word, sent.question)
+            declarative = (not sent.in_refs and not sent.question
+                           and cls in ("HAPNIDA", "HAEYO", "HAERA")
+                           and not word.endswith(("십시오", "세요", "시다", "니까"))
+                           and bool(re.fullmatch(r"[가-힣]+", word)))
+            if declarative and previous_word == word:
+                hit = _hit(sent, word)
+                hit["previous"] = _hit(previous)
+                hits.append(hit)
+            previous, previous_word = sent, word if declarative else None
+    return hits
+
+
 def _unit_hit(line, text, target, m):
     """문장이 아닌 단위(헤딩, 표 행, 블록)에서 찾은 위치. match에는 앞뒤 여덟 글자를 붙인다."""
     a, b = max(0, m.start() - 8), min(len(target), m.end() + 8)
@@ -1657,6 +1684,8 @@ def analyze(text, patterns_spec=None, facts_text=None):
             run_len = 1
         prev = s
     put("A8.ending_run4", len(runs), runs)
+    same_predicates = same_predicate_adjacent_hits(para_sents)
+    put("A8.same_predicate_adjacent", len(same_predicates), same_predicates)
     pred = [s_.bucket for s_ in body if s_.bucket not in ("NOUN", "OTHER")]
     if pred:
         top_bucket = max(set(pred), key=pred.count)
@@ -1936,9 +1965,13 @@ def render_text(path, tone, analysis, ev, show_all=False):
             m = f" «{h['match']}»" if h.get("match") else ""
             lines.append(f"    L{h['line']}{m}: {h['text']}")
     groups = (
-        ([r for r in checks if r.get("group") not in ("ko", "term")], False,
+        ([r for r in checks if r.get("group") not in ("ko", "term", "rhythm")], False,
          "단독 읽기 점검 후보 (판정에 들어가지 않음): 이 문장과 바로 앞 문장만 읽고 무엇에 대한 말인지, "
          "누구의 말인지, 수치가 무엇을 잰 값인지 알 수 있으면 그대로 둔다."),
+        ([r for r in checks if r.get("group") == "rhythm"], True,
+         "서술어 반복 점검 후보 (판정에 들어가지 않음): 이웃한 두 문장을 함께 읽는다. 반복 때문에 읽기가 "
+         "끊기고 뜻과 조건을 더 명확하게 쓸 수 있을 때만 항목을 묶거나 근거와 결과를 잇는다. 자연스러운 반복과 "
+         "필요한 주어와 목적어는 남기고, 남긴 후보의 문맥과 이유를 기록한다."),
         ([r for r in checks if r.get("group") == "ko"], True,
          "한국어 점검 후보 (판정에 들어가지 않음): 걸린 말이 references/ai-patterns.md의 \"과교정하지 않기\"에 "
          "있는 쓰임이면 그대로 두고, 아니면 사람이 쓴 한국어 기술 블로그 글에서 사용하는 말로 고친다."),
@@ -1959,6 +1992,9 @@ def render_text(path, tone, analysis, ev, show_all=False):
             for h in r.get("hits", []):
                 m = f" «{h['match']}»" if show_match and h.get("match") else ""
                 where = f"L{h['line']}" if h["line"] else "fact sheet"
+                if h.get("previous"):
+                    p = h["previous"]
+                    lines.append(f"    앞 문장 L{p['line']}: {p['text']}")
                 lines.append(f"    {where}{m}: {h['text']}")
             more = r.get("more") or []
             if more:

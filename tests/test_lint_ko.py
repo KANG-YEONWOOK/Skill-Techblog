@@ -86,6 +86,91 @@ class EndingTest(unittest.TestCase):
         self.assertEqual(L.ending_bucket("비싸거든요.", "비싸거든요", "HAEYO"), "C_GEUDEUN")
 
 
+class AdjacentPredicateTest(unittest.TestCase):
+    def metric(self, text):
+        return L.analyze(text)["metrics"]["A8.same_predicate_adjacent"]
+
+    def test_reported_examples_in_both_tones(self):
+        for first, second, word in (
+                ("저자는 첫 이유로 입력이 퍼진다는 점을 들어요.", "입력이 멀리서 온다는 점도 들어요.", "들어요"),
+                ("저자는 뉴런 수가 298개라고 말해요.", "둘의 수가 비슷하다고도 말해요.", "말해요"),
+                ("저자는 첫 이유로 입력이 퍼진다는 점을 듭니다.", "입력이 멀리서 온다는 점도 듭니다.", "듭니다"),
+                ("첫 글은 2012년에 발표했습니다.", "다음 글은 2013년에 발표했습니다.", "발표했습니다")):
+            with self.subTest(word=word):
+                metric = self.metric(first + " " + second)
+                self.assertEqual(metric["value"], 1)
+                self.assertEqual(metric["hits"][0]["match"], word)
+                self.assertEqual(metric["hits"][0]["previous"]["text"], first)
+                self.assertEqual(metric["hits"][0]["text"], second)
+
+    def test_counts_pairs_in_run_without_changing_bucket(self):
+        m = L.analyze("입력을 바꿔요. 출력을 바꿔요. 순서를 바꿔요. 위치를 바꿔요.")["metrics"]
+        self.assertEqual(m["A8.same_predicate_adjacent"]["value"], 3)
+        self.assertEqual(m["A8.ending_run4"]["value"], 1)
+        a = L.analyze("입력을 받아요. 출력을 만들어내요. 순서를 바꿔요. 결과를 비교해요.")
+        self.assertEqual(a["metrics"]["A8.same_predicate_adjacent"]["value"], 0)
+        self.assertEqual(a["metrics"]["A8.ending_run4"]["value"], 1)
+        self.assertEqual(a["endings"]["bucket"]["C_PRES"], 4)
+
+    def test_structural_revision_resolves_reported_pair(self):
+        combined = ("Bargmann(2012)은 그 이유로 대부분의 neuromodulatory 입력이 extrasynaptic이라는 점과, "
+                    "많은 입력이 넓게 퍼지는 장거리 projection에서 온다는 점을 제시해요.")
+        counted = ("Bargmann(2012)은 그 이유로 다음 두 가지를 들어요. "
+                   "첫 번째는 입력이 extrasynaptic이라는 점, 두 번째는 입력이 멀리서 온다는 점이에요.")
+        self.assertEqual(self.metric(combined)["value"], 0)
+        self.assertEqual(self.metric(counted)["value"], 0)
+
+    def test_excludes_lists_tables_quotes_and_paragraph_boundaries(self):
+        blocks = (
+            "입력을 받아요.\n\n출력을 받아요.",
+            "- 입력을 받아요. 출력을 받아요.\n- 자료를 받아요.",
+            "| 처음 | 다음 |\n|---|---|\n| 입력을 받아요. 출력을 받아요. | 자료를 받아요. |",
+            "> 입력을 받아요. 출력을 받아요.",
+            "입력을 받아요.\n\n> 인용을 받아요.\n\n출력을 받아요.",
+            "입력을 받아요.\n\n## 두 번째\n\n출력을 받아요.",
+            "## 참고 자료\n\n입력을 받아요. 출력을 받아요.",
+            "```text\n입력을 받아요. 출력을 받아요.\n```",
+        )
+        for text in blocks:
+            with self.subTest(text=text):
+                self.assertEqual(self.metric(text)["value"], 0)
+
+    def test_does_not_bridge_intervening_sentence(self):
+        for middle in ("결과는 달라요.", "출력을 받아요?", "출력을 받으세요.", "입력과 출력."):
+            with self.subTest(middle=middle):
+                self.assertEqual(self.metric("입력을 받아요. " + middle + " 자료를 받아요.")["value"], 0)
+        self.assertEqual(self.metric("첫 자료를 받으세요. 다음 자료를 받으세요.")["value"], 0)
+
+    def test_inline_markup_punctuation_and_parenthetical_tail(self):
+        for text in (
+                "첫 이유를 **들어요.** 둘째 이유도 [들어요](https://example.com).",
+                "첫 이유를 _들어요_. 둘째 이유도 들어요!",
+                "첫 이유를 들어요(그림 1). 둘째 이유도 들어요…",
+                "첫 이유를 들어요[^1]. 둘째 이유도 들어요.",
+                "첫 이유를 들어요.\n둘째 이유도 들어요."):
+            with self.subTest(text=text):
+                self.assertEqual(self.metric(text)["value"], 1)
+        # 코드나 인용된 서술어 자체를 바꾸라는 후보는 만들지 않는다.
+        self.assertEqual(self.metric("첫 표현은 `들어요`. 둘째 표현은 `들어요`.")["value"], 0)
+        self.assertEqual(self.metric('첫 표현은 "들어요". 둘째 표현은 "들어요".')["value"], 0)
+
+    def test_candidate_and_distribution_never_change_verdict(self):
+        source = L.load_json(L.THRESHOLDS_PATH)
+        th = {"metrics": {key: source["metrics"][key] for key in
+                          ("A8.ending_run4", "A8.same_predicate_adjacent")}}
+        a = L.analyze("입력을 받아요. 출력을 받아요. 자료를 받아요. 기록을 받아요.")
+        ev = L.evaluate(a, th, "casual", max_hits=1)
+        statuses = {r["id"]: r["status"] for r in ev["results"]}
+        self.assertEqual(statuses["A8.ending_run4"], "INFO")
+        self.assertEqual(statuses["A8.same_predicate_adjacent"], "CHECK")
+        self.assertEqual(ev["summary"], {"gate_fail": 0, "fail": 0, "warn": 0, "verdict": "PASS"})
+        text = L.render_text("sample.md", "casual", a, ev)
+        self.assertIn("서술어 반복 점검 후보", text)
+        self.assertIn("앞 문장 L1: 입력을 받아요.", text)
+        self.assertIn("나머지 2곳", text)
+        self.assertNotIn("단독 읽기 점검 후보", text)
+
+
 class ParseTest(unittest.TestCase):
     def test_blocks(self):
         md = "# 제목\n\n문단 하나.\n둘째 줄.\n\n- 항목 1\n- 항목 2\n\n```python\nx = 1; y = 2\n```\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n> 인용문입니다.\n"
