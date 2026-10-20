@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.join(ROOT, "skills", "techblog", "scripts"))
 import lint_ko as L  # noqa: E402
 import revise_ko as RV  # noqa: E402
 
-IDS = ("R6", "R1", "R4", "R3", "R5")
+IDS = ("R6", "R1", "R4", "R3", "R5", "R7")
 
 
 def counts(text):
