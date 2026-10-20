@@ -2,6 +2,24 @@
 
 이 문서는 techblog skill이 쓴 글을 같은 자료로 skill 없이 쓴 글, 사람이 쓴 기술 블로그 글과 비교한 결과를 정리한다. 0.2.0 버전의 글은 skill 없이 쓴 글과 비교했고, 0.3.0 버전의 글은 0.2.0 버전의 글과 비교했다. 0.4.0 버전은 같은 실행에서 후처리 전 초안과 후처리를 마친 글을 비교했다. 0.6.0 버전은 같은 자료로 0.5.1 버전이 쓴 글과 비교하고, 문장마다 한국어 표현을 판정했다. 0.8.0 버전은 사용자가 지적한 용어 설명, 출처와 인용 동사, 다의어 문제를 이전 노트, 사람 글, 같은 자료로 쓴 새 글에서 쟀다. 측정 방법과 iteration별 기록은 [`dev/dogfood/README.md`](dev/dogfood/README.md)와 [`dev/dogfood/REPORT.md`](dev/dogfood/REPORT.md)에 있다.
 
+## 0.10.0 문장 명확성 회귀 검증 (2026-10-20)
+
+StudyNote의 사용자 보강안에서 지적한 인접 서술어 반복, 대상을 짚을 수 없는 구절, 생략된 주어와 목적어를 다뤘다. 수정 기록 266건은 새 lint 측정값으로 사용하지 않았다.
+
+- 같은 마지막 어절의 인접 반복은 `A8.same_predicate_adjacent` CHECK로 표시한다. 목록, 표, 인용, 문단 경계와 중간에 끼어 있는 다른 문장을 건너뛰지 않는지 두 어투로 시험했다. 앞뒤 문장을 출력하고 `revise_ko.py`의 R7 후보와 후처리 검사에도 연결했다.
+- `A8.ending_run4`와 평균 문장 길이는 INFO다. 서로 다른 해요체 현재형과 같은 서술어를 구분하고, 길이 때문에 필요한 성분을 지우지 않도록 했다. calibration을 다시 실행해도 INFO/CHECK가 유지되는 회귀 테스트를 포함했다.
+- 기존 사람 글 224편 중 223편을 다시 확보했다. 기준용 66편(holdout 제외)은 모두 확보했으며 새 후보가 259쌍이었다. 자연스러운 반복도 많아 자동 수정 임계값을 만들지 않았다. [측정 절차와 분포](dev/baseline/README.md), [글별 측정값](dev/baseline/predicate-stats.json)을 남겼다.
+- `python -m unittest discover -s tests`: 139개 통과. 기존 어투 변환, short 모드, 설치 폴더의 경로·인코딩·파일 링크 검사도 포함한다. `quick_validate.py`는 Windows UTF-8 모드로 통과했다.
+- 지침의 독립 검토에서 그림 읽기 제한, 원자료 오류 수정의 원복, 설명용 예시 금지, 항목 개수 예고 금지, 평균 길이 상한과 새 규칙의 충돌을 찾아 수정했다.
+
+새 [회귀 평가](evals/clarity-revision/prompt.md)는 가상 원자료와 결함이 있는 초안을 제공한다. 검토 기준은 [clarity grader](evals/clarity-revision/graders/clarity.md)에 있다. 실측 성능이나 사용자 노트 전체의 개선률을 뜻하는 평가는 아니다.
+
+구현 대화를 상속하지 않은 agent가 이 요청과 현재 스킬만으로 6단계의 직접 수행 경로와 어투 변환을 실행했다. 원본은 보존했고 입력 해시를 확인했다. [합니다체 결과](evals/clarity-revision/results/revised.default.md)는 1,266자, [해요체 결과](evals/clarity-revision/results/revised.casual.md)는 1,248자이며 각각 27문장이다. 두 글 모두 Gate 0 / FAIL 0 / WARN 1, 후처리 검사 통과, 어투 검사 27쌍 PASS였다. 남은 WARN은 조정과 비교의 주체를 밝힌 "연구팀은" 두 문장(A16, 0.074)이다. 위치 정보와 causal mask를 각각 사용하지 않는다는 두 문장의 같은 마지막 어절은 필요한 조건 설명으로 유지했다.
+
+작성에 참여하지 않은 별도 agent가 원자료, 초안, 두 결과 전체를 읽고 [6개 의미 기준을 모두 PASS로 판정했다](evals/clarity-revision/results/independent-review.md). 새 인과, 근거 없는 예측 성능, 빠진 조건을 발견하지 못했다. 원자료에 직접 정의하지 않은 "연결표"의 최소한의 보충 설명은 보고서에 별도로 기록했다. 이 실행은 짧은 가상 사례 한 건이며, 모든 분야의 글에서 결함이 사라진다는 검증은 아니다.
+
+실행 중 지침의 충돌을 보완했으며 작성 agent는 이미 읽은 문서를 처음부터 다시 실행하지 않았다. 최종 결과에는 저장소의 최신 검사기를 적용했고, 지적된 지침 충돌 5건의 해결 여부는 별도 검토자가 재확인했다.
+
 ## 평가 방법
 
 평가는 skill을 설치한 Claude Code를 headless 모드(`claude -p`)로 실행해서 한다. 모델은 Claude Opus 5.5(`--effort xhigh`)를 쓰고, 사용자 설정이 결과에 섞이지 않도록 사용자의 CLAUDE.md와 auto memory를 끈다. 비교 대상은 같은 자료를 skill 없이 "한국어 기술 블로그 아티클로 정리해 달라"고 요청해서 얻은 글이다.
