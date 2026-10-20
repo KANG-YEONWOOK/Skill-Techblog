@@ -417,7 +417,7 @@ def render_check(snap, path, res):
     lines.append(f"본문 글자 수: {st['chars'][0]:,}자 → {st['chars'][1]:,}자")
     lost = res["lost_numbers"]
     if lost:
-        lines.append(f"초안에만 있는 수치 {len(lost)}개: 사실의 유일한 언급이었으면 되살린다.")
+        lines.append(f"초안에만 있는 수치 {len(lost)}개: 원자료에서도 맞는 사실의 유일한 언급이었으면 되살린다. 근거를 확인한 오류 수정은 유지한다.")
         for x in lost[:8]:
             lines.append(f"    {x['raw']} (초안 L{x['line']}, 초안에서 {x['count']}회)")
     else:

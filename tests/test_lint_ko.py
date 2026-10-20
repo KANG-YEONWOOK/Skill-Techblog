@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import os
 import subprocess
@@ -169,6 +170,45 @@ class AdjacentPredicateTest(unittest.TestCase):
         self.assertIn("앞 문장 L1: 입력을 받아요.", text)
         self.assertIn("나머지 2곳", text)
         self.assertNotIn("단독 읽기 점검 후보", text)
+
+
+class DistributionReferenceTest(unittest.TestCase):
+    def test_sentence_length_mean_never_imposes_a_length_limit(self):
+        th = L.load_json(L.THRESHOLDS_PATH)
+        metric_id = "A8.sent_len_mean"
+        only_mean = {"metrics": {metric_id: th["metrics"][metric_id]}}
+        long_sentence = (
+            "연구진은 수술 전에 기록한 환자의 발작 시점과 발작이 전파되는 경로를 입력으로 받아 "
+            "모의 발작이 그 기록과 비슷해지도록 영역마다 흥분성 값을 조정한 뒤, "
+            "그 값을 정할 때 사용하지 않은 수술 뒤의 발작 기록을 모델이 예측한 발작 기록과 비교했습니다.")
+        for sentence in ("입력을 받습니다.", long_sentence):
+            with self.subTest(sentence=sentence):
+                analysis = L.analyze("\n\n".join([sentence] * 200))
+                self.assertGreater(analysis["stats"]["chars"], 1500)
+                mean = analysis["metrics"][metric_id]["value"]
+                self.assertTrue(mean < 34.4 or mean > 109.68)  # 이전 FAIL 범위 밖
+                result = L.evaluate(analysis, only_mean, "default")
+                self.assertEqual(result["results"][0]["status"], "INFO")
+                self.assertEqual(result["summary"]["verdict"], "PASS")
+
+    def test_calibration_preserves_distribution_reference_metrics(self):
+        path = os.path.join(ROOT, "dev", "baseline", "calibrate.py")
+        spec = importlib.util.spec_from_file_location("baseline_calibration_test", path)
+        calibration = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(calibration)
+        thresholds = L.load_json(L.THRESHOLDS_PATH)
+        stats = L.load_json(os.path.join(ROOT, "dev", "baseline", "stats.json"))
+        calibrated, _ = calibration.calibrate(stats, thresholds)
+        for metric_id in ("A8.sent_len_mean", "A8.ending_run4"):
+            with self.subTest(metric_id=metric_id):
+                metric = calibrated["metrics"][metric_id]
+                self.assertEqual(metric["kind"], "info")
+                self.assertNotIn("pass", metric)
+                self.assertNotIn("warn", metric)
+                self.assertEqual(L.judge(1000, metric, 5000)[0], "INFO")
+        self.assertEqual(calibrated["metrics"]["A8.sent_len_mean"]["human"],
+                         thresholds["metrics"]["A8.sent_len_mean"]["human"])
+        self.assertEqual(calibrated["metrics"]["A8.same_predicate_adjacent"]["kind"], "check")
 
 
 class ParseTest(unittest.TestCase):
